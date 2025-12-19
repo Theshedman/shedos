@@ -160,7 +160,7 @@ prepare: check-root check-deps
 	@sed -i 's/shortVersionedName: "[^"]*"/shortVersionedName: "ShedOS $(VERSION)"/' $(BUILD_DIR)/airootfs/etc/calamares/branding/shedos/branding.desc
 	@mkdir -p $(BUILD_DIR)/airootfs/usr/lib/calamares/modules
 	@cp -r installer/calamares/modules-src/* $(BUILD_DIR)/airootfs/usr/lib/calamares/modules/ 2>/dev/null || true
-	@chmod +x $(BUILD_DIR)/airootfs/root/customize_airootfs.sh
+	@chmod +x $(BUILD_DIR)/airootfs/usr/local/bin/*
 	@echo "$(GREEN)Build environment ready$(NC)"
 
 iso: prepare
