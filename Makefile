@@ -150,6 +150,7 @@ prepare: check-root check-deps
 	@mkdir -p $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/zsh
 	@cp archiso/airootfs/etc/skel/.zshrc $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/zsh/.zshrc 2>/dev/null || true
 	@cp archiso/airootfs/etc/skel/.p10k.zsh $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/zsh/.p10k.zsh 2>/dev/null || true
+	@cp -r archiso/airootfs/etc/skel/.config/fastfetch $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/fastfetch 2>/dev/null || true
 	@# Copy ShedOS branding files
 	@mkdir -p $(BUILD_DIR)/airootfs/etc
 	@cp branding/os-release $(BUILD_DIR)/airootfs/etc/os-release
