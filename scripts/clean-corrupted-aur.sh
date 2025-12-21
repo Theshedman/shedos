@@ -5,6 +5,7 @@
 echo "Cleaning corrupted AUR packages from /var/cache/pacman/pkg/..."
 
 sudo rm -f /var/cache/pacman/pkg/walker-*.pkg.tar.zst*
+sudo rm -f /var/cache/pacman/pkg/elephant*.pkg.tar.zst*
 sudo rm -f /var/cache/pacman/pkg/calamares-*.pkg.tar.zst*
 sudo rm -f /var/cache/pacman/pkg/yay-*.pkg.tar.zst*
 sudo rm -f /var/cache/pacman/pkg/visual-studio-code-bin-*.pkg.tar.zst*

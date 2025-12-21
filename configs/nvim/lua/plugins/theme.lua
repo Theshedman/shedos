@@ -1,1 +1,0 @@
-/home/theshedman/.config/omarchy/current/theme/neovim.lua

@@ -110,6 +110,7 @@ prepare: check-root check-deps
 	@# Exclude AUR packages - they come from shedos-repo only
 	@rsync -a --info=progress2 \
 		--exclude='walker-*.pkg.tar.zst' \
+		--exclude='elephant*.pkg.tar.zst' \
 		--exclude='calamares-*.pkg.tar.zst' \
 		--exclude='yay-*.pkg.tar.zst' \
 		--exclude='visual-studio-code-bin-*.pkg.tar.zst' \
@@ -124,17 +125,31 @@ prepare: check-root check-deps
 	@mkdir -p $(BUILD_DIR)/scripts
 	@cp scripts/pacman-offline-download.sh $(BUILD_DIR)/scripts/
 	@chmod +x $(BUILD_DIR)/scripts/pacman-offline-download.sh
-	@# Configure pacman: allow DB sync, use cached packages only
-	@sed -i '/^\[options\]/a CacheDir = $(shell pwd)/$(BUILD_DIR)/pkg-cache\nCacheDir = /var/cache/pacman/pkg/' $(BUILD_DIR)/pacman.conf
+	@# Configure pacman: use ONLY our controlled pkg-cache (not system cache which may have wrong builds)
+	@sed -i '/^\\[options\\]/a CacheDir = $(shell pwd)/$(BUILD_DIR)/pkg-cache/' $(BUILD_DIR)/pacman.conf
 	@# Use smart wrapper: allows DB downloads, blocks package downloads (uses cache)
 	@sed -i 's|^XferCommand.*|XferCommand = $(shell pwd)/$(BUILD_DIR)/scripts/pacman-offline-download.sh %o %u|' $(BUILD_DIR)/pacman.conf
 	@mkdir -p $(BUILD_DIR)/airootfs/opt/shedos-installer
 	@cp -r installer/shedos_installer $(BUILD_DIR)/airootfs/opt/shedos-installer/
-	@cp -r configs $(BUILD_DIR)/airootfs/opt/shedos-installer/
 	@cp -r packages $(BUILD_DIR)/airootfs/opt/shedos-installer/
 	@mkdir -p $(BUILD_DIR)/airootfs/opt/shedos-installer/branding
 	@cp -r branding/wallpapers $(BUILD_DIR)/airootfs/opt/shedos-installer/branding/
-	@chmod +x configs/system/shedos-first-login.sh
+	@# Copy user configs for Calamares deployment
+	@mkdir -p $(BUILD_DIR)/airootfs/opt/shedos-installer/configs
+	@cp -r archiso/airootfs/etc/skel/.config/hypr $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/hyprland 2>/dev/null || true
+	@cp -r archiso/airootfs/etc/skel/.config/waybar $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/waybar 2>/dev/null || true
+	@cp -r archiso/airootfs/etc/skel/.config/kitty $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/kitty 2>/dev/null || true
+	@cp -r archiso/airootfs/etc/skel/.config/mako $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/mako 2>/dev/null || true
+	@cp -r archiso/airootfs/etc/skel/.config/walker $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/walker 2>/dev/null || true
+	@cp -r archiso/airootfs/etc/skel/.config/rofi $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/rofi 2>/dev/null || true
+	@cp -r archiso/airootfs/etc/skel/.config/nvim $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/nvim 2>/dev/null || true
+	@cp -r archiso/airootfs/etc/skel/.config/git $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/git 2>/dev/null || true
+	@cp -r archiso/airootfs/etc/skel/.config/mise $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/mise 2>/dev/null || true
+	@mkdir -p $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/starship
+	@cp archiso/airootfs/etc/skel/.config/starship.toml $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/starship/starship.toml 2>/dev/null || true
+	@mkdir -p $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/zsh
+	@cp archiso/airootfs/etc/skel/.zshrc $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/zsh/.zshrc 2>/dev/null || true
+	@cp archiso/airootfs/etc/skel/.p10k.zsh $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/zsh/.p10k.zsh 2>/dev/null || true
 	@# Copy ShedOS branding files
 	@mkdir -p $(BUILD_DIR)/airootfs/etc
 	@cp branding/os-release $(BUILD_DIR)/airootfs/etc/os-release
@@ -161,6 +176,7 @@ prepare: check-root check-deps
 	@mkdir -p $(BUILD_DIR)/airootfs/usr/lib/calamares/modules
 	@cp -r installer/calamares/modules-src/* $(BUILD_DIR)/airootfs/usr/lib/calamares/modules/ 2>/dev/null || true
 	@chmod +x $(BUILD_DIR)/airootfs/usr/local/bin/*
+	@chmod +x $(BUILD_DIR)/airootfs/root/customize_airootfs.sh
 	@echo "$(GREEN)Build environment ready$(NC)"
 
 iso: prepare

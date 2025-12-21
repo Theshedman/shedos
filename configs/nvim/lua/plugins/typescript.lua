@@ -1,1 +1,0 @@
-/home/theshedman/.config/nvim/lua/plugins/lang/typescript.lua
