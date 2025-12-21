@@ -157,6 +157,8 @@ prepare: check-root check-deps
 	@cp branding/motd $(BUILD_DIR)/airootfs/etc/motd
 	@mkdir -p $(BUILD_DIR)/airootfs/etc/neofetch
 	@cp branding/neofetch/config.conf $(BUILD_DIR)/airootfs/etc/neofetch/
+	@# Copy ShedOS ASCII art for fastfetch branding
+	@cp branding/shedos-ascii.txt $(BUILD_DIR)/airootfs/etc/shedos-ascii.txt
 	@# Copy Plymouth theme
 	@mkdir -p $(BUILD_DIR)/airootfs/usr/share/plymouth/themes/shedos
 	@cp -r branding/plymouth/shedos/* $(BUILD_DIR)/airootfs/usr/share/plymouth/themes/shedos/ 2>/dev/null || true
