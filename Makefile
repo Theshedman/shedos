@@ -18,7 +18,7 @@ YELLOW := \033[0;33m
 RED := \033[0;31m
 NC := \033[0m
 
-.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages
+.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages
 
 all: iso
 
@@ -37,6 +37,7 @@ help:
 	@echo "  test-installed     Boot the installed system in QEMU"
 	@echo "  check-deps         Check build dependencies"
 	@echo "  prepare            Prepare build environment"
+	@echo "  generate-packages  Regenerate archiso/packages.x86_64 from packages/"
 	@echo "  lint               Run linters on installer code"
 	@echo "  help               Show this help message"
 	@echo ""
@@ -57,6 +58,12 @@ check-deps:
 	@command -v qemu-system-x86_64 >/dev/null 2>&1 || echo "$(YELLOW)Warning: qemu not installed (needed for testing)$(NC)"
 	@command -v repo-add >/dev/null 2>&1 || { echo "$(RED)Error: repo-add is not installed. Run: pacman -S pacman$(NC)"; exit 1; }
 	@echo "$(GREEN)All required dependencies found$(NC)"
+
+
+generate-packages:
+	@echo "$(GREEN)Generating package list from packages/ directory...$(NC)"
+	@./scripts/generate-package-list.sh
+	@echo "$(GREEN)Package list generated: archiso/packages.x86_64$(NC)"
 
 build-aur:
 	@echo "$(GREEN)Building AUR packages...$(NC)"
