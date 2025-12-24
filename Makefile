@@ -53,81 +53,77 @@ check-root:
 	fi
 
 check-deps:
-	@echo "$(GREEN)Checking dependencies...$(NC)"
-	@command -v mkarchiso >/dev/null 2>&1 || { echo "$(RED)Error: archiso is not installed. Run: pacman -S archiso$(NC)"; exit 1; }
-	@command -v qemu-system-x86_64 >/dev/null 2>&1 || echo "$(YELLOW)Warning: qemu not installed (needed for testing)$(NC)"
-	@command -v repo-add >/dev/null 2>&1 || { echo "$(RED)Error: repo-add is not installed. Run: pacman -S pacman$(NC)"; exit 1; }
-	@echo "$(GREEN)All required dependencies found$(NC)"
+	@echo -e "$(GREEN)Checking dependencies...$(NC)"
+	@command -v mkarchiso >/dev/null 2>&1 || { echo -e "$(RED)Error: archiso is not installed. Run: pacman -S archiso$(NC)"; exit 1; }
+	@command -v qemu-system-x86_64 >/dev/null 2>&1 || echo -e "$(YELLOW)Warning: qemu not installed (needed for testing)$(NC)"
+	@command -v repo-add >/dev/null 2>&1 || { echo -e "$(RED)Error: repo-add is not installed. Run: pacman -S pacman$(NC)"; exit 1; }
+	@echo -e "$(GREEN)All required dependencies found$(NC)"
 
 
 generate-packages:
-	@echo "$(GREEN)Generating package list from packages/ directory...$(NC)"
+	@echo -e "$(GREEN)Generating package list from packages/ directory...$(NC)"
 	@./scripts/generate-package-list.sh
-	@echo "$(GREEN)Package list generated: archiso/packages.x86_64$(NC)"
+	@echo -e "$(GREEN)Package list generated: archiso/packages.x86_64$(NC)"
 
 build-aur:
-	@echo "$(GREEN)Building AUR packages...$(NC)"
+	@echo -e "$(GREEN)Building AUR packages...$(NC)"
 	@./scripts/build-aur-packages.sh
-	@echo "$(GREEN)AUR packages built$(NC)"
+	@echo -e "$(GREEN)AUR packages built$(NC)"
 
-download-packages: check-root
-	@echo "$(GREEN)Pre-downloading all packages...$(NC)"
-	@echo "$(YELLOW)This avoids network issues during ISO build$(NC)"
+download-packages: check-root generate-packages
+	@echo -e "$(GREEN)Pre-downloading all packages...$(NC)"
+	@echo -e "$(YELLOW)This avoids network issues during ISO build$(NC)"
 	@./scripts/download-packages.sh
-	@echo "$(GREEN)Packages downloaded and cached$(NC)"
+	@echo -e "$(GREEN)Packages downloaded and cached$(NC)"
 
 prepare: check-root check-deps
-	@echo "$(GREEN)Preparing build environment...$(NC)"
+	@echo -e "$(GREEN)Preparing build environment...$(NC)"
 	@# Verify package cache BEFORE starting build
-	@echo "$(GREEN)Verifying package cache completeness...$(NC)"
+	@echo -e "$(GREEN)Verifying package cache completeness...$(NC)"
 	@./scripts/verify-cache.sh || { \
-		echo "$(RED)Cache verification failed!$(NC)"; \
-		echo "$(RED)Run 'sudo make download-packages' first$(NC)"; \
+		echo -e "$(RED)Cache verification failed!$(NC)"; \
+		echo -e "$(RED)Run 'sudo make download-packages' first$(NC)"; \
 		exit 1; \
 	}
 	@# Check if packages have been downloaded
 	@if [ ! -d "$(REPO_DIR)" ]; then \
-		echo "$(RED)ERROR: AUR repo directory not found: $(REPO_DIR)$(NC)"; \
-		echo "$(RED)Run 'sudo make download-packages' first$(NC)"; \
+		echo -e "$(RED)ERROR: AUR repo directory not found: $(REPO_DIR)$(NC)"; \
+		echo -e "$(RED)Run 'sudo make download-packages' first$(NC)"; \
 		exit 1; \
 	fi
 	@if ! ls $(REPO_DIR)/*.pkg.tar.zst >/dev/null 2>&1; then \
-		echo "$(RED)ERROR: No AUR packages found in $(REPO_DIR)$(NC)"; \
-		echo "$(RED)Run 'sudo make download-packages' first$(NC)"; \
+		echo -e "$(RED)ERROR: No AUR packages found in $(REPO_DIR)$(NC)"; \
+		echo -e "$(RED)Run 'sudo make download-packages' first$(NC)"; \
 		exit 1; \
 	fi
 	@if [ -z "$$(ls -A /var/cache/pacman/pkg/*.pkg.tar.zst 2>/dev/null)" ]; then \
-		echo "$(YELLOW)WARNING: No cached packages found. Run 'sudo make download-packages' first for faster build$(NC)"; \
+		echo -e "$(YELLOW)WARNING: No cached packages found. Run 'sudo make download-packages' first for faster build$(NC)"; \
 	fi
 	@# Check if database cache exists (for deterministic builds)
 	@if [ ! -d "db-cache" ] || [ -z "$$(ls -A db-cache/*.db 2>/dev/null)" ]; then \
-		echo "$(RED)ERROR: Frozen package databases not found$(NC)"; \
-		echo "$(RED)Run 'sudo make download-packages' to freeze package state$(NC)"; \
+		echo -e "$(RED)ERROR: Frozen package databases not found$(NC)"; \
+		echo -e "$(RED)Run 'sudo make download-packages' to freeze package state$(NC)"; \
 		exit 1; \
 	fi
 	@rm -rf $(BUILD_DIR)
 	@mkdir -p $(BUILD_DIR) $(OUTPUT_DIR)
 	@cp -r $(PROFILE_DIR)/* $(BUILD_DIR)/
-	@echo "$(GREEN)Restoring frozen package databases for deterministic build...$(NC)"
+	@echo -e "$(GREEN)Restoring frozen package databases for deterministic build...$(NC)"
 	@mkdir -p $(BUILD_DIR)/db-cache
 	@cp db-cache/*.db $(BUILD_DIR)/db-cache/
-	@echo "$(GREEN)Frozen databases restored: $$(ls -1 $(BUILD_DIR)/db-cache/ | wc -l) databases$(NC)"
-	@echo "$(GREEN)Copying cached packages to build directory...$(NC)"
+	@echo -e "$(GREEN)Frozen databases restored: $$(ls -1 $(BUILD_DIR)/db-cache/ | wc -l) databases$(NC)"
+	@echo -e "$(GREEN)Copying cached packages to build directory...$(NC)"
 	@mkdir -p $(BUILD_DIR)/pkg-cache
 	@# Exclude AUR packages - they come from shedos-repo only
+	@# Generate exclude list from packages/aur.txt to avoid copying AUR packages
+	@echo "Generating rsync excludes from packages/aur.txt..."
+	@grep -v '^#' packages/aur.txt | grep -v '^$$' | awk '{print $$1"-*.pkg.tar.zst"}' > $(BUILD_DIR)/aur_excludes.txt
+	@echo "Excluding $$(wc -l < $(BUILD_DIR)/aur_excludes.txt) AUR patterns"
 	@rsync -a --info=progress2 \
-		--exclude='walker-*.pkg.tar.zst' \
-		--exclude='elephant*.pkg.tar.zst' \
-		--exclude='calamares-*.pkg.tar.zst' \
-		--exclude='yay-*.pkg.tar.zst' \
-		--exclude='visual-studio-code-bin-*.pkg.tar.zst' \
-		--exclude='google-chrome-*.pkg.tar.zst' \
-		--exclude='slack-desktop-*.pkg.tar.zst' \
-		--exclude='obsidian-bin-*.pkg.tar.zst' \
-		--exclude='hadolint-bin-*.pkg.tar.zst' \
+		--exclude-from='$(BUILD_DIR)/aur_excludes.txt' \
 		/var/cache/pacman/pkg/*.pkg.tar.zst $(BUILD_DIR)/pkg-cache/ 2>/dev/null || true
-	@echo "$(GREEN)Cached packages copied (AUR packages excluded)$(NC)"
-	@echo "$(GREEN)Configuring pacman for offline build...$(NC)"
+	@echo -e "$(GREEN)Cached packages copied (AUR packages excluded)$(NC)"
+	@echo -e "$(GREEN)Configuring pacman for offline build...$(NC)"
 	@# Copy smart download wrapper
 	@mkdir -p $(BUILD_DIR)/scripts
 	@cp scripts/pacman-offline-download.sh $(BUILD_DIR)/scripts/
@@ -139,6 +135,7 @@ prepare: check-root check-deps
 	@mkdir -p $(BUILD_DIR)/airootfs/opt/shedos-installer
 	@cp -r installer/shedos_installer $(BUILD_DIR)/airootfs/opt/shedos-installer/
 	@cp -r packages $(BUILD_DIR)/airootfs/opt/shedos-installer/
+	@# Ensure npm-cache is copied inside packages (it should be automatic if inside packages/, but explicit check helps)
 	@mkdir -p $(BUILD_DIR)/airootfs/opt/shedos-installer/branding
 	@cp -r branding/wallpapers $(BUILD_DIR)/airootfs/opt/shedos-installer/branding/
 	@# Copy user configs for Calamares deployment
@@ -167,9 +164,6 @@ prepare: check-root check-deps
 	@cp branding/neofetch/config.conf $(BUILD_DIR)/airootfs/etc/neofetch/
 	@# Copy ShedOS ASCII art for fastfetch branding
 	@cp branding/shedos-ascii.txt $(BUILD_DIR)/airootfs/etc/shedos-ascii.txt
-	@# Copy Plymouth theme
-	@mkdir -p $(BUILD_DIR)/airootfs/usr/share/plymouth/themes/shedos
-	@cp -r branding/plymouth/shedos/* $(BUILD_DIR)/airootfs/usr/share/plymouth/themes/shedos/ 2>/dev/null || true
 	@# Calamares installer configuration
 	@mkdir -p $(BUILD_DIR)/airootfs/etc/calamares
 	@cp installer/calamares/settings.conf $(BUILD_DIR)/airootfs/etc/calamares/ 2>/dev/null || true
@@ -187,63 +181,63 @@ prepare: check-root check-deps
 	@cp -r installer/calamares/modules-src/* $(BUILD_DIR)/airootfs/usr/lib/calamares/modules/ 2>/dev/null || true
 	@chmod +x $(BUILD_DIR)/airootfs/usr/local/bin/*
 	@chmod +x $(BUILD_DIR)/airootfs/root/customize_airootfs.sh
-	@echo "$(GREEN)Build environment ready$(NC)"
+	@echo -e "$(GREEN)Build environment ready$(NC)"
 
 iso: prepare
-	@echo "$(GREEN)Building ShedOS $(VERSION)...$(NC)"
-	@echo "$(YELLOW)This may take 15-30 minutes...$(NC)"
+	@echo -e "$(GREEN)Building ShedOS $(VERSION)...$(NC)"
+	@echo -e "$(YELLOW)This may take 15-30 minutes...$(NC)"
 	mkarchiso -v -w $(WORK_DIR) -o $(OUTPUT_DIR) $(BUILD_DIR)
-	@echo "$(GREEN)ISO built successfully: $(OUTPUT_DIR)/$(ISO_NAME)$(NC)"
+	@echo -e "$(GREEN)ISO built successfully: $(OUTPUT_DIR)/$(ISO_NAME)$(NC)"
 	@cd $(OUTPUT_DIR) && sha256sum *.iso > sha256sums.txt 2>/dev/null || true
-	@echo "$(GREEN)Build complete!$(NC)"
-	@ls -lh $(OUTPUT_DIR)/*.iso 2>/dev/null || echo "$(RED)No ISO found$(NC)"
+	@echo -e "$(GREEN)Build complete!$(NC)"
+	@ls -lh $(OUTPUT_DIR)/*.iso 2>/dev/null || echo -e "$(RED)No ISO found$(NC)"
 
 clean: check-root
-	@echo "$(YELLOW)Cleaning build artifacts...$(NC)"
+	@echo -e "$(YELLOW)Cleaning build artifacts...$(NC)"
 	@rm -rf $(BUILD_DIR) $(WORK_DIR)
 	@rm -rf /tmp/shedos-aur-build
-	@echo "$(GREEN)Clean complete (packages preserved)$(NC)"
+	@echo -e "$(GREEN)Clean complete (packages preserved)$(NC)"
 
 clean-all: check-root
-	@echo "$(YELLOW)Removing all generated files...$(NC)"
+	@echo -e "$(YELLOW)Removing all generated files...$(NC)"
 	@rm -rf $(BUILD_DIR) $(WORK_DIR) $(OUTPUT_DIR)
 	@rm -rf packages/aur
 	@rm -rf archiso/shedos-repo
 	@rm -rf db-cache
-	@echo "$(GREEN)Full clean complete (packages and frozen databases removed)$(NC)"
+	@echo -e "$(GREEN)Full clean complete (packages and frozen databases removed)$(NC)"
 
 test:
 	@if [ ! -f "$(OUTPUT_DIR)/$(ISO_NAME)" ]; then \
-		echo "$(RED)Error: ISO not found. Run 'sudo make iso' first$(NC)"; \
+		echo -e "$(RED)Error: ISO not found. Run 'sudo make iso' first$(NC)"; \
 		exit 1; \
 	fi
-	@echo "$(GREEN)Testing ISO in QEMU (UEFI mode)...$(NC)"
+	@echo -e "$(GREEN)Testing ISO in QEMU (UEFI mode)...$(NC)"
 	./scripts/test-iso.sh "$(OUTPUT_DIR)/$(ISO_NAME)" uefi
 
 test-bios:
 	@if [ ! -f "$(OUTPUT_DIR)/$(ISO_NAME)" ]; then \
-		echo "$(RED)Error: ISO not found. Run 'sudo make iso' first$(NC)"; \
+		echo -e "$(RED)Error: ISO not found. Run 'sudo make iso' first$(NC)"; \
 		exit 1; \
 	fi
-	@echo "$(GREEN)Testing ISO in QEMU (BIOS mode)...$(NC)"
+	@echo -e "$(GREEN)Testing ISO in QEMU (BIOS mode)...$(NC)"
 	./scripts/test-iso.sh "$(OUTPUT_DIR)/$(ISO_NAME)" bios
 
 test-installed:
 	@if [ ! -f "$(TEST_DIR)/test-disk.qcow2" ]; then \
-		echo "$(RED)Error: No installed system found. Run 'make test' and install first$(NC)"; \
+		echo -e "$(RED)Error: No installed system found. Run 'make test' and install first$(NC)"; \
 		exit 1; \
 	fi
-	@echo "$(GREEN)Booting installed ShedOS...$(NC)"
+	@echo -e "$(GREEN)Booting installed ShedOS...$(NC)"
 	./scripts/test-iso.sh --disk-only
 
 lint:
-	@echo "$(GREEN)Running linters...$(NC)"
+	@echo -e "$(GREEN)Running linters...$(NC)"
 	@cd installer && python -m ruff check shedos_installer/ || true
 	@cd installer && python -m mypy shedos_installer/ || true
-	@echo "$(GREEN)Lint complete$(NC)"
+	@echo -e "$(GREEN)Lint complete$(NC)"
 
 dev-install:
-	@echo "$(GREEN)Installing development dependencies...$(NC)"
+	@echo -e "$(GREEN)Installing development dependencies...$(NC)"
 	@cd installer && pip install -e ".[dev]"
 
 .PHONY: dev-install lint test test-bios
