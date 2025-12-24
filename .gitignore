@@ -4,6 +4,7 @@ out/
 db-cache/
 *.iso
 *.sha256
+packages/npm-cache/
 packages/aur/
 archiso/shedos-repo/*.pkg.tar.zst*
 archiso/shedos-repo/shedos-repo.db*
