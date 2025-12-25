@@ -64,3 +64,4 @@ packages_merged.txt
 
 # Virtual Machine Images
 *.qcow2
+test/OVMF_VARS.fd
