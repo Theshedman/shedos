@@ -9,6 +9,8 @@ packages/aur/
 archiso/shedos-repo/*.pkg.tar.zst*
 archiso/shedos-repo/shedos-repo.db*
 archiso/shedos-repo/shedos-repo.files*
+# Rendered from archiso/pacman.conf.in at build time
+archiso/pacman.conf
 
 # Python
 __pycache__/

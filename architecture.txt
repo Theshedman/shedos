@@ -1,0 +1,38 @@
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              ShedOS Architecture                                │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+  ┌─────────────────────┐    ┌─────────────────────┐    ┌─────────────────────┐
+  │     BUILD TIME      │    │    INSTALL TIME     │    │      RUNTIME        │
+  └─────────────────────┘    └─────────────────────┘    └─────────────────────┘
+
+  ┌─────────────────────┐    ┌─────────────────────┐    ┌─────────────────────┐
+  │  packages/          │    │                     │    │  Keyboard-Centric   │
+  │  ├── development    │    │    USB Boot         │    │  Workflow           │
+  │  ├── devops         │    │        │            │    │        │            │
+  │  ├── desktop        │    │        ▼            │    │        ▼            │
+  │  └── productivity   │    │  5-min Install      │    │  Pre-configured     │
+  │         │           │    │  (No Network)       │    │  Shell & Tools      │
+  │         ▼           │    │        │            │    │        │            │
+  │  Generate Manifest  │    │        ▼            │    │        ▼            │
+  │         │           │    │  Ready to Code      │    │  Full Dev           │
+  │         ▼           │    │                     │    │  Environment        │
+  │  Download/Build     │    └─────────────────────┘    └─────────────────────┘
+  │  (Incremental)      │
+  │         │           │
+  │         ▼           │
+  │  Freeze DB State    │
+  │         │           │
+  │         ▼           │
+  │  Build ISO          │
+  └─────────────────────┘
+
+                    ════════════════════════════════════
+                              Key Principles
+                    ════════════════════════════════════
+
+         Declarative          Reproducible         Automated
+         ───────────          ────────────         ─────────
+         Config as Code       Same input =         QEMU Testing
+         Single Source        Same output          Fast Feedback
+         of Truth

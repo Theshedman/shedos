@@ -18,7 +18,7 @@ YELLOW := \033[0;33m
 RED := \033[0;31m
 NC := \033[0m
 
-.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages
+.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages
 
 all: iso
 
@@ -38,13 +38,15 @@ help:
 	@echo "  check-deps         Check build dependencies"
 	@echo "  prepare            Prepare build environment"
 	@echo "  generate-packages  Regenerate archiso/packages.x86_64 from packages/"
+	@echo "  shedos-packages    Build ShedOS native packages (packaging/shedos-*) into shedos-repo"
 	@echo "  lint               Run linters on installer code"
 	@echo "  help               Show this help message"
 	@echo ""
 	@echo "Deterministic Build Process:"
 	@echo "  1. Run 'sudo make download-packages' to download and freeze package state"
-	@echo "  2. Run 'sudo make iso' to build ISO using EXACT frozen packages (no network)"
-	@echo "  3. ISO build is guaranteed to use same package versions as download time"
+	@echo "  2. Run 'sudo make shedos-packages' to build ShedOS native packages"
+	@echo "  3. Run 'sudo make iso' to build ISO using EXACT frozen packages (no network)"
+	@echo "  4. ISO build is guaranteed to use same package versions as download time"
 
 check-root:
 	@if [ "$$(id -u)" -ne 0 ]; then \
@@ -69,6 +71,11 @@ build-aur:
 	@echo -e "$(GREEN)Building AUR packages...$(NC)"
 	@./scripts/build-aur-packages.sh
 	@echo -e "$(GREEN)AUR packages built$(NC)"
+
+shedos-packages:
+	@echo -e "$(GREEN)Building ShedOS native packages...$(NC)"
+	@./scripts/build-shedos-packages.sh
+	@echo -e "$(GREEN)ShedOS packages built into $(REPO_DIR)$(NC)"
 
 download-packages: check-root generate-packages
 	@echo -e "$(GREEN)Pre-downloading all packages...$(NC)"
@@ -96,6 +103,11 @@ prepare: check-root check-deps
 		echo -e "$(RED)Run 'sudo make download-packages' first$(NC)"; \
 		exit 1; \
 	fi
+	@if ! ls $(REPO_DIR)/shedos-meta-*.pkg.tar.zst >/dev/null 2>&1; then \
+		echo -e "$(RED)ERROR: ShedOS native packages not built in $(REPO_DIR)$(NC)"; \
+		echo -e "$(RED)Run 'sudo make shedos-packages' first$(NC)"; \
+		exit 1; \
+	fi
 	@if [ -z "$$(ls -A /var/cache/pacman/pkg/*.pkg.tar.zst 2>/dev/null)" ]; then \
 		echo -e "$(YELLOW)WARNING: No cached packages found. Run 'sudo make download-packages' first for faster build$(NC)"; \
 	fi
@@ -108,6 +120,14 @@ prepare: check-root check-deps
 	@rm -rf $(BUILD_DIR)
 	@mkdir -p $(BUILD_DIR) $(OUTPUT_DIR)
 	@cp -r $(PROFILE_DIR)/* $(BUILD_DIR)/
+	@# Render pacman.conf from template (path-independent build)
+	@if [ ! -f "$(PROFILE_DIR)/pacman.conf.in" ]; then \
+		echo -e "$(RED)ERROR: Missing template: $(PROFILE_DIR)/pacman.conf.in$(NC)"; \
+		exit 1; \
+	fi
+	@sed "s|@SHEDOS_REPO@|$(shell pwd)/$(PROFILE_DIR)/shedos-repo|g" \
+		$(PROFILE_DIR)/pacman.conf.in > $(BUILD_DIR)/pacman.conf
+	@rm -f $(BUILD_DIR)/pacman.conf.in
 	@echo -e "$(GREEN)Restoring frozen package databases for deterministic build...$(NC)"
 	@mkdir -p $(BUILD_DIR)/db-cache
 	@cp db-cache/*.db $(BUILD_DIR)/db-cache/
@@ -155,15 +175,14 @@ prepare: check-root check-deps
 	@cp archiso/airootfs/etc/skel/.zshrc $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/zsh/.zshrc 2>/dev/null || true
 	@cp archiso/airootfs/etc/skel/.p10k.zsh $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/zsh/.p10k.zsh 2>/dev/null || true
 	@cp -r archiso/airootfs/etc/skel/.config/fastfetch $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/fastfetch 2>/dev/null || true
-	@# Copy ShedOS branding files
+	@# Copy ShedOS branding files. Note: /etc/os-release and /etc/shedos-ascii.txt
+	@# are now owned by shedos-system / shedos-branding packages respectively — do
+	@# not copy them here or pacstrap will fail with "exists in filesystem".
 	@mkdir -p $(BUILD_DIR)/airootfs/etc
-	@cp branding/os-release $(BUILD_DIR)/airootfs/etc/os-release
 	@cp branding/issue $(BUILD_DIR)/airootfs/etc/issue
 	@cp branding/motd $(BUILD_DIR)/airootfs/etc/motd
 	@mkdir -p $(BUILD_DIR)/airootfs/etc/neofetch
 	@cp branding/neofetch/config.conf $(BUILD_DIR)/airootfs/etc/neofetch/
-	@# Copy ShedOS ASCII art for fastfetch branding
-	@cp branding/shedos-ascii.txt $(BUILD_DIR)/airootfs/etc/shedos-ascii.txt
 	@# Calamares installer configuration
 	@mkdir -p $(BUILD_DIR)/airootfs/etc/calamares
 	@cp installer/calamares/settings.conf $(BUILD_DIR)/airootfs/etc/calamares/ 2>/dev/null || true
@@ -178,7 +197,12 @@ prepare: check-root check-deps
 	@sed -i 's/versionedName: "[^"]*"/versionedName: "ShedOS $(VERSION)"/' $(BUILD_DIR)/airootfs/etc/calamares/branding/shedos/branding.desc
 	@sed -i 's/shortVersionedName: "[^"]*"/shortVersionedName: "ShedOS $(VERSION)"/' $(BUILD_DIR)/airootfs/etc/calamares/branding/shedos/branding.desc
 	@mkdir -p $(BUILD_DIR)/airootfs/usr/lib/calamares/modules
-	@cp -r installer/calamares/modules-src/* $(BUILD_DIR)/airootfs/usr/lib/calamares/modules/ 2>/dev/null || true
+	@# rsync --exclude __pycache__: stale .pyc files from a prior local run can
+	@# ship alongside the fresh .py and make Python load old bytecode on a
+	@# read-only squashfs filesystem where it cannot recompile cleanly.
+	@rsync -a --delete --exclude='__pycache__' \
+		installer/calamares/modules-src/ \
+		$(BUILD_DIR)/airootfs/usr/lib/calamares/modules/
 	@chmod +x $(BUILD_DIR)/airootfs/usr/local/bin/*
 	@chmod +x $(BUILD_DIR)/airootfs/root/customize_airootfs.sh
 	@echo -e "$(GREEN)Build environment ready$(NC)"

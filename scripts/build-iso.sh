@@ -83,6 +83,16 @@ prepare_build() {
     # Copy archiso profile
     cp -r "$PROFILE_DIR"/* "$BUILD_DIR/"
 
+    # Render pacman.conf from template (path-independent build)
+    if [[ ! -f "$PROFILE_DIR/pacman.conf.in" ]]; then
+        log_error "Missing template: $PROFILE_DIR/pacman.conf.in"
+        exit 1
+    fi
+    sed "s|@SHEDOS_REPO@|${PROFILE_DIR}/shedos-repo|g" \
+        "$PROFILE_DIR/pacman.conf.in" > "$BUILD_DIR/pacman.conf"
+    # Remove the template copy that cp -r brought in
+    rm -f "$BUILD_DIR/pacman.conf.in"
+
     # Copy installer
     mkdir -p "$BUILD_DIR/airootfs/opt/shedos-installer"
     cp -r "$PROJECT_DIR/installer/shedos_installer" "$BUILD_DIR/airootfs/opt/shedos-installer/"
