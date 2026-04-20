@@ -1,0 +1,8 @@
+# shedos-nvim sync policy. Read by shedos-sync-configs.
+#
+# always-conflict  Never auto-update nvim files even when the user hasn't
+#                  touched them. Rationale: nvim lua configs are heavily
+#                  personalised and a bad auto-merge can break the editor
+#                  on next launch, which is an especially bad failure mode.
+#                  Conservative wins.
+always-conflict

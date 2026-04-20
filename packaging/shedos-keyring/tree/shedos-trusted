@@ -1,0 +1,10 @@
+# ShedOS trusted-key fingerprints.
+#
+# One 40-char GPG fingerprint per line (no spaces). Lines starting with # are
+# ignored. The shedos-keyring install scriptlet runs `pacman-key --lsign-key`
+# on each non-comment line.
+#
+# PLACEHOLDER. Run packaging/shedos-keyring/scripts/key-ceremony.sh to
+# generate the signing key and overwrite this file + shedos.gpg with the real
+# values. CI refuses to build a package containing the placeholder.
+0000000000000000000000000000000000000000

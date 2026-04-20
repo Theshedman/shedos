@@ -1,0 +1,48 @@
+# shedos-keyring install scriptlet
+#
+# Runs as root in the target install root. For a normal `pacman -S` this is
+# the live system; during pacstrap it's the install target. Either way we
+# teach pacman to trust the ShedOS signing key.
+#
+# The fingerprint list is read from /usr/share/pacman/keyrings/shedos-trusted
+# (one fingerprint per line, comments with #). This is the same mechanism
+# archlinux-keyring uses, so we don't hard-code the fingerprint here — it
+# lives in the shipped file, which is what CI regenerates on key rotation.
+
+_trust_shedos_key() {
+    local keyring=/usr/share/pacman/keyrings/shedos.gpg
+    local trusted=/usr/share/pacman/keyrings/shedos-trusted
+
+    if [[ ! -f $keyring || ! -f $trusted ]]; then
+        echo ">>> shedos-keyring: keyring files missing, skipping" >&2
+        return 0
+    fi
+
+    pacman-key --add "$keyring" >/dev/null
+
+    local fp
+    while read -r fp; do
+        [[ -z $fp || $fp == \#* ]] && continue
+        pacman-key --lsign-key "$fp" >/dev/null
+    done < "$trusted"
+}
+
+post_install() {
+    _trust_shedos_key
+}
+
+post_upgrade() {
+    _trust_shedos_key
+}
+
+pre_remove() {
+    # On removal, best-effort untrust. We don't hard-fail if this breaks —
+    # pacman --remove shouldn't abort on keyring cleanup.
+    local trusted=/usr/share/pacman/keyrings/shedos-trusted
+    [[ -f $trusted ]] || return 0
+    local fp
+    while read -r fp; do
+        [[ -z $fp || $fp == \#* ]] && continue
+        pacman-key --delete "$fp" 2>/dev/null || true
+    done < "$trusted"
+}

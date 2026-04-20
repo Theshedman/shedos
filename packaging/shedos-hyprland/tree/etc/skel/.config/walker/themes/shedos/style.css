@@ -1,0 +1,279 @@
+/*
+ * shedOS walker theme — Catppuccin Mocha.
+ * Designed to match SDDM, Hyprland borders, kitty and bat. Mauve is the
+ * shared accent; surface colors anchor the chrome. Spacing is tighter
+ * than the upstream default and selected items get a thin mauve rail.
+ */
+
+@define-color base       #1e1e2e;
+@define-color mantle     #181825;
+@define-color crust      #11111b;
+@define-color surface0   #313244;
+@define-color surface1   #45475a;
+@define-color surface2   #585b70;
+@define-color overlay0   #6c7086;
+@define-color overlay1   #7f849c;
+@define-color text       #cdd6f4;
+@define-color subtext0   #a6adc8;
+@define-color subtext1   #bac2de;
+@define-color mauve      #cba6f7;
+@define-color blue       #89b4fa;
+@define-color lavender   #b4befe;
+@define-color rosewater  #f5e0dc;
+@define-color red        #f38ba8;
+@define-color peach      #fab387;
+
+* {
+  all: unset;
+  font-family: "Inter", "Roboto", "Cantarell", sans-serif;
+  color: @text;
+}
+
+/* ───────────── Window chrome ───────────── */
+
+.box-wrapper {
+  background: alpha(@base, 0.92);
+  border: 1px solid alpha(@mauve, 0.32);
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow:
+    0 24px 60px alpha(@crust, 0.55),
+    0 10px 20px alpha(@crust, 0.35),
+    inset 0 1px 0 alpha(@text, 0.04);
+}
+
+/* ───────────── Search input ───────────── */
+
+.search-container {
+  background: alpha(@surface0, 0.85);
+  border: 1px solid alpha(@surface2, 0.55);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.search-container:focus-within {
+  border-color: alpha(@mauve, 0.85);
+  background: alpha(@surface0, 0.95);
+}
+
+.input {
+  padding: 12px 16px;
+  background: transparent;
+  color: @text;
+  caret-color: @mauve;
+  font-size: 15px;
+}
+
+.input placeholder {
+  color: @overlay1;
+  opacity: 0.75;
+}
+
+.input selection {
+  background: alpha(@mauve, 0.3);
+  color: @text;
+}
+
+/* ───────────── Content area ───────────── */
+
+.placeholder,
+.elephant-hint {
+  color: @subtext0;
+  font-size: 14px;
+  font-style: italic;
+  opacity: 0.8;
+}
+
+scrollbar {
+  opacity: 0;
+}
+
+.normal-icons {
+  -gtk-icon-size: 20px;
+}
+
+.large-icons {
+  -gtk-icon-size: 40px;
+}
+
+/* ───────────── List items ───────────── */
+
+.item-box {
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin: 2px 0;
+  transition: background-color 120ms ease, padding 120ms ease;
+}
+
+child:hover .item-box {
+  background: alpha(@surface1, 0.45);
+}
+
+child:selected .item-box,
+row:selected .item-box {
+  background: alpha(@mauve, 0.16);
+  border-left: 3px solid @mauve;
+  padding-left: 9px;
+}
+
+.item-text {
+  color: @text;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.item-subtext {
+  color: @subtext0;
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.item-image-text {
+  font-size: 26px;
+}
+
+.item-quick-activation {
+  background: alpha(@mauve, 0.22);
+  color: @mauve;
+  border-radius: 5px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: "JetBrainsMono Nerd Font", monospace;
+}
+
+/* ───────────── Provider-specific ───────────── */
+
+.calc .item-text {
+  font-size: 26px;
+  font-weight: 600;
+  color: @rosewater;
+  font-family: "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;
+}
+
+.calc .item-subtext {
+  color: @subtext0;
+}
+
+.symbols .item-image {
+  font-size: 22px;
+  color: @blue;
+}
+
+.todo.done .item-text-box {
+  opacity: 0.4;
+}
+
+.todo.urgent {
+  color: @red;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.todo.active {
+  color: @mauve;
+  font-weight: 600;
+}
+
+.bluetooth.disconnected {
+  opacity: 0.55;
+}
+
+.providerlist .item-subtext {
+  font-size: 12px;
+  opacity: 0.75;
+  color: @subtext0;
+}
+
+:not(.calc).current {
+  font-style: italic;
+  color: @blue;
+}
+
+/* ───────────── Preview pane ───────────── */
+
+.preview {
+  border: 1px solid alpha(@surface2, 0.45);
+  background: alpha(@mantle, 0.55);
+  border-radius: 12px;
+  padding: 14px;
+  margin-left: 12px;
+  color: @text;
+}
+
+.preview-box {
+  color: @text;
+}
+
+.preview .large-icons {
+  -gtk-icon-size: 72px;
+}
+
+.preview-content.archlinuxpkgs,
+.preview-content.dnfpackages {
+  font-family: "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;
+  font-size: 13px;
+  color: @subtext1;
+}
+
+/* ───────────── Keybinds footer ───────────── */
+
+.keybinds {
+  padding-top: 12px;
+  margin-top: 6px;
+  border-top: 1px solid alpha(@surface1, 0.55);
+  color: @subtext0;
+  font-size: 11px;
+}
+
+.keybind-button {
+  opacity: 0.8;
+  transition: opacity 150ms ease;
+}
+
+.keybind-button:hover {
+  opacity: 1;
+}
+
+.keybind-bind {
+  text-transform: lowercase;
+  color: @overlay0;
+  opacity: 0.75;
+  margin-right: 4px;
+}
+
+.keybind-label {
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: alpha(@surface0, 0.8);
+  border: 1px solid alpha(@surface2, 0.55);
+  color: @subtext1;
+  font-family: "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;
+  font-size: 10px;
+}
+
+/* ───────────── Error banner ───────────── */
+
+.error {
+  padding: 10px 14px;
+  background: alpha(@red, 0.16);
+  color: @red;
+  border: 1px solid alpha(@red, 0.45);
+  border-radius: 8px;
+  margin-top: 8px;
+  font-weight: 500;
+}
+
+/* ───────────── Popovers (action menu) ───────────── */
+
+popover > contents {
+  background: alpha(@base, 0.96);
+  border: 1px solid alpha(@mauve, 0.35);
+  border-radius: 14px;
+  padding: 8px;
+  color: @text;
+  box-shadow:
+    0 14px 36px alpha(@crust, 0.55),
+    0 6px 12px alpha(@crust, 0.35);
+}

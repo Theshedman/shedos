@@ -1,0 +1,48 @@
+name: build-iso
+
+# Builds the ShedOS ISO on tag push (v*) and attaches it to the GitHub
+# Release. Depends on the packages workflow having already published to R2 —
+# the pacman.conf baked into the ISO fetches [shedos] from repo.shedos.org.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  iso:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+      options: --privileged
+
+    steps:
+      - name: Install build dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --needed --noconfirm archiso base-devel git sudo
+
+      - uses: actions/checkout@v4
+
+      - name: Build ShedOS native packages
+        # Populates archiso/shedos-repo with shedos-meta + deps so pacstrap
+        # can resolve them from the build-local repo. Also refreshes
+        # shedos-meta's depends= from packages/.
+        run: make shedos-packages
+
+      - name: Build ISO
+        run: |
+          make iso
+          ls -la out/
+
+      - name: Compute checksums
+        run: |
+          cd out
+          sha256sum shedos-*.iso > SHA256SUMS
+
+      - name: Attach to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            out/shedos-*.iso
+            out/SHA256SUMS

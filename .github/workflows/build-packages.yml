@@ -1,0 +1,111 @@
+name: build-packages
+
+# Builds every PKGBUILD under packaging/, signs with the repo GPG key, and
+# publishes the repo DB + packages to r2:shedos-repo/x86_64/. Runs on pushes
+# to main that touch package contents. Manual dispatch is also allowed.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packaging/**'
+      - 'packages/**'
+      - 'scripts/render-meta-depends.sh'
+      - '.github/workflows/build-packages.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: repo-publish
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+      options: --privileged
+
+    env:
+      R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+      R2_BUCKET: shedos-repo
+
+    steps:
+      - name: Install build dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --needed --noconfirm base-devel git sudo gnupg rclone pacman-contrib
+          # makepkg refuses to run as root; create a build user.
+          useradd -m -G wheel builder
+          echo '%wheel ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/wheel
+          chmod 440 /etc/sudoers.d/wheel
+
+      - uses: actions/checkout@v4
+
+      - name: Refresh shedos-meta depends
+        run: |
+          chown -R builder:builder .
+          sudo -u builder bash scripts/render-meta-depends.sh
+
+      - name: Import signing key
+        env:
+          SIGNING_KEY: ${{ secrets.SHEDOS_REPO_SIGNING_KEY }}
+        run: |
+          mkdir -p /home/builder/.gnupg
+          chmod 700 /home/builder/.gnupg
+          chown -R builder:builder /home/builder/.gnupg
+          echo "$SIGNING_KEY" | sudo -u builder gpg --batch --import
+
+          FP=$(sudo -u builder gpg --list-secret-keys --with-colons \
+               | awk -F: '/^fpr:/ { print $10; exit }')
+          echo "GPG_FP=$FP" >> "$GITHUB_ENV"
+
+          EXPECTED=$(awk 'NF && $1 !~ /^#/ { print; exit }' \
+            packaging/shedos-keyring/tree/shedos-trusted)
+          if [[ "$FP" != "$EXPECTED" ]]; then
+              echo "FATAL: signing key fingerprint ($FP) does not match"
+              echo "       committed shedos-trusted ($EXPECTED). Refusing to publish."
+              exit 1
+          fi
+
+      - name: Build packages
+        run: |
+          install -d -o builder -g builder dist/x86_64
+          for pkg in packaging/shedos-*; do
+              [[ -f $pkg/PKGBUILD ]] || continue
+              echo "== makepkg $pkg =="
+              sudo -u builder bash -c "
+                  cd '$pkg' &&
+                  makepkg --syncdeps --noconfirm --sign \
+                      --key '$GPG_FP' \
+                      --cleanbuild --force
+              "
+              mv "$pkg"/*.pkg.tar.zst      dist/x86_64/
+              mv "$pkg"/*.pkg.tar.zst.sig  dist/x86_64/
+          done
+          ls -la dist/x86_64/
+
+      - name: Build repo DB
+        run: |
+          cd dist/x86_64
+          sudo -u builder repo-add --sign --key "$GPG_FP" \
+              shedos.db.tar.gz *.pkg.tar.zst
+          # R2 has no symlinks — duplicate .db.tar.gz → .db and .files.tar.gz → .files.
+          cp shedos.db.tar.gz shedos.db
+          cp shedos.db.tar.gz.sig shedos.db.sig
+          cp shedos.files.tar.gz shedos.files
+          cp shedos.files.tar.gz.sig shedos.files.sig
+
+      - name: Publish to R2
+        env:
+          RCLONE_CONFIG_R2_TYPE: s3
+          RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+          RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          RCLONE_CONFIG_R2_ENDPOINT: ${{ env.R2_ENDPOINT }}
+          RCLONE_CONFIG_R2_REGION: auto
+        run: |
+          rclone sync dist/x86_64/ "r2:$R2_BUCKET/x86_64/" --progress
+          # Ship the bootstrap pubkey at the bucket root so the migration
+          # script can fetch it without the keyring installed.
+          rclone copyto packaging/shedos-keyring/tree/shedos.gpg \
+              "r2:$R2_BUCKET/shedos.gpg"
