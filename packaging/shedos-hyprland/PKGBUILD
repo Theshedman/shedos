@@ -25,7 +25,7 @@ depends=(
     'mako'
     'rofi'
     'fastfetch'
-    'mise'
+    'mise-bin'
     'zsh'
     'oh-my-zsh-git'
     'zsh-theme-powerlevel10k-git'

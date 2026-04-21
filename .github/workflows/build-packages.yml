@@ -94,6 +94,29 @@ jobs:
               exit 1
           fi
 
+      - name: Pre-build AUR packages
+        # Populates archiso/shedos-repo/ with every AUR package listed in
+        # packages/aur.txt (~38 pkgs). Output serves two purposes:
+        #   1. Satisfies makepkg --syncdeps for the shedos-* build loop below
+        #      (via [shedos-build] registered in the next step).
+        #   2. The OSS subset is re-signed and republished to [shedos] in the
+        #      "Sign + stage OSS AUR packages" step, so installed systems can
+        #      resolve shedos-meta's depends=() from repo.shedos.org alone.
+        # The script handles root→builduser hop internally.
+        run: scripts/build-aur-packages.sh
+
+      - name: Register local AUR repo with pacman
+        run: |
+          cat >> /etc/pacman.conf <<EOF
+
+          # Added by build-packages.yml — file:// URL to the AUR repo we just
+          # built. Only visible inside this CI job; never shipped anywhere.
+          [shedos-build]
+          SigLevel = Optional TrustAll
+          Server = file://$(pwd)/archiso/shedos-repo
+          EOF
+          pacman -Sy
+
       - name: Build packages
         run: |
           install -d -o builder -g builder dist/x86_64
@@ -110,6 +133,46 @@ jobs:
               mv "$pkg"/*.pkg.tar.zst.sig  dist/x86_64/
           done
           ls -la dist/x86_64/
+
+      - name: Sign + stage OSS AUR packages
+        # We republish AUR packages under the ShedOS signing key so installed
+        # systems can `pacman -Syu shedos-meta` without needing yay for the
+        # OSS majority. Proprietary packages (see packages/aur-norepublish.txt)
+        # are skipped — their EULAs don't grant third-party redistribution
+        # rights. Users install those via yay / shedos-welcome.
+        run: |
+          # Packages in archiso/shedos-repo/ were built by builduser (now
+          # cleaned up) with root-owned cp; chown to builder so gpg can sign.
+          chown -R builder:builder archiso/shedos-repo
+
+          mapfile -t norepublish < <(
+              grep -hEv '^\s*(#|$)' packages/aur-norepublish.txt
+          )
+
+          staged=0 skipped=0
+          for pkg in archiso/shedos-repo/*.pkg.tar.zst; do
+              [[ -f $pkg ]] || continue
+              # pkgname is the longest prefix before -<version>-<rel>-<arch>.
+              base=$(basename "$pkg")
+              pkgname=${base%-*-*-*.pkg.tar.zst}
+              skip=0
+              for n in "${norepublish[@]}"; do
+                  if [[ $pkgname == "$n" ]]; then skip=1; break; fi
+              done
+              if [[ $skip -eq 1 ]]; then
+                  echo "skip  $pkgname (norepublish)"
+                  skipped=$((skipped+1))
+                  continue
+              fi
+              echo "sign  $pkgname"
+              sudo -u builder gpg --batch --detach-sign --no-armor \
+                  --local-user "$GPG_FP" \
+                  --output "$pkg.sig" "$pkg"
+              mv "$pkg" "$pkg.sig" dist/x86_64/
+              staged=$((staged+1))
+          done
+          echo "staged $staged OSS AUR packages; skipped $skipped proprietary"
+          ls -la dist/x86_64/ | head -30
 
       - name: Build repo DB
         run: |

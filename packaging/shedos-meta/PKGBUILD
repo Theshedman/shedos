@@ -453,7 +453,6 @@ depends=(
     'elephant-todo'
     'elephant-unicode'
     'elephant-websearch'
-    'google-chrome'
     'hadolint-bin'
     'hyprshutdown'
     'impala'
@@ -461,17 +460,20 @@ depends=(
     'minikube-bin'
     'mise-bin'
     'mission-center'
-    'obsidian-bin'
     'oh-my-zsh-git'
-    'postman-bin'
-    'slack-desktop'
     'timeshift'
-    'ttf-ms-fonts'
     'usql'
-    'visual-studio-code-bin'
     'walker'
     'yay'
     'zsh-theme-powerlevel10k-git'
+)
+optdepends=(
+    'google-chrome: proprietary AUR package; install via shedos-welcome / yay'
+    'obsidian-bin: proprietary AUR package; install via shedos-welcome / yay'
+    'postman-bin: proprietary AUR package; install via shedos-welcome / yay'
+    'slack-desktop: proprietary AUR package; install via shedos-welcome / yay'
+    'ttf-ms-fonts: proprietary AUR package; install via shedos-welcome / yay'
+    'visual-studio-code-bin: proprietary AUR package; install via shedos-welcome / yay'
 )
 
 package() {
