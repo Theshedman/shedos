@@ -99,10 +99,16 @@ jobs:
         # package whose .pkg.tar.zst is already present at the expected version
         # (and always skips -git packages if any cached build exists), so
         # restoring archiso/shedos-repo/ turns the step below into a near
-        # no-op when packages/aur.txt hasn't changed. The restore-keys
-        # fallback handles partial matches (e.g. adding one new AUR package
-        # doesn't invalidate the other 37).
-        uses: actions/cache@v4
+        # no-op when packages/aur.txt hasn't changed. Restore-keys handles
+        # partial matches (one new package doesn't invalidate the other 37).
+        #
+        # We use restore/save as separate actions (not the combined `cache`
+        # action) because the combined action's post-save is gated on
+        # `success()` — so a downstream failure would discard a successful
+        # prebuild's output. Save is triggered explicitly below with
+        # `if: always()`.
+        id: aur-cache
+        uses: actions/cache/restore@v4
         with:
           path: archiso/shedos-repo
           key: aur-${{ runner.os }}-${{ hashFiles('packages/aur.txt') }}
@@ -120,6 +126,16 @@ jobs:
         # The script handles root→builduser hop internally. With the cache
         # restored above, unchanged packages skip rebuilds.
         run: scripts/build-aur-packages.sh
+
+      - name: Save AUR package cache
+        # Unconditionally save (if we didn't already hit the exact key) so a
+        # downstream failure in the shedos-* build / sign / publish steps
+        # doesn't cost us the 35 min we just spent prebuilding AUR.
+        if: always() && steps.aur-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: archiso/shedos-repo
+          key: aur-${{ runner.os }}-${{ hashFiles('packages/aur.txt') }}
 
       - name: Build shedos-* packages
         # Delegates to the same script the ISO build uses so the logic stays
