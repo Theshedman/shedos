@@ -58,7 +58,26 @@ jobs:
           mkdir -p /home/builder/.gnupg
           chmod 700 /home/builder/.gnupg
           chown -R builder:builder /home/builder/.gnupg
-          echo "$SIGNING_KEY" | sudo -u builder gpg --batch --import
+
+          # Defensive pre-check: surface the common failure modes (empty
+          # secret, wrong file pasted, flattened newlines) before gpg's
+          # generic "no valid OpenPGP data" error.
+          if [[ -z "$SIGNING_KEY" ]]; then
+              echo "FATAL: SHEDOS_REPO_SIGNING_KEY secret is empty or unset." >&2
+              exit 1
+          fi
+          echo "signing key secret length: ${#SIGNING_KEY} bytes"
+          first_line=$(printf '%s' "$SIGNING_KEY" | head -n1)
+          echo "first line: $first_line"
+          if [[ "$first_line" != "-----BEGIN PGP PRIVATE KEY BLOCK-----" ]]; then
+              echo "FATAL: secret does not start with the armored PGP private key header." >&2
+              echo "       Expected: -----BEGIN PGP PRIVATE KEY BLOCK-----" >&2
+              echo "       Got:      $first_line" >&2
+              echo "       Re-run key-ceremony.sh and paste shedos-private.asc verbatim." >&2
+              exit 1
+          fi
+
+          printf '%s\n' "$SIGNING_KEY" | sudo -u builder gpg --batch --import
 
           FP=$(sudo -u builder gpg --list-secret-keys --with-colons \
                | awk -F: '/^fpr:/ { print $10; exit }')
