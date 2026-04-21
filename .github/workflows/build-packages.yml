@@ -94,15 +94,31 @@ jobs:
               exit 1
           fi
 
+      - name: Restore AUR package cache
+        # AUR builds take ~35 min from cold. build-aur-packages.sh skips any
+        # package whose .pkg.tar.zst is already present at the expected version
+        # (and always skips -git packages if any cached build exists), so
+        # restoring archiso/shedos-repo/ turns the step below into a near
+        # no-op when packages/aur.txt hasn't changed. The restore-keys
+        # fallback handles partial matches (e.g. adding one new AUR package
+        # doesn't invalidate the other 37).
+        uses: actions/cache@v4
+        with:
+          path: archiso/shedos-repo
+          key: aur-${{ runner.os }}-${{ hashFiles('packages/aur.txt') }}
+          restore-keys: |
+            aur-${{ runner.os }}-
+
       - name: Pre-build AUR packages
         # Populates archiso/shedos-repo/ with every AUR package listed in
         # packages/aur.txt (~38 pkgs). Output serves two purposes:
         #   1. Satisfies makepkg --syncdeps for the shedos-* build loop below
-        #      (via [shedos-build] registered in the next step).
+        #      (via [shedos-repo] registered in the next step).
         #   2. The OSS subset is re-signed and republished to [shedos] in the
         #      "Sign + stage OSS AUR packages" step, so installed systems can
         #      resolve shedos-meta's depends=() from repo.shedos.org alone.
-        # The script handles root→builduser hop internally.
+        # The script handles root→builduser hop internally. With the cache
+        # restored above, unchanged packages skip rebuilds.
         run: scripts/build-aur-packages.sh
 
       - name: Register local AUR repo with pacman
