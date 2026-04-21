@@ -16,6 +16,12 @@ jobs:
     runs-on: ubuntu-latest
     # R2_* secrets live in the SHEDOS_ENV environment.
     environment: SHEDOS_ENV
+    # softprops/action-gh-release needs contents:write to create the tag's
+    # Release page. Default GITHUB_TOKEN permissions vary by repo settings
+    # (often read-only since 2023); spell it out so the ISO-build workflow
+    # doesn't break if someone tightens the org default later.
+    permissions:
+      contents: write
     container:
       image: archlinux:latest
       options: --privileged

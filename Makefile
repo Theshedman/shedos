@@ -128,6 +128,9 @@ prepare: check-root check-deps
 	@sed "s|@SHEDOS_REPO@|$(shell pwd)/$(PROFILE_DIR)/shedos-repo|g" \
 		$(PROFILE_DIR)/pacman.conf.in > $(BUILD_DIR)/pacman.conf
 	@rm -f $(BUILD_DIR)/pacman.conf.in
+	@# Stamp the CalVer from VERSION into profiledef.sh so the built ISO's
+	@# filename (shedos-<ver>-x86_64.iso) matches the release tag.
+	@sed -i "s|@SHEDOS_VERSION@|$$(cat VERSION)|g" $(BUILD_DIR)/profiledef.sh
 	@echo -e "$(GREEN)Restoring frozen package databases for deterministic build...$(NC)"
 	@mkdir -p $(BUILD_DIR)/db-cache
 	@cp db-cache/*.db $(BUILD_DIR)/db-cache/
