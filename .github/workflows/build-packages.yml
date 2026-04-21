@@ -121,47 +121,29 @@ jobs:
         # restored above, unchanged packages skip rebuilds.
         run: scripts/build-aur-packages.sh
 
-      - name: Register local AUR repo with pacman
-        run: |
-          # build-aur-packages.sh names its DB file shedos-repo.db*, so the
-          # pacman stanza MUST also be [shedos-repo] — pacman maps the stanza
-          # name onto the filename it tries to load.
-          cat >> /etc/pacman.conf <<EOF
+      - name: Build shedos-* packages
+        # Delegates to the same script the ISO build uses so the logic stays
+        # in one place. It:
+        #   - orders builds topologically (shedos-keyring → shedos-system →
+        #     shedos-branding → shedos-hyprland → shedos-nvim → shedos-meta),
+        #   - registers archiso/shedos-repo as [shedos-repo] in /etc/pacman.conf
+        #     and rebuilds the repo DB after every package so later builds can
+        #     resolve earlier ones via pacman,
+        #   - handles the root→builduser hop internally.
+        # After this runs, archiso/shedos-repo/ holds every package we want
+        # published (shedos-* + OSS AUR + unsigned proprietary AUR).
+        run: scripts/build-shedos-packages.sh
 
-          # Added by build-packages.yml — file:// URL to the AUR repo we just
-          # built. Only visible inside this CI job; never shipped anywhere.
-          [shedos-repo]
-          SigLevel = Optional TrustAll
-          Server = file://$(pwd)/archiso/shedos-repo
-          EOF
-          pacman -Sy
-
-      - name: Build packages
+      - name: Sign + stage packages for publication
+        # Walk archiso/shedos-repo/, sign each .pkg.tar.zst with the ShedOS
+        # key, and move to dist/x86_64/ — UNLESS the package is listed in
+        # packages/aur-norepublish.txt (proprietary EULAs forbid third-party
+        # redistribution under our signature; users get those via yay /
+        # shedos-welcome).
         run: |
           install -d -o builder -g builder dist/x86_64
-          for pkg in packaging/shedos-*; do
-              [[ -f $pkg/PKGBUILD ]] || continue
-              echo "== makepkg $pkg =="
-              sudo -u builder bash -c "
-                  cd '$pkg' &&
-                  makepkg --syncdeps --noconfirm --sign \
-                      --key '$GPG_FP' \
-                      --cleanbuild --force
-              "
-              mv "$pkg"/*.pkg.tar.zst      dist/x86_64/
-              mv "$pkg"/*.pkg.tar.zst.sig  dist/x86_64/
-          done
-          ls -la dist/x86_64/
-
-      - name: Sign + stage OSS AUR packages
-        # We republish AUR packages under the ShedOS signing key so installed
-        # systems can `pacman -Syu shedos-meta` without needing yay for the
-        # OSS majority. Proprietary packages (see packages/aur-norepublish.txt)
-        # are skipped — their EULAs don't grant third-party redistribution
-        # rights. Users install those via yay / shedos-welcome.
-        run: |
-          # Packages in archiso/shedos-repo/ were built by builduser (now
-          # cleaned up) with root-owned cp; chown to builder so gpg can sign.
+          # build-shedos-packages.sh emits packages as root-owned (via cp);
+          # chown so gpg running as builder can read.
           chown -R builder:builder archiso/shedos-repo
 
           mapfile -t norepublish < <(
@@ -171,7 +153,6 @@ jobs:
           staged=0 skipped=0
           for pkg in archiso/shedos-repo/*.pkg.tar.zst; do
               [[ -f $pkg ]] || continue
-              # pkgname is the longest prefix before -<version>-<rel>-<arch>.
               base=$(basename "$pkg")
               pkgname=${base%-*-*-*.pkg.tar.zst}
               skip=0
@@ -187,10 +168,12 @@ jobs:
               sudo -u builder gpg --batch --detach-sign --no-armor \
                   --local-user "$GPG_FP" \
                   --output "$pkg.sig" "$pkg"
-              mv "$pkg" "$pkg.sig" dist/x86_64/
+              # cp (not mv) — keep the package in archiso/shedos-repo/ so it
+              # remains in the cache snapshot for the next run.
+              cp "$pkg" "$pkg.sig" dist/x86_64/
               staged=$((staged+1))
           done
-          echo "staged $staged OSS AUR packages; skipped $skipped proprietary"
+          echo "staged $staged packages; skipped $skipped proprietary"
           ls -la dist/x86_64/ | head -30
 
       - name: Build repo DB
