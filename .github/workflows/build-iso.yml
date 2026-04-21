@@ -28,7 +28,7 @@ jobs:
       - name: Install build dependencies
         run: |
           pacman -Syu --noconfirm
-          pacman -S --needed --noconfirm archiso base-devel git sudo rclone rsync
+          pacman -S --needed --noconfirm archiso base-devel git sudo rclone rsync grub
           # archlinux:latest ships an empty pacman keyring. Initialize +
           # populate the archlinux trust chain so makepkg --syncdeps (invoked
           # transitively by the AUR prebuild below) can verify signed
