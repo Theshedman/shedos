@@ -30,13 +30,38 @@ jobs:
 
       - uses: actions/checkout@v4
 
+      - name: Restore AUR package cache
+        # Share one cache entry with build-packages.yml: same key shape,
+        # same path (archiso/shedos-repo). Either workflow's successful
+        # prebuild warms the cache for the other. Without this the ISO
+        # build rebuilds ~38 AUR packages from source on every tag (~35 min
+        # cold); with a cache hit it's near-instant.
+        id: aur-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: archiso/shedos-repo
+          key: aur-${{ runner.os }}-${{ hashFiles('packages/aur.txt') }}
+          restore-keys: |
+            aur-${{ runner.os }}-
+
       - name: Pre-build AUR dependencies
         # shedos-hyprland depends on oh-my-zsh-git etc.; shedos-branding on
         # catppuccin-sddm-theme-mocha. These must exist in the build-local
         # repo BEFORE `make shedos-packages` runs makepkg --syncdeps, else
         # dependency resolution fails. `make download-packages` invokes
         # scripts/build-aur-packages.sh which populates archiso/shedos-repo/.
+        # With the cache restored above, unchanged packages skip rebuilds.
         run: make download-packages
+
+      - name: Save AUR package cache
+        # Save unconditionally when the cache key wasn't an exact hit, even
+        # if later steps fail — mirrors the build-packages.yml pattern to
+        # avoid discarding 35 min of prebuilt output on a downstream flake.
+        if: always() && steps.aur-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: archiso/shedos-repo
+          key: aur-${{ runner.os }}-${{ hashFiles('packages/aur.txt') }}
 
       - name: Build ShedOS native packages
         # Populates archiso/shedos-repo with shedos-meta + deps so pacstrap
