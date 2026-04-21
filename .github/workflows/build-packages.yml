@@ -21,6 +21,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Secrets (SHEDOS_REPO_SIGNING_KEY, R2_*) are scoped to this environment.
+    # Without this line the `secrets.*` lookups below resolve to empty strings.
+    environment: SHEDOS_ENV
     container:
       image: archlinux:latest
       options: --privileged
