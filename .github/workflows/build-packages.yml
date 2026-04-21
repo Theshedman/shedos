@@ -219,6 +219,11 @@ jobs:
           RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           RCLONE_CONFIG_R2_ENDPOINT: ${{ env.R2_ENDPOINT }}
           RCLONE_CONFIG_R2_REGION: auto
+          # R2 API tokens scoped to a specific bucket don't have CreateBucket
+          # permission. rclone probes HeadBucket → CreateBucket on every new
+          # path; with this flag it assumes the bucket exists (which it does)
+          # and skips the probe. Without it copyto to the bucket root 403s.
+          RCLONE_S3_NO_CHECK_BUCKET: "true"
         run: |
           rclone sync dist/x86_64/ "r2:$R2_BUCKET/x86_64/" --progress
           # Ship the bootstrap pubkey at the bucket root so the migration
