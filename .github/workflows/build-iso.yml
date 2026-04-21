@@ -57,6 +57,9 @@ jobs:
       - name: Attach to release
         uses: softprops/action-gh-release@v2
         with:
+          # Tag convention: v<CalVer>       → stable release
+          #                 v<CalVer>-rcN   → prerelease (user-reviewed RC)
+          prerelease: ${{ contains(github.ref_name, '-rc') }}
           files: |
             out/shedos-*.iso
             out/SHA256SUMS
