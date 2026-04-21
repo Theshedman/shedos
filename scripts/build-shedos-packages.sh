@@ -178,16 +178,15 @@ for dir in "${PKG_DIRS[@]}"; do
     rm -rf "$work"
     cp -a "$dir" "$work"
 
-    # shedos-meta is a pure-metadata package (no build, no payload). Installing
-    # its 450+ deps on the build host is noisy, slow, and can hit conflicts
-    # with pre-existing host packages (e.g. tealdeer vs. tldr) that pacman
-    # can't auto-resolve under --noconfirm. Since there's nothing to build
-    # against, --nodeps is the canonical makepkg answer for metapackages.
-    if [[ "$pkgname" == "shedos-meta" ]]; then
-        mk_flags=(--nodeps --noconfirm --force --cleanbuild)
-    else
-        mk_flags=(--syncdeps --noconfirm --force --cleanbuild)
-    fi
+    # Every shedos-* package is a pure-copy package: no compile step, no
+    # makedepends, just `cp -a tree/… $pkgdir`. Runtime depends=() are needed
+    # on the INSTALLED system, not on the build host. Using --syncdeps here
+    # installs runtime deps into the build container for no benefit — and is
+    # actively harmful when the installed dep mutates build-host state via
+    # its .install scriptlet. (shedos-system's post_install appends [shedos]
+    # to /etc/pacman.conf; the next `pacman -Sy` then 404s because the prod
+    # repo doesn't exist yet inside CI.) --nodeps sidesteps the whole problem.
+    mk_flags=(--nodeps --noconfirm --force --cleanbuild)
 
     if [[ $EUID -eq 0 ]]; then
         chown -R builduser:builduser "$work"
