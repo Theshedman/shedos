@@ -34,6 +34,11 @@ jobs:
         run: |
           pacman -Syu --noconfirm
           pacman -S --needed --noconfirm base-devel git sudo gnupg rclone pacman-contrib
+          # archlinux:latest ships an empty pacman keyring. Initialize + populate
+          # the archlinux trust chain so makepkg --syncdeps can verify signed
+          # packages from core/extra during dependency resolution.
+          pacman-key --init
+          pacman-key --populate archlinux
           # makepkg refuses to run as root; create a build user.
           useradd -m -G wheel builder
           echo '%wheel ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/wheel

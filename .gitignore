@@ -68,3 +68,9 @@ packages_merged.txt
 *.qcow2
 test/OVMF_VARS.fd
 .antigravityignore
+
+# Signing keys — private key material must never be committed. The ceremony
+# script writes it to packaging/shedos-keyring/shedos-private.asc; this guard
+# is defense-in-depth in case someone forgets to shred before `git add`.
+packaging/shedos-keyring/shedos-private.asc
+*-private.asc
