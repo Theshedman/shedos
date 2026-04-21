@@ -197,7 +197,15 @@ jobs:
           cd dist/x86_64
           sudo -u builder repo-add --sign --key "$GPG_FP" \
               shedos.db.tar.gz *.pkg.tar.zst
-          # R2 has no symlinks — duplicate .db.tar.gz → .db and .files.tar.gz → .files.
+          # repo-add leaves shedos.db / shedos.files as symlinks to their
+          # .tar.gz counterparts. R2 has no symlink concept and pacman on
+          # the installed system fetches `shedos.db` as a regular object,
+          # so materialize the symlinks into real files. rm first because
+          # `cp <src> <symlink-to-src>` sees source == destination and
+          # aborts with "are the same file".
+          for name in shedos.db shedos.db.sig shedos.files shedos.files.sig; do
+              [[ -L $name ]] && rm -f "$name"
+          done
           cp shedos.db.tar.gz shedos.db
           cp shedos.db.tar.gz.sig shedos.db.sig
           cp shedos.files.tar.gz shedos.files
