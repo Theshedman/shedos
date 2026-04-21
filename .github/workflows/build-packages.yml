@@ -107,11 +107,14 @@ jobs:
 
       - name: Register local AUR repo with pacman
         run: |
+          # build-aur-packages.sh names its DB file shedos-repo.db*, so the
+          # pacman stanza MUST also be [shedos-repo] — pacman maps the stanza
+          # name onto the filename it tries to load.
           cat >> /etc/pacman.conf <<EOF
 
           # Added by build-packages.yml — file:// URL to the AUR repo we just
           # built. Only visible inside this CI job; never shipped anywhere.
-          [shedos-build]
+          [shedos-repo]
           SigLevel = Optional TrustAll
           Server = file://$(pwd)/archiso/shedos-repo
           EOF
