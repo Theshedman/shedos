@@ -47,3 +47,25 @@ Rotation is a deliberate operation:
 The install scriptlet reads fingerprints from `shedos-trusted`, one per line.
 This mirrors how `archlinux-keyring` ships its `.trusted` file. Rotation is a
 single-file change — no scriptlet edits needed.
+
+## How trust actually lands on a fresh install
+
+Trust is split between two entry points:
+
+1. **`.install` scriptlet.** Runs `trust-keys.sh` best-effort at install time.
+   During a running-system upgrade the master keyring already exists, so
+   `--lsign-key` succeeds immediately. During `pacstrap` the target chroot's
+   master keyring may not be initialized yet — in that case the lsign is
+   either a no-op (nothing to sign with) or creates a fresh master key in
+   the pacstrap chroot. Either way, the scriptlet also enables the oneshot
+   unit below so the first real boot picks up the slack.
+2. **`shedos-keyring-trust.service`** (oneshot, sentinel-gated, enabled by
+   the scriptlet). On first boot it calls `trust-keys.sh` which: initializes
+   pacman's master keyring if missing, populates `archlinux`, adds
+   `shedos.gpg`, and `--lsign`s every fingerprint in `shedos-trusted`.
+   Writes `/var/lib/shedos-keyring/trusted` as a sentinel.
+
+The sentinel file contains the fingerprints that have been signed. On key
+rotation, `post_upgrade` detects that the shipped `shedos-trusted` no longer
+matches the sentinel and deletes the sentinel, so the boot unit re-trusts on
+next reboot without manual intervention.

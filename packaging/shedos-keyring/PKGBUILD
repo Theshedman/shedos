@@ -9,7 +9,7 @@
 
 pkgname=shedos-keyring
 pkgver=2026.04.21
-pkgrel=1
+pkgrel=2
 pkgdesc='ShedOS repository keyring — trust anchor for [shedos]'
 arch=('any')
 url='https://github.com/theshedman/shedos'
@@ -21,4 +21,8 @@ package() {
         "$pkgdir/usr/share/pacman/keyrings/shedos.gpg"
     install -Dm644 "$startdir/tree/shedos-trusted" \
         "$pkgdir/usr/share/pacman/keyrings/shedos-trusted"
+    install -Dm755 "$startdir/tree/usr/lib/shedos-keyring/trust-keys.sh" \
+        "$pkgdir/usr/lib/shedos-keyring/trust-keys.sh"
+    install -Dm644 "$startdir/tree/usr/lib/systemd/system/shedos-keyring-trust.service" \
+        "$pkgdir/usr/lib/systemd/system/shedos-keyring-trust.service"
 }

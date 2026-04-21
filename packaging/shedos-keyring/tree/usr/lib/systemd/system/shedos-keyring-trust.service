@@ -1,0 +1,25 @@
+[Unit]
+Description=Trust the ShedOS signing key in pacman's keyring
+Documentation=https://github.com/theshedman/shedos
+# Sentinel gates the unit so it runs exactly once per key rotation. trust-keys.sh
+# writes the signed fingerprints into /var/lib/shedos-keyring/trusted; if the
+# committed shedos-trusted ever changes (key rotation), the package's
+# post_upgrade removes the sentinel so this service re-runs on next boot.
+ConditionPathExists=!/var/lib/shedos-keyring/trusted
+# Run before anything that calls pacman -Sy at boot (e.g. user shells doing
+# auto-update, shedos-update-check.timer). local-fs.target is enough to ensure
+# /var is writable.
+After=local-fs.target
+Before=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/shedos-keyring/trust-keys.sh
+RemainAfterExit=yes
+# trust-keys.sh is the authoritative script; log its output so failures are
+# diagnosable via `journalctl -u shedos-keyring-trust`.
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

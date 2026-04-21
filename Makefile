@@ -77,7 +77,14 @@ shedos-packages:
 	@./scripts/build-shedos-packages.sh
 	@echo -e "$(GREEN)ShedOS packages built into $(REPO_DIR)$(NC)"
 
-download-packages: check-root generate-packages
+download-packages: check-root
+	@# NOTE: intentionally does NOT depend on `generate-packages`. That target
+	@# regenerates archiso/packages.x86_64 to include EVERY package in
+	@# packages/official/*.txt + packages/aur.txt, which blows past the
+	@# "shedos-meta + 5 live-boot essentials" design and pacstraps proprietary
+	@# AUR packages (VS Code, Chrome, Slack, …) straight into the ISO. The
+	@# committed archiso/packages.x86_64 is the minimal one; keep it that way.
+	@# download-packages.sh reads packages/official/*.txt + aur.txt directly.
 	@echo -e "$(GREEN)Pre-downloading all packages...$(NC)"
 	@echo -e "$(YELLOW)This avoids network issues during ISO build$(NC)"
 	@./scripts/download-packages.sh

@@ -1,41 +1,49 @@
 # shedos-keyring install scriptlet
 #
 # Runs as root in the target install root. For a normal `pacman -S` this is
-# the live system; during pacstrap it's the install target. Either way we
-# teach pacman to trust the ShedOS signing key.
+# the live system; during pacstrap it's the install target.
 #
-# The fingerprint list is read from /usr/share/pacman/keyrings/shedos-trusted
-# (one fingerprint per line, comments with #). This is the same mechanism
-# archlinux-keyring uses, so we don't hard-code the fingerprint here — it
-# lives in the shipped file, which is what CI regenerates on key rotation.
-
-_trust_shedos_key() {
-    local keyring=/usr/share/pacman/keyrings/shedos.gpg
-    local trusted=/usr/share/pacman/keyrings/shedos-trusted
-
-    if [[ ! -f $keyring || ! -f $trusted ]]; then
-        echo ">>> shedos-keyring: keyring files missing, skipping" >&2
-        return 0
-    fi
-
-    pacman-key --add "$keyring" >/dev/null
-
-    local fp
-    while read -r fp; do
-        [[ -z $fp || $fp == \#* ]] && continue
-        pacman-key --lsign-key "$fp" >/dev/null
-    done < "$trusted"
-}
+# Key-trust strategy (see packaging/shedos-keyring/README.md):
+# The actual trust work — `pacman-key --init`, `--populate archlinux`, `--add`
+# and `--lsign-key` — lives in /usr/lib/shedos-keyring/trust-keys.sh, run by
+# shedos-keyring-trust.service (oneshot, sentinel-gated, WantedBy=multi-user).
+# Doing it from the boot unit rather than inline here is load-bearing:
+# pacstrap runs this scriptlet BEFORE the target's master keyring has been
+# initialized, so --lsign-key silently no-ops (nothing to sign *with*). The
+# first-boot service runs after pacman-key --init has happened and trust
+# actually sticks.
+#
+# We still *attempt* the trust here for the on-running-system upgrade path
+# (where the master key already exists). trust-keys.sh is idempotent and
+# cheap, so running it at both install time AND first boot is fine.
 
 post_install() {
-    _trust_shedos_key
+    # Enable the first-boot unit so new installs get the key trusted
+    # automatically after reboot.
+    systemctl enable shedos-keyring-trust.service >/dev/null 2>&1 || true
+
+    # Best-effort immediate trust. If we're in a fresh pacstrap chroot without
+    # a master key, this is a no-op and the boot unit picks up the slack.
+    if [[ -x /usr/lib/shedos-keyring/trust-keys.sh ]]; then
+        /usr/lib/shedos-keyring/trust-keys.sh 2>&1 | sed 's/^/shedos-keyring: /' || true
+    fi
 }
 
 post_upgrade() {
-    _trust_shedos_key
+    # Clear the sentinel if the trusted-fingerprints file has rotated; the
+    # boot unit will re-trust on next reboot. (`cmp -s` returns non-zero on
+    # any difference including missing sentinel — that's what we want.)
+    if ! cmp -s /usr/share/pacman/keyrings/shedos-trusted \
+                /var/lib/shedos-keyring/trusted 2>/dev/null; then
+        rm -f /var/lib/shedos-keyring/trusted
+    fi
+
+    post_install
 }
 
 pre_remove() {
+    systemctl disable shedos-keyring-trust.service >/dev/null 2>&1 || true
+
     # On removal, best-effort untrust. We don't hard-fail if this breaks —
     # pacman --remove shouldn't abort on keyring cleanup.
     local trusted=/usr/share/pacman/keyrings/shedos-trusted
@@ -45,4 +53,6 @@ pre_remove() {
         [[ -z $fp || $fp == \#* ]] && continue
         pacman-key --delete "$fp" 2>/dev/null || true
     done < "$trusted"
+
+    rm -rf /var/lib/shedos-keyring
 }
