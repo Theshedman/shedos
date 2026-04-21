@@ -84,17 +84,26 @@ jobs:
         run: make shedos-packages
 
       - name: Build ISO
+        env:
+          # Strip the leading "v" from the tag so the ISO filename is
+          # shedos-2026.04.21-rc2-x86_64.iso (not shedos-v2026.04.21-rc2-…).
+          # Makefile's ISO_VER picks this up and feeds it to profiledef.sh.
+          SHEDOS_ISO_TAG: ${{ github.ref_name }}
         run: |
-          make iso
+          # github.ref_name is the full tag (e.g. v2026.04.21-rc2); strip "v".
+          export SHEDOS_ISO_TAG="${SHEDOS_ISO_TAG#v}"
+          make iso SHEDOS_ISO_TAG="$SHEDOS_ISO_TAG"
           ls -la out/
 
-      - name: Compute checksums
+      - name: Compute checksum
         run: |
           cd out
-          sha256sum shedos-*.iso > SHA256SUMS
-          # Record the ISO filename for later steps (used in release notes
-          # and rclone upload path).
-          echo "ISO_NAME=$(ls shedos-*.iso | head -1)" >> "$GITHUB_ENV"
+          ISO_NAME=$(ls shedos-*.iso | head -1)
+          # Per-file .sha256 (vs a single SHA256SUMS): with a flat /iso/
+          # layout, a global SHA256SUMS would overwrite on every release.
+          # <iso>.sha256 is self-scoped and matches `sha256sum -c` UX.
+          sha256sum "$ISO_NAME" > "${ISO_NAME}.sha256"
+          echo "ISO_NAME=$ISO_NAME" >> "$GITHUB_ENV"
 
       - name: Upload ISO to R2
         env:
@@ -109,34 +118,92 @@ jobs:
           # build-packages.yml's Publish to R2 step).
           RCLONE_S3_NO_CHECK_BUCKET: "true"
         run: |
-          # Publish to /iso/<tag>/ so multiple releases coexist (useful for
-          # rolling back), AND alias the newest at /iso/latest/.
-          rclone copy "out/$ISO_NAME" "r2:$R2_BUCKET/iso/${{ github.ref_name }}/" --progress
-          rclone copy "out/SHA256SUMS" "r2:$R2_BUCKET/iso/${{ github.ref_name }}/"
-          if [[ "${{ github.ref_name }}" != *-rc* ]]; then
-              rclone copy "out/$ISO_NAME" "r2:$R2_BUCKET/iso/latest/" --progress
-              rclone copy "out/SHA256SUMS" "r2:$R2_BUCKET/iso/latest/"
-          fi
+          # Flat layout: r2:shedos-repo/iso/shedos-<ver>-x86_64.iso
+          # Uniqueness comes from the filename itself (tag → ISO_VER), so
+          # successive releases don't overwrite and the browser download
+          # filename matches the on-disk name.
+          rclone copy "out/$ISO_NAME" "r2:$R2_BUCKET/iso/" --progress
+          rclone copy "out/${ISO_NAME}.sha256" "r2:$R2_BUCKET/iso/"
+
+      - name: Retention sweep
+        # Keep 2 stables + 1 RC on R2 (plus their .sha256 siblings). Rolling
+        # release = nobody wants older ISOs post-install; previous-stable is
+        # kept purely as a rollback lifeline if the newest stable ships broken.
+        env:
+          RCLONE_CONFIG_R2_TYPE: s3
+          RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+          RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          RCLONE_CONFIG_R2_ENDPOINT: ${{ env.R2_ENDPOINT }}
+          RCLONE_CONFIG_R2_REGION: auto
+          RCLONE_S3_NO_CHECK_BUCKET: "true"
+        run: |
+          KEEP_STABLES=2
+          KEEP_RCS=1
+
+          # One-time cleanup of the old nested layout from the rc1 era
+          # (/iso/v<tag>/<file>). Safe to run every time — `rclone purge` on
+          # a non-existent path is a no-op with this flag set. Drop this step
+          # once no v*/ prefixes remain in the bucket.
+          for legacy in $(rclone lsf "r2:$R2_BUCKET/iso/" --dirs-only 2>/dev/null \
+                         | grep -E '^v[0-9]' || true); do
+              echo "purging legacy nested layout: iso/$legacy"
+              rclone purge "r2:$R2_BUCKET/iso/$legacy" || true
+          done
+
+          # Inventory current ISOs (filenames only, top-level of /iso/).
+          mapfile -t all_isos < <(
+              rclone lsf "r2:$R2_BUCKET/iso/" --files-only \
+                  --include 'shedos-*-x86_64.iso' | sort
+          )
+
+          stables=() rcs=()
+          for f in "${all_isos[@]}"; do
+              if [[ $f == *-rc*-x86_64.iso ]]; then
+                  rcs+=("$f")
+              else
+                  stables+=("$f")
+              fi
+          done
+
+          # Lexicographic sort on CalVer filenames puts newest last, so
+          # "everything except the tail N" is what we delete.
+          _sweep() {
+              local keep=$1; shift
+              local -a list=("$@")
+              local drop=$(( ${#list[@]} - keep ))
+              (( drop <= 0 )) && return
+              for f in "${list[@]:0:$drop}"; do
+                  echo "retention: dropping $f (and .sha256)"
+                  rclone deletefile "r2:$R2_BUCKET/iso/$f" || true
+                  rclone deletefile "r2:$R2_BUCKET/iso/${f}.sha256" || true
+              done
+          }
+          _sweep "$KEEP_STABLES" "${stables[@]}"
+          _sweep "$KEEP_RCS"     "${rcs[@]}"
+
+          echo "--- /iso/ after sweep ---"
+          rclone lsf "r2:$R2_BUCKET/iso/" --files-only | sort
 
       - name: Publish GitHub Release
         # GitHub Releases caps files at 2 GiB — our ISO is ~7.6 GiB. Attach
-        # only SHA256SUMS + point at R2 in the body. The Release itself is
-        # still the canonical "what's in tag vX" pin.
+        # only the per-file .sha256 + point at R2 in the body. The Release
+        # itself is still the canonical "what's in tag vX" pin.
         uses: softprops/action-gh-release@v2
         with:
           # Tag convention: v<CalVer>       → stable release
           #                 v<CalVer>-rcN   → prerelease (user-reviewed RC)
           prerelease: ${{ contains(github.ref_name, '-rc') }}
-          files: out/SHA256SUMS
+          files: out/${{ env.ISO_NAME }}.sha256
           body: |
             ## ShedOS ${{ github.ref_name }}
 
-            **ISO download:** https://repo.shedos.org/iso/${{ github.ref_name }}/${{ env.ISO_NAME }}
-            **Checksums:** https://repo.shedos.org/iso/${{ github.ref_name }}/SHA256SUMS (attached below for convenience)
+            **ISO download:** https://repo.shedos.org/iso/${{ env.ISO_NAME }}
+            **Checksum:** https://repo.shedos.org/iso/${{ env.ISO_NAME }}.sha256 (attached below for convenience)
 
             Verify after download:
             ```
-            sha256sum -c SHA256SUMS
+            sha256sum -c ${{ env.ISO_NAME }}.sha256
             ```
 
             ### Upgrading an existing ShedOS system

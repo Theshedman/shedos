@@ -4,7 +4,13 @@
 # Usage: sudo make iso
 
 VERSION := $(shell cat VERSION)
-ISO_NAME := shedos-$(VERSION)-x86_64.iso
+# ISO filename stamping: CI sets SHEDOS_ISO_TAG to the pushed git tag minus its
+# "v" prefix (e.g. 2026.04.21-rc2) so RCs and stables cut from the same CalVer
+# produce distinct ISO filenames — otherwise v2026.04.21-rc1 and v2026.04.21
+# would both emit shedos-2026.04.21-x86_64.iso and collide on R2. Local `make
+# iso` without the env var falls back to VERSION (matches what packages ship).
+ISO_VER  := $(if $(SHEDOS_ISO_TAG),$(SHEDOS_ISO_TAG),$(VERSION))
+ISO_NAME := shedos-$(ISO_VER)-x86_64.iso
 PROFILE_DIR := archiso
 BUILD_DIR := build
 OUTPUT_DIR := out
@@ -135,9 +141,10 @@ prepare: check-root check-deps
 	@sed "s|@SHEDOS_REPO@|$(shell pwd)/$(PROFILE_DIR)/shedos-repo|g" \
 		$(PROFILE_DIR)/pacman.conf.in > $(BUILD_DIR)/pacman.conf
 	@rm -f $(BUILD_DIR)/pacman.conf.in
-	@# Stamp the CalVer from VERSION into profiledef.sh so the built ISO's
-	@# filename (shedos-<ver>-x86_64.iso) matches the release tag.
-	@sed -i "s|@SHEDOS_VERSION@|$$(cat VERSION)|g" $(BUILD_DIR)/profiledef.sh
+	@# Stamp ISO_VER into profiledef.sh so iso_version in the built ISO's
+	@# filename matches whatever CI (or a local build) picked via the
+	@# SHEDOS_ISO_TAG env / VERSION fallback above.
+	@sed -i "s|@SHEDOS_VERSION@|$(ISO_VER)|g" $(BUILD_DIR)/profiledef.sh
 	@echo -e "$(GREEN)Restoring frozen package databases for deterministic build...$(NC)"
 	@mkdir -p $(BUILD_DIR)/db-cache
 	@cp db-cache/*.db $(BUILD_DIR)/db-cache/
