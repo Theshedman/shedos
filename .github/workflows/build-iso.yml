@@ -1,8 +1,10 @@
 name: build-iso
 
-# Builds the ShedOS ISO on tag push (v*) and attaches it to the GitHub
-# Release. Depends on the packages workflow having already published to R2 —
-# the pacman.conf baked into the ISO fetches [shedos] from repo.shedos.org.
+# Builds the ShedOS ISO on tag push (v*). The ISO itself (multi-GB) is
+# published to R2 at https://repo.shedos.org/iso/ — GitHub Releases caps
+# individual files at 2 GiB and our ISO is ~7.6 GiB, so only the SHA256SUMS
+# + download-link release notes land on GitHub. Depends on the packages
+# workflow having already published to R2.
 
 on:
   push:
@@ -12,15 +14,21 @@ on:
 jobs:
   iso:
     runs-on: ubuntu-latest
+    # R2_* secrets live in the SHEDOS_ENV environment.
+    environment: SHEDOS_ENV
     container:
       image: archlinux:latest
       options: --privileged
+
+    env:
+      R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+      R2_BUCKET: shedos-repo
 
     steps:
       - name: Install build dependencies
         run: |
           pacman -Syu --noconfirm
-          pacman -S --needed --noconfirm archiso base-devel git sudo
+          pacman -S --needed --noconfirm archiso base-devel git sudo rclone
           # archlinux:latest ships an empty pacman keyring. Initialize +
           # populate the archlinux trust chain so makepkg --syncdeps (invoked
           # transitively by the AUR prebuild below) can verify signed
@@ -78,13 +86,54 @@ jobs:
         run: |
           cd out
           sha256sum shedos-*.iso > SHA256SUMS
+          # Record the ISO filename for later steps (used in release notes
+          # and rclone upload path).
+          echo "ISO_NAME=$(ls shedos-*.iso | head -1)" >> "$GITHUB_ENV"
 
-      - name: Attach to release
+      - name: Upload ISO to R2
+        env:
+          RCLONE_CONFIG_R2_TYPE: s3
+          RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+          RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          RCLONE_CONFIG_R2_ENDPOINT: ${{ env.R2_ENDPOINT }}
+          RCLONE_CONFIG_R2_REGION: auto
+          # R2 API tokens scoped to a single bucket don't have CreateBucket
+          # permission; skip rclone's pre-flight probe (same trick as
+          # build-packages.yml's Publish to R2 step).
+          RCLONE_S3_NO_CHECK_BUCKET: "true"
+        run: |
+          # Publish to /iso/<tag>/ so multiple releases coexist (useful for
+          # rolling back), AND alias the newest at /iso/latest/.
+          rclone copy "out/$ISO_NAME" "r2:$R2_BUCKET/iso/${{ github.ref_name }}/" --progress
+          rclone copy "out/SHA256SUMS" "r2:$R2_BUCKET/iso/${{ github.ref_name }}/"
+          if [[ "${{ github.ref_name }}" != *-rc* ]]; then
+              rclone copy "out/$ISO_NAME" "r2:$R2_BUCKET/iso/latest/" --progress
+              rclone copy "out/SHA256SUMS" "r2:$R2_BUCKET/iso/latest/"
+          fi
+
+      - name: Publish GitHub Release
+        # GitHub Releases caps files at 2 GiB — our ISO is ~7.6 GiB. Attach
+        # only SHA256SUMS + point at R2 in the body. The Release itself is
+        # still the canonical "what's in tag vX" pin.
         uses: softprops/action-gh-release@v2
         with:
           # Tag convention: v<CalVer>       → stable release
           #                 v<CalVer>-rcN   → prerelease (user-reviewed RC)
           prerelease: ${{ contains(github.ref_name, '-rc') }}
-          files: |
-            out/shedos-*.iso
-            out/SHA256SUMS
+          files: out/SHA256SUMS
+          body: |
+            ## ShedOS ${{ github.ref_name }}
+
+            **ISO download:** https://repo.shedos.org/iso/${{ github.ref_name }}/${{ env.ISO_NAME }}
+            **Checksums:** https://repo.shedos.org/iso/${{ github.ref_name }}/SHA256SUMS (attached below for convenience)
+
+            Verify after download:
+            ```
+            sha256sum -c SHA256SUMS
+            ```
+
+            ### Upgrading an existing ShedOS system
+            You don't need this ISO to upgrade. Click the waybar update icon
+            or run `shedos-update` — `pacman -Syu` pulls signed packages
+            directly from `repo.shedos.org`.
