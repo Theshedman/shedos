@@ -63,8 +63,28 @@ Proceed with upgrade? [y/N]
   pacman. Yay prompts again too.
 - Finally, `shedos-sync-configs` runs to reconcile `$HOME` dotfiles.
 
-The script never uses `--noconfirm`. If you want unattended upgrades,
-that's a future opt-in flag (not available yet).
+### Unattended mode: `--yes`
+
+For cron- or timer-driven upgrades on trusted systems:
+
+```bash
+shedos-update --yes
+```
+
+`--yes` skips every prompt and threads `--noconfirm` into pacman, yay,
+and `shedos-sync-configs`. **But it does not auto-resolve config
+conflicts** — a conflict means you *and* upstream edited the same file,
+and silently picking a side is exactly the data loss the sync tool
+exists to prevent. Conflicts in `--yes` mode still produce `.shedosnew`
+files for you to reconcile later. Run `find ~ -name '*.shedosnew'` on
+whatever schedule suits you.
+
+Recommended wrapper for a user-scope systemd timer or cron:
+
+```bash
+# logs to journal via systemd-cat
+shedos-update --yes 2>&1 | systemd-cat -t shedos-update
+```
 
 ## `shedos-sync-configs` (dotfile 3-way merge)
 
@@ -136,6 +156,13 @@ To resolve each one, pick one of:
 aligned with the current defaults." It hashes each default and writes it
 as the new last-seen entry. It does *not* copy any files.
 
+After writing the manifest, it also scans `$HOME` for leftover
+`.shedosnew` and `.shedosbak` files and reports them. Any `.shedosnew`
+surviving past a `--rebuild-manifest` is, by definition, an unreviewed
+upstream version — the tool points at them so they don't accumulate
+silently. `.shedosbak` files are harmless rolling backups from past
+auto-updates; clean them up whenever you like.
+
 ### Why `shedos-nvim` behaves differently
 
 Neovim lua configs are small, personal, and a bad auto-merge can break
@@ -151,10 +178,12 @@ never wake up to a broken editor.
 | Command | Purpose |
 |---|---|
 | `shedos-update` | Interactive upgrade flow (pacman + yay + config sync). |
+| `shedos-update --yes` | Unattended variant. Conflicts still produce `.shedosnew`, never overwrite. |
 | `shedos-check-updates` | Waybar JSON emitter. Run manually with `--refresh-waybar` to force an immediate poll. |
 | `shedos-sync-configs` | Print a plan and interactively apply 3-way merge. |
 | `shedos-sync-configs --dry-run` | Print the plan, change nothing. |
-| `shedos-sync-configs --rebuild-manifest` | Reset last-seen state to current defaults. Use after manually resolving conflicts. |
+| `shedos-sync-configs --yes` | Apply the plan without the interactive prompt (same conflict semantics). |
+| `shedos-sync-configs --rebuild-manifest` | Reset last-seen state to current defaults. Use after manually resolving conflicts. Reports any leftover `.shedosnew`/`.shedosbak`. |
 
 ## What about kernel upgrades?
 
