@@ -6,8 +6,8 @@
 # /etc/sddm.conf.d/theme.conf points to.
 
 pkgname=shedos-branding
-pkgver=2026.04.21
-pkgrel=2
+pkgver=2026.04.23
+pkgrel=1
 pkgdesc='ShedOS visual identity: Plymouth theme, wallpapers, ASCII logo'
 arch=('any')
 url='https://github.com/theshedman/shedos'

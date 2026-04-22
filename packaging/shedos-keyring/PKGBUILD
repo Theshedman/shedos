@@ -8,8 +8,8 @@
 # Key rotation procedure: packaging/shedos-keyring/README.md
 
 pkgname=shedos-keyring
-pkgver=2026.04.21
-pkgrel=3
+pkgver=2026.04.23
+pkgrel=1
 pkgdesc='ShedOS repository keyring — trust anchor for [shedos]'
 arch=('any')
 url='https://github.com/theshedman/shedos'
