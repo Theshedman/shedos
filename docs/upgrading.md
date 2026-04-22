@@ -34,6 +34,24 @@ The waybar module:
 After a successful upgrade, `shedos-update` signals waybar to refresh
 immediately so you don't wait up to an hour for the icon to clear.
 
+## Desktop notifications
+
+The same hourly check also fires a mako notification the first time new
+updates land — so you find out even when waybar is off-screen or on another
+workspace.
+
+- Fires on the transition from 0 → N, and again when the count goes **up**.
+- Does **not** re-fire for the same count you've already been told about.
+- Count drops to 0 (e.g. you just ran `shedos-update`) → the "already
+  notified" marker resets, so the next fresh batch notifies you again.
+- Quiet channels: notifications are skipped on TTY logins, SSH sessions,
+  and any environment without a DBus session. Mako DND mode (`makoctl
+  mode dnd`) also silences them.
+
+State lives at `$XDG_STATE_HOME/shedos/last-notified-count` (one integer).
+If you want to force a re-notification at the next tick, run
+`shedos-check-updates --reset-notify-state`.
+
 ## `shedos-update` (interactive)
 
 ```
