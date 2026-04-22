@@ -44,6 +44,26 @@ jobs:
 
       - uses: actions/checkout@v4
 
+      - name: Verify VERSION matches tag
+        # Tags follow v<CalVer>[-rcN]. The VERSION file drives Calamares
+        # branding (Makefile lines 212-215 use $(VERSION), not the tag-aware
+        # $(ISO_VER)), so a stale VERSION ships an ISO whose installer UI
+        # disagrees with the filename. Fail fast before we burn ~35 min on
+        # AUR prebuilds + mkarchiso. Stable tags (v<CalVer>) must match
+        # VERSION exactly; RC tags (v<CalVer>-rcN) match after stripping -rcN.
+        # Skipped on workflow_dispatch from a branch — only tag builds ship.
+        if: github.ref_type == 'tag'
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          expected="${tag%-rc*}"
+          actual="$(cat VERSION)"
+          if [[ "$expected" != "$actual" ]]; then
+            echo "::error::VERSION file ($actual) disagrees with tag ($expected)."
+            echo "Fix: bump VERSION to '$expected' and retag, or retag as v${actual}[-rcN]."
+            exit 1
+          fi
+          echo "VERSION matches tag: $actual"
+
       - name: Restore AUR package cache
         # Share one cache entry with build-packages.yml: same key shape,
         # same path (archiso/shedos-repo). Either workflow's successful
