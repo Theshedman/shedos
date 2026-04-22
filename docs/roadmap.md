@@ -36,7 +36,7 @@ Make `shedos-update` feel first-class: unattended, transparent, conflict-aware.
 | B#2 | `shedos-review-configs` IntelliJ-style merge TUI | ✅ Shipped (v1) — polish deferred, see below |
 | B#3 | Mako notification on update detection (beyond the waybar badge) | ✅ Shipped |
 | B#4 | Waybar conflict-count indicator for unresolved `.shedosnew` files | ✅ Shipped |
-| B#5 | Release cadence decision (continuous vs weekly) — see [cadence-proposal.md](cadence-proposal.md) | Next |
+| B#5 | Release cadence: weekly PR + hotfix/RC hatches — [proposal](cadence-proposal.md), [flow](releasing.md) | ✅ Shipped |
 
 ### B#2 deferred polish (to address in a follow-up iteration)
 

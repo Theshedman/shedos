@@ -1,0 +1,129 @@
+name: release-weekly
+
+# Opens a "release: v<today>" PR every Monday at 07:00 UTC. Does NOT push
+# to main directly — the ShedOS repo requires SSH-signed commits + tags
+# under a single maintainer identity, and handing that key to CI would be
+# a security regression. The PR carries an unsigned bot commit; the
+# maintainer amends-signs it locally and fast-forwards main, then signs +
+# pushes the v<date> tag. See docs/releasing.md for the finalize steps.
+#
+# The workflow still earns its keep: it remembers (so Mondays don't slip),
+# it computes the pkgver bump deterministically, and it respects a
+# `.no-release-this-week` opt-out file for weeks the maintainer wants to
+# skip (release week of a personal trip, mid-upgrade-debug week, etc).
+
+on:
+  schedule:
+    - cron: '0 7 * * 1'   # Mondays, 07:00 UTC
+  workflow_dispatch:
+
+jobs:
+  open-release-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # bump-version.sh needs full history for "since last tag" diff
+
+      - name: Honor .no-release-this-week skip marker
+        id: skip
+        run: |
+          if [[ -f .no-release-this-week ]]; then
+              echo "skip marker present — removing and exiting cleanly"
+              rm -f .no-release-this-week
+              # Commit the removal so next Monday defaults back to opening a PR.
+              git config user.name 'shedos-release-bot'
+              git config user.email 'shedos-release-bot@users.noreply.github.com'
+              git add .no-release-this-week
+              git commit -m 'release: consume weekly skip marker' || true
+              git push || true
+              echo "skipped=true" >> "$GITHUB_OUTPUT"
+          else
+              echo "skipped=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip when packaging hasn't changed since last tag
+        if: steps.skip.outputs.skipped == 'false'
+        id: changes
+        run: |
+          last_tag=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || echo '')
+          if [[ -z "$last_tag" ]]; then
+              echo "no prior tag — will release"
+              echo "has_changes=true" >> "$GITHUB_OUTPUT"
+              exit 0
+          fi
+          if git diff --quiet "$last_tag" HEAD -- packaging/ packages/ scripts/render-meta-depends.sh; then
+              echo "no packaging changes since $last_tag — skipping this week"
+              echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          else
+              echo "packaging changed since $last_tag — will release"
+              echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bump VERSION and open PR
+        if: steps.skip.outputs.skipped == 'false' && steps.changes.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          today=$(date -u +%Y.%m.%d)
+          branch="release/v$today"
+
+          # If a PR for today already exists (manual re-trigger), just exit.
+          existing=$(gh pr list --head "$branch" --json number --jq '.[0].number' || true)
+          if [[ -n "$existing" ]]; then
+              echo "PR #$existing already open for $branch — no-op"
+              exit 0
+          fi
+
+          bash scripts/bump-version.sh "$today"
+
+          git config user.name 'shedos-release-bot'
+          git config user.email 'shedos-release-bot@users.noreply.github.com'
+
+          git checkout -b "$branch"
+          git add VERSION packaging/
+          if git diff --cached --quiet; then
+              echo "bump-version.sh produced no changes — nothing to release"
+              exit 0
+          fi
+          # Unsigned bot commit. The maintainer's finalize step amends + signs
+          # before merging to main — see docs/releasing.md.
+          git commit -m "release: v$today"
+          git push -u origin "$branch"
+
+          gh pr create \
+              --base main \
+              --head "$branch" \
+              --title "release: v$today" \
+              --body "$(cat <<EOF
+          Automated weekly release PR.
+
+          This PR carries an **unsigned** bot commit. Do **not** merge it
+          through the GitHub UI — merging here would land an unsigned commit
+          on \`main\`, which violates the repo's SSH-signing invariant.
+
+          ## Finalize locally
+
+          \`\`\`sh
+          git fetch origin $branch
+          git checkout main && git pull --ff-only
+          git merge --squash "origin/$branch"
+          git commit -S -s -m "release: v$today"
+          git tag -s "v$today" -m "ShedOS v$today"
+          git push origin main
+          git push origin "v$today"
+          git push origin --delete "$branch"
+          gh pr close ${GH_PR_NUMBER:-<this PR>}
+          \`\`\`
+
+          The tag push fires \`build-iso.yml\`; the \`main\` push fires
+          \`build-packages.yml\`. Both should land within ~45 min.
+
+          See \`docs/releasing.md\` for hotfix / skip / RC paths.
+          EOF
+          )"
