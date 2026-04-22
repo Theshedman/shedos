@@ -35,8 +35,8 @@ Make `shedos-update` feel first-class: unattended, transparent, conflict-aware.
 | B#1 | `shedos-update --yes` unattended mode + stranded-file scan | ✅ Shipped |
 | B#2 | `shedos-review-configs` IntelliJ-style merge TUI | ✅ Shipped (v1) — polish deferred, see below |
 | B#3 | Mako notification on update detection (beyond the waybar badge) | ✅ Shipped |
-| B#4 | `shedos-welcome` conflict-count indicator | Next |
-| B#5 | Release cadence decision (continuous vs weekly) | Planned |
+| B#4 | Waybar conflict-count indicator for unresolved `.shedosnew` files | ✅ Shipped |
+| B#5 | Release cadence decision (continuous vs weekly) | Next |
 
 ### B#2 deferred polish (to address in a follow-up iteration)
 

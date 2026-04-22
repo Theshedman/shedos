@@ -142,6 +142,27 @@ window#waybar>box {
     color: @peach;
 }
 
+#custom-conflicts {
+    padding: 0 10px;
+    margin: 5px 2px;
+    border-radius: 10px;
+    background: @surface0;
+    color: @peach;
+    transition: all 0.2s ease;
+}
+
+#custom-conflicts.has-conflicts {
+    background: @peach;
+    color: @base;
+    font-weight: bold;
+}
+
+#custom-conflicts.no-conflicts {
+    padding: 0;
+    margin: 0;
+    background: transparent;
+}
+
 #memory {
     color: @yellow;
 }

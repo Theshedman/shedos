@@ -34,6 +34,24 @@ The waybar module:
 After a successful upgrade, `shedos-update` signals waybar to refresh
 immediately so you don't wait up to an hour for the icon to clear.
 
+## The conflict indicator
+
+Next to the updates badge, waybar shows a warning triangle with a count
+any time `.shedosnew` files are sitting unresolved under `$HOME`. These
+are upstream versions of dotfiles you've also edited locally — the config
+sync tool won't clobber your edits, so it leaves them for you to reconcile.
+
+- Empty → no unresolved conflicts.
+- ` N` → `N` conflicts waiting. Tooltip reminds you to open
+  `shedos-review-configs`.
+- Click → opens a kitty window running `shedos-review-configs`.
+
+The count is driven by `shedos-check-conflicts`. It's refreshed at three
+known touchpoints: after `shedos-sync-configs` finishes, after
+`shedos-review-configs` saves a merge, and at the end of `shedos-update`.
+A mako notification also fires the first time the count climbs — same
+"silent unless the number went up" semantics as the updates notifier.
+
 ## Desktop notifications
 
 The same hourly check also fires a mako notification the first time new
