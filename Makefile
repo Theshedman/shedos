@@ -24,7 +24,7 @@ YELLOW := \033[0;33m
 RED := \033[0;31m
 NC := \033[0m
 
-.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages
+.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages test-review-configs
 
 all: iso
 
@@ -41,6 +41,7 @@ help:
 	@echo "  test               Test the ISO in QEMU (UEFI mode)"
 	@echo "  test-bios          Test the ISO in QEMU (BIOS mode)"
 	@echo "  test-installed     Boot the installed system in QEMU"
+	@echo "  test-review-configs Run shedos-review-configs fixture tests"
 	@echo "  check-deps         Check build dependencies"
 	@echo "  prepare            Prepare build environment"
 	@echo "  generate-packages  Regenerate archiso/packages.x86_64 from packages/"
@@ -276,6 +277,10 @@ lint:
 	@cd installer && python -m ruff check shedos_installer/ || true
 	@cd installer && python -m mypy shedos_installer/ || true
 	@echo -e "$(GREEN)Lint complete$(NC)"
+
+test-review-configs:
+	@echo -e "$(GREEN)Running shedos-review-configs fixture tests...$(NC)"
+	@bash $(TEST_DIR)/review-configs/run.sh
 
 dev-install:
 	@echo -e "$(GREEN)Installing development dependencies...$(NC)"

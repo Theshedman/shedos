@@ -125,16 +125,57 @@ Properties that fall out:
 
 ### Resolving a `.shedosnew`
 
-After an upgrade that produced conflicts, you'll see:
+After an upgrade that produced conflicts, `shedos-update` offers:
 
 ```
-Sync complete. Conflicts (if any) landed as <path>.shedosnew alongside
-your files — inspect with: find ~ -name '*.shedosnew'
+3 config conflict(s) remain. Review now with shedos-review-configs? [Y/n]
 ```
 
-To resolve each one, pick one of:
+Answering `Y` (or just Enter) launches `shedos-review-configs`, a
+full-screen TUI that handles every conflict in one sitting. It's the
+recommended path.
 
-- **Diff and merge by hand** (most common):
+#### `shedos-review-configs` (IDE-style merge TUI)
+
+- **File list** — one row per `.shedosnew`, with conflict kind (text /
+  binary / symlink / orphan), hunk count, size, and whether a BASE
+  snapshot is available (3-way vs 2-way merge).
+- **Merge screen** — three panes (YOURS ▸ BASE ▸ THEIRS) when a BASE is
+  available, otherwise two. Diff colors follow git conventions (green
+  additions, red deletions). A dot-strip at the bottom shows hunk
+  decisions at a glance.
+- **Per-hunk controls**:
+  - `y` — take YOURS (keep your edit)
+  - `t` — take THEIRS (accept upstream)
+  - `b` — take BOTH, YOURS first then THEIRS
+  - `B` — take BOTH, THEIRS first then YOURS
+  - `x` — skip this hunk (keep YOURS)
+  - `u` — undo last decision
+  - `n` / `p` — next / previous hunk
+- **Whole-file shortcuts**:
+  - `A` — take YOURS for every hunk
+  - `Shift-T` — take THEIRS for every hunk
+- **Save**:
+  - `s` — write the merged result. YOURS is backed up to `.shedosbak`,
+    the `.shedosnew` is removed, and the manifest is advanced. Atomic:
+    a crash mid-save cannot corrupt the live file.
+- **Quit**:
+  - `q` — save a draft and return to the file list. Re-running the tool
+    resumes where you left off, as long as none of the underlying files
+    changed under it.
+
+Hunks where only one side changed are pre-marked (YOURS-only ▸ YOURS,
+THEIRS-only ▸ THEIRS), so trivial conflicts collapse to a single `s`.
+Only genuine both-sides-changed hunks require a user decision.
+
+Binary files, symlinks, and orphans (`.shedosnew` with no live file) use
+dedicated modals — the TUI never tries to line-merge things it can't.
+
+#### Alternative: manual resolution
+
+If you'd rather not use the TUI, the old flow still works:
+
+- **Diff and merge by hand**:
   ```bash
   diff -u ~/.config/hypr/hyprland.conf ~/.config/hypr/hyprland.conf.shedosnew
   # edit the live file to taste, then:
@@ -184,6 +225,9 @@ never wake up to a broken editor.
 | `shedos-sync-configs --dry-run` | Print the plan, change nothing. |
 | `shedos-sync-configs --yes` | Apply the plan without the interactive prompt (same conflict semantics). |
 | `shedos-sync-configs --rebuild-manifest` | Reset last-seen state to current defaults. Use after manually resolving conflicts. Reports any leftover `.shedosnew`/`.shedosbak`. |
+| `shedos-review-configs` | IDE-style merge TUI for `.shedosnew` conflicts. Per-hunk y/t/b/B/x/u, whole-file A/T, atomic save, draft/resume. |
+| `shedos-review-configs --list` | Tab-separated machine-readable conflict list. |
+| `shedos-review-configs --file PATH` | Open merge UI on one file (path relative to `$HOME`). |
 
 ## What about kernel upgrades?
 
