@@ -2,6 +2,8 @@
 
 > A developer-focused Arch Linux distribution with Hyprland, BTRFS, and a rolling-release upgrade story.
 
+**Website:** [shedos.org](https://shedos.org)
+
 ShedOS ships as an ISO and a signed pacman repo at
 [`repo.shedos.org`](https://repo.shedos.org). Once installed, an existing
 system stays current via `pacman -Syu` — no reinstall, no image swap.
