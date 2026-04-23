@@ -7,6 +7,15 @@ on:
       - 'site/**'
       - 'VERSION'
       - '.github/workflows/deploy-site.yml'
+  # Fire after build-iso finishes uploading a new ISO to R2. Without this,
+  # an RC tag (which doesn't bump VERSION) never redeploys the site, and
+  # a stable release's site build races ahead of its own ISO upload — the
+  # sha256 probe in sync-version.mjs misses, and /download shows "Release
+  # candidate building" until the next site-touching push. Chaining on
+  # build-iso completion guarantees R2 is live before we rebuild.
+  workflow_run:
+    workflows: ['build-iso']
+    types: [completed]
   # Manual re-deploy from the Actions tab. Useful when a new ISO lands on
   # repo.shedos.org and we want /download to reflect it immediately.
   workflow_dispatch:
@@ -24,6 +33,10 @@ concurrency:
 
 jobs:
   build:
+    # workflow_run fires for every completion (success OR failure); only
+    # rebuild the site when the upstream ISO build actually succeeded.
+    # Other event types (push / workflow_dispatch) pass this gate trivially.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -34,6 +47,11 @@ jobs:
           # site/scripts/sync-version.mjs runs `git tag --sort=-v:refname`
           # to resolve the newest published stable + RC. The default
           # shallow clone has no tags, so pull full history.
+          #
+          # For workflow_run events, checkout@v4 defaults to the default
+          # branch (main). That's what we want — the freshest VERSION file
+          # + the newly-pushed tag (tags are global, so any checkout with
+          # fetch-depth:0 sees it).
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
