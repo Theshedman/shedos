@@ -1,0 +1,49 @@
+---
+interface Props {
+    variant?: "wordmark" | "mark";
+    height?: number;
+    class?: string;
+    ariaLabel?: string;
+}
+
+const {
+    variant = "wordmark",
+    height = 24,
+    class: className = "",
+    ariaLabel = "ShedOS",
+} = Astro.props;
+
+// Aspect ratios match the trimmed source PNGs in site/public/brand/.
+// wordmark: 984 × 235 ≈ 4.187; mark: 342 × 424 ≈ 0.807.
+const wordmarkAspect = 984 / 235;
+const markAspect = 342 / 424;
+const aspect = variant === "wordmark" ? wordmarkAspect : markAspect;
+const width = Math.round(height * aspect);
+
+const light =
+    variant === "wordmark"
+        ? "/brand/logo-wordmark-color.png"
+        : "/brand/logo-mark-blue.png";
+const dark =
+    variant === "wordmark"
+        ? "/brand/logo-wordmark-white.png"
+        : "/brand/logo-mark-white.png";
+---
+<img
+    src={light}
+    alt={ariaLabel}
+    height={height}
+    width={width}
+    class={`block select-none dark:hidden ${className}`}
+    loading="eager"
+    decoding="async"
+/>
+<img
+    src={dark}
+    alt={ariaLabel}
+    height={height}
+    width={width}
+    class={`hidden select-none dark:block ${className}`}
+    loading="eager"
+    decoding="async"
+/>

@@ -1,0 +1,102 @@
+---
+import VerifyCommand from "./VerifyCommand.astro";
+
+interface Props {
+    label: string;
+    version: string;
+    isoName: string;
+    isoUrl: string;
+    sha256: string;
+    sha256Url: string;
+    tone?: "primary" | "muted";
+}
+
+const {
+    label,
+    version,
+    isoName,
+    isoUrl,
+    sha256,
+    sha256Url,
+    tone = "primary",
+} = Astro.props;
+
+const labelColor = tone === "primary" ? "var(--color-primary)" : "#d97706";
+---
+<section class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 sm:p-8">
+    <header class="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--color-border)] pb-5">
+        <div>
+            <div class="flex items-center gap-2 text-xs text-[color:var(--color-muted)]">
+                <span
+                    class="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5"
+                    style={`border-color: ${labelColor}; color: ${labelColor}`}
+                >
+                    <span
+                        aria-hidden="true"
+                        class="inline-block h-1.5 w-1.5 rounded-full"
+                        style={`background: ${labelColor}`}
+                    ></span>
+                    {label}
+                </span>
+                <span class="font-mono text-[color:var(--color-text)]">v{version}</span>
+            </div>
+            <h2 class="mt-2 text-2xl font-bold">{isoName}</h2>
+        </div>
+        <a
+            href={isoUrl}
+            class:list={["btn", tone === "primary" ? "btn-primary" : "btn-ghost"]}
+        >
+            <svg
+                viewBox="0 0 20 20"
+                width="18"
+                height="18"
+                fill="currentColor"
+                aria-hidden="true"
+            >
+                <path d="M10 3a1 1 0 0 1 1 1v7.586l2.293-2.293a1 1 0 0 1 1.414 1.414l-4 4a1 1 0 0 1-1.414 0l-4-4a1 1 0 1 1 1.414-1.414L9 11.586V4a1 1 0 0 1 1-1Zm-6 12a1 1 0 0 1 1-1h10a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1Z" />
+            </svg>
+            Download ISO
+        </a>
+    </header>
+
+    <div class="mt-6 grid gap-6 md:grid-cols-[auto,1fr]">
+        <div class="text-sm">
+            <div class="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--color-muted)]">
+                SHA-256
+            </div>
+            <button
+                type="button"
+                data-copy={sha256}
+                class="copy-btn text-left font-mono text-xs leading-snug break-all text-[color:var(--color-text)] hover:text-[color:var(--color-primary)]"
+                aria-label="Copy SHA-256"
+            >
+                {sha256}
+            </button>
+        </div>
+        <div class="text-sm">
+            <div class="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--color-muted)]">
+                Verify
+            </div>
+            <VerifyCommand command={`sha256sum ${isoName}`} />
+            <p class="mt-2 text-xs text-[color:var(--color-muted)]">
+                Or fetch the <a href={sha256Url} class="underline">.sha256 sibling</a>.
+            </p>
+        </div>
+    </div>
+</section>
+
+<script>
+    document.querySelectorAll<HTMLButtonElement>(".copy-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+            const text = btn.getAttribute("data-copy");
+            if (!text) return;
+            try {
+                await navigator.clipboard.writeText(text);
+                btn.dataset.copied = "1";
+                setTimeout(() => delete btn.dataset.copied, 1200);
+            } catch {
+                /* clipboard blocked */
+            }
+        });
+    });
+</script>

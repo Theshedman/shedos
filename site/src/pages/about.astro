@@ -1,0 +1,52 @@
+---
+import BaseLayout from "~/layouts/BaseLayout.astro";
+---
+<BaseLayout
+    title="About"
+    description="A developer-first Arch Linux distribution."
+>
+    <article class="prose mx-auto max-w-3xl px-4 py-16 sm:px-6">
+        <h1>About ShedOS</h1>
+
+        <p>
+            ShedOS is a developer-first Linux distribution built on Arch. It
+            ships a tuned Hyprland desktop, a working developer toolchain,
+            and a rolling upgrade path that respects the files you've edited.
+        </p>
+
+        <h2>Why it exists</h2>
+
+        <p>
+            Most distributions choose between two tradeoffs: stable and
+            opinionated, or rolling and DIY. The first pins you to old
+            software; the second pins you to a hobby. ShedOS aims for the
+            middle — current software, a working desktop on first boot, and
+            one command to stay up to date.
+        </p>
+
+        <h2>What's in the box</h2>
+
+        <ul>
+            <li>Hyprland on Wayland, with waybar, mako, walker, and hyprlock.</li>
+            <li>Neovim (LazyVim), VS Code, and Zsh preconfigured.</li>
+            <li>Language runtimes for Python, Node, Go, Rust, and C++.</li>
+            <li>Docker, Podman, and Kubernetes tooling ready on first boot.</li>
+            <li>BTRFS with snapshots; LUKS encryption optional at install time.</li>
+        </ul>
+
+        <h2>Source and license</h2>
+
+        <p>
+            Source lives at
+            <a href="https://github.com/theshedman/shedos">github.com/theshedman/shedos</a>
+            and is GPL-3.0. Branding assets under <code>branding/</code> are
+            not covered by that license — reach out before re-using them.
+        </p>
+
+        <h2>Contact</h2>
+
+        <ul>
+            <li>Issues and PRs — <a href="https://github.com/theshedman/shedos/issues">GitHub issues</a>.</li>
+        </ul>
+    </article>
+</BaseLayout>

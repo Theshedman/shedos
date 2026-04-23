@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://shedos.org/sitemap-index.xml

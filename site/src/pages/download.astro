@@ -1,0 +1,119 @@
+---
+import BaseLayout from "~/layouts/BaseLayout.astro";
+import DownloadBox from "~/components/DownloadBox.astro";
+import {
+    STABLE_VERSION,
+    STABLE_ISO_NAME,
+    STABLE_ISO_URL,
+    STABLE_SHA256,
+    STABLE_SHA256_URL,
+    RC_VERSION,
+    RC_ISO_NAME,
+    RC_ISO_URL,
+    RC_SHA256,
+    RC_SHA256_URL,
+} from "~/generated/version";
+
+const hasStable =
+    !!STABLE_VERSION &&
+    !!STABLE_ISO_NAME &&
+    !!STABLE_ISO_URL &&
+    !!STABLE_SHA256 &&
+    !!STABLE_SHA256_URL;
+
+const hasRc =
+    !!RC_VERSION &&
+    !!RC_ISO_NAME &&
+    !!RC_ISO_URL &&
+    !!RC_SHA256 &&
+    !!RC_SHA256_URL;
+---
+<BaseLayout
+    title="Download"
+    description="Download the latest ShedOS ISO with a verifiable SHA-256."
+>
+    <div class="mx-auto max-w-[56rem] px-4 pt-16 pb-20 sm:px-6">
+        <h1 class="mb-3 text-4xl font-bold tracking-tight sm:text-5xl">Download</h1>
+        <p class="mb-10 max-w-2xl text-[color:var(--color-muted)]">
+            The latest ISO, with a verifiable SHA-256. Flash it,
+            boot it, and the installer handles the rest.
+        </p>
+
+        {hasStable && (
+            <DownloadBox
+                label="Stable"
+                version={STABLE_VERSION!}
+                isoName={STABLE_ISO_NAME!}
+                isoUrl={STABLE_ISO_URL!}
+                sha256={STABLE_SHA256!}
+                sha256Url={STABLE_SHA256_URL!}
+                tone="primary"
+            />
+        )}
+
+        {hasRc && (
+            <div class="mt-10">
+                <div class="mb-3 flex items-baseline justify-between gap-4">
+                    <h2 class="text-xl font-semibold">Testing build</h2>
+                    <p class="text-sm text-[color:var(--color-muted)]">
+                        For curious users who want to help shake out the next release.
+                    </p>
+                </div>
+                <DownloadBox
+                    label="Testing"
+                    version={RC_VERSION!}
+                    isoName={RC_ISO_NAME!}
+                    isoUrl={RC_ISO_URL!}
+                    sha256={RC_SHA256!}
+                    sha256Url={RC_SHA256_URL!}
+                    tone="muted"
+                />
+            </div>
+        )}
+
+        <section class="mt-16">
+            <h2 class="text-xl font-semibold">After you download</h2>
+            <div class="mt-6 grid gap-4 md:grid-cols-3">
+                <article class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+                    <div class="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--color-primary)]">
+                        1 · Verify
+                    </div>
+                    <p class="text-sm text-[color:var(--color-muted)]">
+                        Run <code class="font-mono text-[color:var(--color-text)]">sha256sum</code>
+                        on the ISO and compare the output to the hash above.
+                    </p>
+                </article>
+                <article class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+                    <div class="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--color-primary)]">
+                        2 · Flash
+                    </div>
+                    <p class="text-sm text-[color:var(--color-muted)]">
+                        Write to a USB stick with <code class="font-mono text-[color:var(--color-text)]">dd</code>,
+                        Ventoy, or balenaEtcher. 8 GB or larger.
+                    </p>
+                </article>
+                <article class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+                    <div class="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--color-primary)]">
+                        3 · Install
+                    </div>
+                    <p class="text-sm text-[color:var(--color-muted)]">
+                        Boot the USB, follow the installer, and log in to a
+                        themed Hyprland desktop.
+                    </p>
+                </article>
+            </div>
+            <p class="mt-6 text-sm text-[color:var(--color-muted)]">
+                Full walkthrough in <a href="/docs/getting-started">Getting started</a>.
+            </p>
+        </section>
+
+        <section class="mt-16">
+            <h2 class="text-xl font-semibold">Already installed?</h2>
+            <p class="mt-3 max-w-2xl text-[color:var(--color-muted)]">
+                ShedOS is a rolling release — you don't need a new ISO.
+                See <a href="/docs/upgrading">Upgrading</a> for how the
+                in-place update works.
+            </p>
+        </section>
+    </div>
+</BaseLayout>

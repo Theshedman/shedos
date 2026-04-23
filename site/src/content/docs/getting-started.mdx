@@ -1,0 +1,60 @@
+---
+title: Getting started
+description: Download, flash, install, and land on a working desktop.
+order: 10
+section: Guide
+---
+import CalloutBox from "~/components/CalloutBox.astro";
+
+ShedOS ships as a single bootable ISO. Flash it to a USB stick, run the
+installer, and reboot into a working Hyprland desktop with your
+toolchain preinstalled.
+
+## 1. Download
+
+Grab the latest ISO and its SHA-256 from the [download page](/download).
+
+<CalloutBox kind="note">
+An amber **Building** badge means the ISO for the latest version is
+still being produced. Grab the previous release from GitHub in the
+meantime.
+</CalloutBox>
+
+## 2. Verify
+
+```sh
+sha256sum shedos-YYYY.MM.DD-x86_64.iso
+```
+
+The hash must match the one on the download page. If it doesn't, the
+file is corrupted — do not boot it.
+
+## 3. Flash
+
+```sh
+sudo dd if=shedos-YYYY.MM.DD-x86_64.iso of=/dev/sdX bs=4M status=progress conv=fsync
+```
+
+Ventoy, Rufus, and balenaEtcher also work.
+
+<CalloutBox kind="warn">
+`dd` will not ask for confirmation. Double-check the target device —
+writing to the wrong disk wipes it.
+</CalloutBox>
+
+## 4. Install
+
+Boot the USB from your firmware's boot menu. The installer walks you
+through partitioning, user creation, and locale. ShedOS defaults are
+pre-seeded.
+
+## 5. First boot
+
+A one-shot welcome flow collects your name, email, and GitHub username
+to configure `git`. The desktop (Hyprland, waybar, mako, kitty) is
+already themed and ready.
+
+## Next
+
+- [Upgrading](/docs/upgrading) — how updates and dotfile merges work.
+- [Keybindings](/docs/keybindings) — every shortcut the desktop ships with.

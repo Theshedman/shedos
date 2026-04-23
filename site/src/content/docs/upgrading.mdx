@@ -1,0 +1,67 @@
+---
+title: Upgrading
+description: Rolling updates, dotfile merges, and conflict review.
+order: 20
+section: Guide
+---
+import CalloutBox from "~/components/CalloutBox.astro";
+
+ShedOS is a rolling release. Once installed, you never reinstall —
+updates flow from the ShedOS repository through `pacman -Syu`.
+
+What sets the upgrade apart: your dotfiles are safe. The system tracks
+which files it shipped and what you've edited, and it never silently
+overwrites your changes.
+
+## The flow
+
+1. Waybar shows a pending-updates badge when packages are waiting.
+2. Click it, or run the updater in a terminal.
+3. Confirm. Pacman (and yay, for AUR) prompt again with their own
+   lists before anything is installed.
+4. If any dotfiles need reconciling, you'll be offered the review TUI.
+
+Nothing destructive runs without an explicit `y`. Every upgrade
+interactively lists what it's about to do.
+
+## How dotfile sync works
+
+For each file ShedOS ships, three things are tracked: the pristine
+default (as installed), your live copy in `$HOME`, and a hash of the
+last version you were given. On upgrade, one of four actions runs per
+file:
+
+| Case | Condition | Action |
+|---|---|---|
+| seed | No `$HOME` copy | Copy the default in. |
+| noop | Upstream unchanged | Nothing. |
+| auto | You haven't edited the file | Back up, install the new default. |
+| conflict | Both you and upstream changed it | Drop a sidecar file; your copy is untouched. |
+
+A file you edited is never overwritten. The only write to your live
+copy is the `auto` case, which requires a byte-for-byte match with the
+last-known version.
+
+## Resolving conflicts
+
+After an upgrade with conflicts, the updater offers to launch a
+full-screen merge review:
+
+- **Three-pane diff** (YOURS · BASE · THEIRS) when a base snapshot is
+  available; two-pane otherwise.
+- **Per-hunk**: take yours, take theirs, take both, skip, undo.
+- **Whole-file**: take all yours, take all theirs.
+- **Atomic save**: your file is backed up, the sidecar is removed, and
+  the manifest advances. A crash mid-save can't corrupt the live file.
+
+Single-sided hunks are pre-marked, so trivial conflicts collapse to a
+single keystroke.
+
+## FAQ
+
+**Can I skip the config sync?** Yes — answer `N` at the sync prompt.
+Packages stay upgraded; dotfiles are unchanged.
+
+**A config file has a `.shedosnew` sibling. What is it?** That's the
+upstream version of a file you've edited. Open the merge review from
+the updater, or diff and reconcile it manually.

@@ -1,0 +1,66 @@
+---
+import "~/styles/global.css";
+import Nav from "~/components/Nav.astro";
+import Footer from "~/components/Footer.astro";
+import ThemeScript from "~/components/ThemeScript.astro";
+
+interface Props {
+    title: string;
+    description?: string;
+    image?: string;
+    noindex?: boolean;
+}
+
+const {
+    title,
+    description = "ShedOS — a developer-first Arch Linux distribution. Performance, ease-of-use, and dev tools out of the box.",
+    image = "/og-image.png",
+    noindex = false,
+} = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site ?? "https://shedos.org").toString();
+const ogImage = new URL(image, Astro.site ?? "https://shedos.org").toString();
+const fullTitle = title === "ShedOS" ? title : `${title} · ShedOS`;
+---
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+        <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0b0d" />
+        <meta name="color-scheme" content="light dark" />
+
+        <ThemeScript />
+
+        <title>{fullTitle}</title>
+        <meta name="description" content={description} />
+        {noindex && <meta name="robots" content="noindex" />}
+        <link rel="canonical" href={canonical} />
+
+        <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+        <link rel="icon" href="/favicon-16.png" sizes="16x16" type="image/png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="ShedOS" />
+        <meta property="og:title" content={fullTitle} />
+        <meta property="og:description" content={description} />
+        <meta property="og:image" content={ogImage} />
+        <meta property="og:url" content={canonical} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={fullTitle} />
+        <meta name="twitter:description" content={description} />
+        <meta name="twitter:image" content={ogImage} />
+
+        <link rel="sitemap" href="/sitemap-index.xml" />
+    </head>
+    <body class="antialiased">
+        <a href="#main" class="skip-link">Skip to content</a>
+        <Nav />
+        <main id="main">
+            <slot />
+        </main>
+        <Footer />
+    </body>
+</html>

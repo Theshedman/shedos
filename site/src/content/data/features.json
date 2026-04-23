@@ -1,0 +1,22 @@
+[
+    {
+        "title": "Dev toolchains, preinstalled",
+        "body": "Neovim (LazyVim), VS Code, Zsh, and runtimes for Python, Node, Go, Rust, and C++. Docker, Podman, and kubectl are ready on first boot.",
+        "icon": "terminal"
+    },
+    {
+        "title": "Hyprland desktop, tuned",
+        "body": "A Wayland tiling setup with Catppuccin Mocha, waybar, walker, and sensible keybindings. No dotfile archaeology required.",
+        "icon": "layout"
+    },
+    {
+        "title": "Rolling release, safe upgrades",
+        "body": "Packages update continuously from the ShedOS repository. Your edited dotfiles are never silently overwritten — conflicts surface in a merge review instead.",
+        "icon": "refresh"
+    },
+    {
+        "title": "BTRFS + LUKS, out of the box",
+        "body": "Subvolumes and snapshots are set up by the installer, with optional full-disk encryption. Roll back a bad upgrade in seconds.",
+        "icon": "shield"
+    }
+]

@@ -1,0 +1,49 @@
+---
+const cols = [
+    {
+        label: "System",
+        items: [
+            ["Base", "Arch Linux (x86_64)"],
+            ["Compositor", "Hyprland (Wayland)"],
+            ["Shell", "Zsh + Oh My Zsh"],
+            ["Filesystem", "BTRFS with snapshots"],
+            ["Encryption", "LUKS (optional)"],
+        ],
+    },
+    {
+        label: "Developer tools",
+        items: [
+            ["Editors", "Neovim (LazyVim), VS Code"],
+            ["Runtimes", "Python, Node, Go, Rust, C++"],
+            ["Containers", "Docker, Podman, kubectl"],
+            ["Terminal", "kitty"],
+            ["Browser", "Firefox"],
+        ],
+    },
+];
+---
+<section class="border-y border-[var(--color-border)] bg-[var(--color-surface)]">
+    <div class="mx-auto max-w-[72rem] px-4 py-16 sm:px-6">
+        <div class="grid gap-10 md:grid-cols-2 md:gap-16">
+            {
+                cols.map((col) => (
+                    <div>
+                        <h2 class="mb-4 text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--color-primary)]">
+                            {col.label}
+                        </h2>
+                        <dl class="divide-y divide-[var(--color-border)] border-y border-[var(--color-border)]">
+                            {col.items.map(([k, v]) => (
+                                <div class="flex items-baseline justify-between gap-6 py-3">
+                                    <dt class="text-sm text-[color:var(--color-muted)]">{k}</dt>
+                                    <dd class="text-right text-sm font-medium text-[color:var(--color-text)]">
+                                        {v}
+                                    </dd>
+                                </div>
+                            ))}
+                        </dl>
+                    </div>
+                ))
+            }
+        </div>
+    </div>
+</section>
