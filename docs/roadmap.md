@@ -38,6 +38,7 @@ Make `shedos-update` feel first-class: unattended, transparent, conflict-aware.
 | B#4 | Waybar conflict-count indicator for unresolved `.shedosnew` files | ✅ Shipped |
 | B#5 | Release cadence: weekly PR + hotfix/RC hatches — [proposal](cadence-proposal.md), [flow](releasing.md) | ✅ Shipped |
 | B#6 | Public website at [shedos.org](https://shedos.org) (Astro + Tailwind, GitHub Pages) | ✅ Shipped |
+| B#7 | First-boot proprietary-apps installer (`shedos-apps-installer`) — opt-in checklist for VS Code, Chrome, Slack, etc. | ✅ Shipped |
 
 ### B#2 deferred polish (to address in a follow-up iteration)
 
