@@ -24,7 +24,7 @@ YELLOW := \033[0;33m
 RED := \033[0;31m
 NC := \033[0m
 
-.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages test-review-configs test-sync-configs test-check-health test-tui-logs
+.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages test-review-configs test-sync-configs test-check-health test-tui-logs test-tui-history
 
 all: iso
 
@@ -45,6 +45,7 @@ help:
 	@echo "  test-sync-configs  Run shedos-sync-configs fixture tests"
 	@echo "  test-check-health  Run shedos-check-health fixture tests"
 	@echo "  test-tui-logs      Run shedos-logs pilot tests"
+	@echo "  test-tui-history   Run shedos-upgrade-history pilot tests"
 	@echo "  check-deps         Check build dependencies"
 	@echo "  prepare            Prepare build environment"
 	@echo "  generate-packages  Regenerate archiso/packages.x86_64 from packages/"
@@ -296,6 +297,10 @@ test-check-health:
 test-tui-logs:
 	@echo -e "$(GREEN)Running shedos-logs pilot tests...$(NC)"
 	@bash $(TEST_DIR)/logs/run.sh
+
+test-tui-history:
+	@echo -e "$(GREEN)Running shedos-upgrade-history pilot tests...$(NC)"
+	@bash $(TEST_DIR)/upgrade-history/run.sh
 
 dev-install:
 	@echo -e "$(GREEN)Installing development dependencies...$(NC)"
