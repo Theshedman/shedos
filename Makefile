@@ -42,6 +42,8 @@ help:
 	@echo "  test-bios          Test the ISO in QEMU (BIOS mode)"
 	@echo "  test-installed     Boot the installed system in QEMU"
 	@echo "  test-review-configs Run shedos-review-configs fixture tests"
+	@echo "  test-sync-configs  Run shedos-sync-configs fixture tests"
+	@echo "  test-check-health  Run shedos-check-health fixture tests"
 	@echo "  check-deps         Check build dependencies"
 	@echo "  prepare            Prepare build environment"
 	@echo "  generate-packages  Regenerate archiso/packages.x86_64 from packages/"
@@ -285,6 +287,10 @@ test-review-configs:
 test-sync-configs:
 	@echo -e "$(GREEN)Running shedos-sync-configs fixture tests...$(NC)"
 	@bash $(TEST_DIR)/sync-configs/run.sh
+
+test-check-health:
+	@echo -e "$(GREEN)Running shedos-check-health fixture tests...$(NC)"
+	@bash $(TEST_DIR)/check-health/run.sh
 
 dev-install:
 	@echo -e "$(GREEN)Installing development dependencies...$(NC)"
