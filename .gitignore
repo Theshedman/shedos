@@ -34,6 +34,18 @@ ENV/
 env/
 .env
 
+# Node / site (site/ is an Astro project)
+node_modules/
+.astro/
+site/src/generated/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.env.local
+.env.production
+.env.development
+
 # IDE
 .idea/
 .vscode/
