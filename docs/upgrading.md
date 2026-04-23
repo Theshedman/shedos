@@ -366,15 +366,28 @@ Packages stay upgraded; your dotfiles aren't touched. You can run
 conflicts forever?** Run `shedos-sync-configs --rebuild-manifest`.
 
 **I want to opt out of ShedOS-managed dotfiles entirely for some file.**
-Delete the `$HOME` copy and the state entry:
+Add a matcher to `~/.config/shedos/sync-exclude` — one glob per line,
+matched against the relpath under `$HOME`:
 ```bash
-rm ~/.config/<app>/<file>
-rm ~/.local/state/shedos/last-seen/.config/<app>/<file>.sha256
+install -Dm644 /usr/share/shedos/sync-exclude.example \
+    ~/.config/shedos/sync-exclude
+$EDITOR ~/.config/shedos/sync-exclude
 ```
-Next sync will treat the file as excluded-by-absence (no `$HOME` copy →
-seed case). If you want to *never* regenerate it, add a matcher to
-`$HOME/.config/shedos/sync-exclude` (future feature — file-level opt-out
-is a Phase 2 item).
+Typical entries:
+```
+.config/hypr/hyprland.conf   # keep my own; never drop .shedosnew for this
+.config/waybar/*             # opt every waybar file out
+```
+Excluded files are never seeded, auto-updated, or flagged as conflicts —
+ShedOS treats them as entirely yours. Globs follow bash pattern-matching
+rules; `#` lines and blanks are ignored. No ShedOS restart needed; the
+file is re-read on every `shedos-sync-configs` run.
+
+If a path already has manifest state or a leftover `.shedosnew` from
+before you added the matcher, the next `shedos-sync-configs` run auto-
+purges those droppings (manifest hash, BASE snapshot, and `.shedosnew`
+sidecar). Your live file in `$HOME` is never touched. You can preview
+what would be purged with `shedos-sync-configs --dry-run`.
 
 **Do I need to trust a new key to install updates?** No — the repo key
 lives in `shedos-keyring`, which is itself part of every ShedOS install

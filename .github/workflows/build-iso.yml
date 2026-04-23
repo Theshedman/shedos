@@ -43,6 +43,11 @@ jobs:
           pacman-key --populate archlinux
 
       - uses: actions/checkout@v4
+        with:
+          # Full history so `git describe` can find the previous tag when
+          # generating release notes. Default fetch-depth:1 would hide every
+          # earlier tag and the notes step would fall back to "initial commit".
+          fetch-depth: 0
 
       - name: Verify VERSION matches tag
         # Tags follow v<CalVer>[-rcN]. The VERSION file drives Calamares
@@ -205,6 +210,74 @@ jobs:
           echo "--- /iso/ after sweep ---"
           rclone lsf "r2:$R2_BUCKET/iso/" --files-only | sort
 
+      - name: Generate release notes
+        # Group commits since the previous tag by Conventional Commit type so
+        # the GitHub Release body shows a human-readable changelog instead of
+        # a fixed template. Output exposed as $RELEASE_NOTES (multiline env
+        # var) + $PREV_TAG (for the compare link).
+        run: |
+          prev_tag=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)
+          if [[ -z $prev_tag ]]; then
+              range=HEAD
+              since="initial commit"
+          else
+              range="${prev_tag}..HEAD"
+              since="$prev_tag"
+          fi
+
+          # Conventional Commits convention used across this repo:
+          # feat | fix | perf | revert | docs | ci | chore | release
+          # `release:` commits are pure version bumps — drop them. Everything
+          # else buckets by type; unrecognised prefixes land in "Other".
+          mapfile -t subjects < <(git log "$range" --no-merges --pretty='%s' \
+              | grep -Ev '^(release|chore\(release\)):' || true)
+
+          declare -A bucket_title=(
+              [feat]="### New features"
+              [fix]="### Fixes"
+              [perf]="### Performance"
+              [revert]="### Reverts"
+              [docs]="### Documentation"
+              [ci]="### CI / tooling"
+              [chore]="### Chores"
+          )
+          declare -A bucket
+          other=""
+
+          for line in "${subjects[@]}"; do
+              if [[ $line =~ ^([a-z]+)(\([^\)]+\))?!?:[[:space:]] ]]; then
+                  type="${BASH_REMATCH[1]}"
+                  if [[ -n ${bucket_title[$type]:-} ]]; then
+                      bucket[$type]+="- ${line}"$'\n'
+                      continue
+                  fi
+              fi
+              other+="- ${line}"$'\n'
+          done
+
+          {
+              echo "RELEASE_NOTES<<SHEDOS_EOF"
+              wrote=0
+              for type in feat fix perf revert docs ci chore; do
+                  if [[ -n ${bucket[$type]:-} ]]; then
+                      echo "${bucket_title[$type]}"
+                      echo
+                      printf '%s\n' "${bucket[$type]}"
+                      wrote=1
+                  fi
+              done
+              if [[ -n $other ]]; then
+                  echo "### Other"
+                  echo
+                  printf '%s\n' "$other"
+                  wrote=1
+              fi
+              (( wrote )) || echo "_No user-visible changes since ${since}._"
+              echo "SHEDOS_EOF"
+          } >> "$GITHUB_ENV"
+
+          echo "PREV_TAG=$prev_tag" >> "$GITHUB_ENV"
+
       - name: Publish GitHub Release
         # GitHub Releases caps files at 2 GiB — our ISO is ~7.6 GiB. Attach
         # only the per-file .sha256 + point at R2 in the body. The Release
@@ -225,6 +298,12 @@ jobs:
             ```
             sha256sum -c ${{ env.ISO_NAME }}.sha256
             ```
+
+            ## What's new${{ env.PREV_TAG && format(' since {0}', env.PREV_TAG) || '' }}
+
+            ${{ env.RELEASE_NOTES }}
+
+            ${{ env.PREV_TAG && format('**Full diff:** https://github.com/{0}/compare/{1}...{2}', github.repository, env.PREV_TAG, github.ref_name) || '' }}
 
             ### Upgrading an existing ShedOS system
             You don't need this ISO to upgrade. Click the waybar update icon

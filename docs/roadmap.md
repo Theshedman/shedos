@@ -87,8 +87,18 @@ No concrete trigger today.
 ## Phase 4+ — Unscoped
 
 Placeholder for ideas that have been mentioned but not committed to a phase:
-file-level `$HOME/.config/shedos/sync-exclude` matchers, `shedos-migrate-to-packaged`
-for pre-packaging installs, signed ISO release notes automation.
+`shedos-migrate-to-packaged` for pre-packaging installs.
+
+**Landed as unscoped follow-ups:**
+
+- File-level `$HOME/.config/shedos/sync-exclude` matchers (April 2026,
+  `shedos-system` pkgrel=4): drop a glob list at that path and ShedOS will
+  never seed, auto-update, or flag those files. Example template at
+  `/usr/share/shedos/sync-exclude.example`.
+- Auto-generated GitHub Release notes (April 2026, `build-iso.yml`): every
+  tag push groups its Conventional Commits since the previous tag into
+  feat/fix/perf/docs/ci/chore sections and stamps a compare-link in the
+  release body. No manual release-note maintenance.
 
 ---
 
