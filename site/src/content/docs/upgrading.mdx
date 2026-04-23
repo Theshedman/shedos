@@ -57,6 +57,50 @@ full-screen merge review:
 Single-sided hunks are pre-marked, so trivial conflicts collapse to a
 single keystroke.
 
+## Rolling back an upgrade
+
+Every `shedos-update` run brackets the upgrade with a pre- and
+post-snapshot of `/` (btrfs, via snapper). If an upgrade breaks
+something, restoring the pre-state is two commands:
+
+```sh
+shedos-update --list-snapshots
+shedos-update --rollback <N>
+```
+
+Pick the pre-upgrade snapshot number from the list. A reboot applies
+the rollback. `$HOME` is intentionally **not** rolled back — your work
+since the upgrade is preserved. Run `shedos-rollback --undo` before
+rebooting if you change your mind.
+
+<CalloutBox kind="note">
+Snapshots live on the same disk. For full data resilience, pair
+snapshots with an offsite backup (`borg`, `restic`, etc.).
+</CalloutBox>
+
+## Opting files out of dotfile sync
+
+If you've customised a file and want ShedOS to stop tracking it
+entirely, add a matcher to `~/.config/shedos/sync-exclude`:
+
+```sh
+install -Dm644 /usr/share/shedos/sync-exclude.example \
+  ~/.config/shedos/sync-exclude
+```
+
+One glob per line, `#` for comments. Globs match against the path
+relative to `$HOME`:
+
+```
+.config/hypr/hyprland.conf   # keep my bindings — never drop a .shedosnew
+.config/waybar/*             # opt an entire directory out
+```
+
+Excluded paths are never seeded, auto-updated, or flagged as
+conflicts. Any leftover state (manifest hash, base snapshot,
+`.shedosnew` sidecar) from before the exclude is auto-purged on the
+next `shedos-sync-configs` run. Your live file is never touched.
+
 ## FAQ
 
 **Can I skip the config sync?** Yes — answer `N` at the sync prompt.
@@ -65,3 +109,9 @@ Packages stay upgraded; dotfiles are unchanged.
 **A config file has a `.shedosnew` sibling. What is it?** That's the
 upstream version of a file you've edited. Open the merge review from
 the updater, or diff and reconcile it manually.
+
+**What if the rollback snapshot is missing?** `shedos-update
+--list-snapshots` shows everything snapper knows about. If the
+pre-snapshot was cleaned up (retention policy) or snapper was
+disabled, rollback isn't available for that upgrade — reinstalling
+affected packages from the ShedOS repo is the fallback.
