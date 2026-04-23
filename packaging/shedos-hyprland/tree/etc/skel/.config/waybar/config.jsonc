@@ -17,6 +17,7 @@
         "network",
         "pulseaudio",
         "cpu",
+        "custom/health",
         "custom/conflicts",
         "custom/updates",
         "battery",
@@ -181,6 +182,13 @@
         "return-type": "json",
         "on-click": "/usr/bin/kitty --class shedos-review -e /usr/bin/shedos-review-configs",
         "signal": 9
+    },
+    "custom/health": {
+        "exec": "/usr/bin/shedos-check-health --waybar",
+        "interval": 300,
+        "return-type": "json",
+        "on-click": "/usr/bin/kitty --class btop -e btop --force-utf",
+        "signal": 10
     },
     "custom/screenrecording-indicator": {
         "on-click": "shedos-screenrecord",
