@@ -95,12 +95,12 @@ differentiator. Each bucket is independently shippable.
 
 | # | Deliverable | Status |
 |---|---|---|
-| B#1 | `shedos-check-health` + waybar `custom/health` module — disk/memory/battery/cpu-temp aggregator mirroring the `shedos-check-updates` pattern; signal `SIGRTMIN+10` | 🚧 In progress |
-| B#2 | `shedos-logs` Textual journal browser TUI — three-pane (units / messages / filters); `Super+Shift+J` | ⏳ Planned |
-| B#3 | `shedos-upgrade-history` TUI + waybar click-through — groups snapper pre/post pairs by `userdata.source=shedos-update`; `r` invokes `shedos-update --rollback` | ⏳ Planned |
-| B#4 | `/etc/shedos/system.toml` schema + `shedos-apply` core — Pydantic/TOML reconciler for `systemd.{system,user}.enable`, `drop-ins`, `snapper` (Tier 1 state) | ⏳ Planned |
-| B#5 | `shedos-doctor` drift detector + timer — reuses B#4's diff engine read-only; waybar `custom/doctor` pill on drift; `SIGRTMIN+11` | ⏳ Planned |
-| B#6 | Tier 2 state: `[pacman.repos]` fence-managed + `[services.postgresql]` (auto-init / per-user-db) | ⏳ Planned |
+| B#1 | `shedos-check-health` + waybar `custom/health` module — disk/memory/battery/cpu-temp aggregator mirroring the `shedos-check-updates` pattern; signal `SIGRTMIN+10` | ✅ Shipped |
+| B#2 | `shedos-logs` Textual journal browser TUI — three-pane (units / messages / filters); `Super+Shift+J` | ✅ Shipped |
+| B#3 | `shedos-upgrade-history` TUI + waybar click-through — groups snapper pre/post pairs by `userdata.source=shedos-update`; `r` invokes `shedos-update --rollback` | ✅ Shipped |
+| B#4 | `/etc/shedos/system.toml` schema + `shedos-apply` core — stdlib-tomllib reconciler for `systemd.{system,user}.enable`, `drop-ins`, `snapper` (Tier 1 state) | ✅ Shipped |
+| B#5 | `shedos-doctor` drift detector + timer — reuses B#4's diff engine read-only; waybar `custom/doctor` pill on drift; `SIGRTMIN+11` | ✅ Shipped |
+| B#6 | Tier 2 state: `[pacman.repos]` fence-managed + `[services.postgresql]` (auto-init / per-user-db) | ✅ Shipped |
 
 ### Locked design choices
 
