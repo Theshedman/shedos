@@ -14,19 +14,15 @@ import {
     RC_SHA256_URL,
 } from "~/generated/version";
 
+// The box renders as long as we have a version + ISO URL from a git tag.
+// The SHA is inlined when the build-time probe succeeds, and falls back to
+// a "fetch .sha256 to verify" command otherwise — so a network blip in CI
+// never blanks the page.
 const hasStable =
-    !!STABLE_VERSION &&
-    !!STABLE_ISO_NAME &&
-    !!STABLE_ISO_URL &&
-    !!STABLE_SHA256 &&
-    !!STABLE_SHA256_URL;
+    !!STABLE_VERSION && !!STABLE_ISO_NAME && !!STABLE_ISO_URL && !!STABLE_SHA256_URL;
 
 const hasRc =
-    !!RC_VERSION &&
-    !!RC_ISO_NAME &&
-    !!RC_ISO_URL &&
-    !!RC_SHA256 &&
-    !!RC_SHA256_URL;
+    !!RC_VERSION && !!RC_ISO_NAME && !!RC_ISO_URL && !!RC_SHA256_URL;
 ---
 <BaseLayout
     title="Download"
@@ -45,7 +41,7 @@ const hasRc =
                 version={STABLE_VERSION!}
                 isoName={STABLE_ISO_NAME!}
                 isoUrl={STABLE_ISO_URL!}
-                sha256={STABLE_SHA256!}
+                sha256={STABLE_SHA256}
                 sha256Url={STABLE_SHA256_URL!}
                 tone="primary"
             />
@@ -64,7 +60,7 @@ const hasRc =
                     version={RC_VERSION!}
                     isoName={RC_ISO_NAME!}
                     isoUrl={RC_ISO_URL!}
-                    sha256={RC_SHA256!}
+                    sha256={RC_SHA256}
                     sha256Url={RC_SHA256_URL!}
                     tone="muted"
                 />
