@@ -282,6 +282,10 @@ test-review-configs:
 	@echo -e "$(GREEN)Running shedos-review-configs fixture tests...$(NC)"
 	@bash $(TEST_DIR)/review-configs/run.sh
 
+test-sync-configs:
+	@echo -e "$(GREEN)Running shedos-sync-configs fixture tests...$(NC)"
+	@bash $(TEST_DIR)/sync-configs/run.sh
+
 dev-install:
 	@echo -e "$(GREEN)Installing development dependencies...$(NC)"
 	@cd installer && pip install -e ".[dev]"
