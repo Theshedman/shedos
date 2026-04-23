@@ -12,6 +12,14 @@ archiso/shedos-repo/shedos-repo.files*
 # Rendered from archiso/pacman.conf.in at build time
 archiso/pacman.conf
 
+# makepkg byproducts under packaging/<pkg>/ — pkg/ is the staging dir it
+# installs into during package(); src/ holds extracted sources; the
+# .pkg.tar.zst is the built artifact (CI rebuilds from PKGBUILD on every tag).
+packaging/*/pkg/
+packaging/*/src/
+packaging/*/*.pkg.tar.zst
+packaging/*/*.pkg.tar.zst.sig
+
 # Python
 __pycache__/
 *.py[cod]
