@@ -4,6 +4,9 @@ out/
 db-cache/
 *.iso
 *.sha256
+# Fixture manifests are real files we want under version control — the
+# sync-configs tool keys on the .sha256 extension, so we can't rename them.
+!test/sync-configs/fixtures/**/*.sha256
 packages/npm-cache/
 packages/aur/
 archiso/shedos-repo/*.pkg.tar.zst*
