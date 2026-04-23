@@ -47,10 +47,12 @@ outstanding B#2 polish list.
 
 ---
 
-## Phase 3 — Rollback + canary · **In progress**
+## Phase 3 — Rollback + canary · **Shipped** (B#3, B#4 deferred)
 
 Once Phase 2 is closed, the next class of user story is "I ran the update
-and something broke; get me back."
+and something broke; get me back." B#1 (btrfs rollback) and B#2 (AUR CI
+cache) are the user-facing deliverables; B#3 and B#4 are infrastructure
+bets that don't yet have a forcing function and live deferred below.
 
 | # | Deliverable | Status |
 |---|---|---|
@@ -84,7 +86,48 @@ No concrete trigger today.
 
 ---
 
-## Phase 4+ — Unscoped
+## Phase 4 — Declarative system state + operational awareness · **In progress**
+
+Two parallel tracks. Track B (observability) ships first because it reuses
+existing patterns and gives users visible wins early; Track A (declarative
+`/etc/shedos/system.toml` + `shedos-apply` reconciler) is the strategic
+differentiator. Each bucket is independently shippable.
+
+| # | Deliverable | Status |
+|---|---|---|
+| B#1 | `shedos-check-health` + waybar `custom/health` module — disk/memory/battery/cpu-temp aggregator mirroring the `shedos-check-updates` pattern; signal `SIGRTMIN+10` | 🚧 In progress |
+| B#2 | `shedos-logs` Textual journal browser TUI — three-pane (units / messages / filters); `Super+Shift+J` | ⏳ Planned |
+| B#3 | `shedos-upgrade-history` TUI + waybar click-through — groups snapper pre/post pairs by `userdata.source=shedos-update`; `r` invokes `shedos-update --rollback` | ⏳ Planned |
+| B#4 | `/etc/shedos/system.toml` schema + `shedos-apply` core — Pydantic/TOML reconciler for `systemd.{system,user}.enable`, `drop-ins`, `snapper` (Tier 1 state) | ⏳ Planned |
+| B#5 | `shedos-doctor` drift detector + timer — reuses B#4's diff engine read-only; waybar `custom/doctor` pill on drift; `SIGRTMIN+11` | ⏳ Planned |
+| B#6 | Tier 2 state: `[pacman.repos]` fence-managed + `[services.postgresql]` (auto-init / per-user-db) | ⏳ Planned |
+
+### Locked design choices
+
+- **Python + Textual** (already a dep from Phase 2 B#2 review-configs) for
+  `shedos-apply` and every new TUI. Only new runtime dep is `python-pydantic`
+  (already in the installer's `pyproject.toml`, so in most caches).
+- **TOML, not YAML** — stdlib `tomllib` parses it; matches starship / mise /
+  elephant conventions already used across ShedOS configs.
+- **Declarative supersedes, doesn't replace, install hooks.** If it's "set
+  once at install", it stays in `shedos-system.install`; if it's "user might
+  toggle later", it moves to `system.toml`.
+- **`shedos-apply` is manual, not timer-driven.** Surprise-reconciles are
+  hostile. `shedos-doctor` runs on a timer to *detect* drift and nudge,
+  mirroring `shedos-check-updates`.
+
+### Deferred to Phase 5 (noted up front)
+
+- Keyring trust in `system.toml` (destructive on uninstall — needs a safer
+  protocol).
+- Plymouth theme in `system.toml` (mkinitcpio regen side-effect — scope
+  pollution).
+- Kernel parameters, mount points, user accounts, firewall rules — each a
+  future schema section, not v1 scope.
+
+---
+
+## Phase 5+ — Unscoped
 
 Placeholder for ideas that have been mentioned but not committed to a phase:
 `shedos-migrate-to-packaged` for pre-packaging installs.
