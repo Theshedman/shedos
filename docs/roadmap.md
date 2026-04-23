@@ -26,58 +26,61 @@ releases via plain `pacman -Syu`. Eleven deliverables (P1–P11) covering:
 
 ---
 
-## Phase 2 — Upgrade UX polish · **In progress**
+## Phase 2 — Upgrade UX polish · **Shipped**
 
 Make `shedos-update` feel first-class: unattended, transparent, conflict-aware.
 
 | # | Deliverable | Status |
 |---|---|---|
 | B#1 | `shedos-update --yes` unattended mode + stranded-file scan | ✅ Shipped |
-| B#2 | `shedos-review-configs` IntelliJ-style merge TUI | ✅ Shipped (v1) — polish deferred, see below |
+| B#2 | `shedos-review-configs` IntelliJ-style merge TUI | ✅ Shipped |
 | B#3 | Mako notification on update detection (beyond the waybar badge) | ✅ Shipped |
 | B#4 | Waybar conflict-count indicator for unresolved `.shedosnew` files | ✅ Shipped |
 | B#5 | Release cadence: weekly PR + hotfix/RC hatches — [proposal](cadence-proposal.md), [flow](releasing.md) | ✅ Shipped |
 | B#6 | Public website at [shedos.org](https://shedos.org) (Astro + Tailwind, GitHub Pages) | ✅ Shipped |
 | B#7 | First-boot proprietary-apps installer (`shedos-apps-installer`) — opt-in checklist for VS Code, Chrome, Slack, etc. | ✅ Shipped |
 
-### B#2 deferred polish (to address in a follow-up iteration)
-
-These were intentionally cut from the first shippable `shedos-review-configs`
-cut so the core merge flow could get dogfooded on a real upgrade before more
-surface area was added. They are not bugs — they are known gaps.
-
-- **FileList `/` filter** — the key is bound but does not yet filter the list.
-- **Pan (`h`/`l`) and wrap toggle (`z`)** — not wired into `MergeScreen`.
-  Long single lines (minified JSON etc.) currently rely on the terminal's
-  horizontal behaviour.
-- **SIGTERM/SIGHUP draft save** — `q` already saves a draft on cancel, but
-  forced termination (logout, window manager kill, `kill <pid>`) loses the
-  in-progress decisions. A signal handler should flush the current state.
-- **Excluded-path `.shedosnew`** — currently silently skipped during the scan.
-  Surface a note so the user knows a conflict exists there and can choose to
-  delete the stray file.
-- **`$HOME` read-only** — no early guard; the tool runs, presents the UI, and
-  only fails at save time with a cryptic OSError. Detect EROFS / unwritable
-  `$HOME` at startup and exit cleanly.
-- **Unicode width** in the custom hunk-strip widget and the long-line cutoff
-  in `_render_cell` (`unicodedata.east_asian_width`) so CJK/emoji don't
-  desync column math across panes.
+All Phase 2 B#2 deferred polish items (`/` filter, pan/wrap, signal-driven
+draft save, excluded-path surfacing, `$HOME` read-only guard, Unicode-aware
+hunk-strip width) landed in the review-configs follow-up pass — there is no
+outstanding B#2 polish list.
 
 ---
 
-## Phase 3 — Rollback + canary · **Further out**
+## Phase 3 — Rollback + canary · **In progress**
 
 Once Phase 2 is closed, the next class of user story is "I ran the update
 and something broke; get me back."
 
-- **btrfs snapshot pre-upgrade + `shedos-update --rollback`** — one-command
-  revert using the existing `@snapshots` subvolume.
-- **`[shedos-testing]` canary channel** — opt-in repo for pre-release
-  packages; `shedos-update` grows a `--channel` flag.
-- **Offline-signed packages** — move signing off CI runners if the threat
-  model tightens.
-- **AUR build cache across CI runs** — cut `build-packages.yml` time for
-  the slow AUR tail.
+| # | Deliverable | Status |
+|---|---|---|
+| B#1 | btrfs snapshot pre-upgrade + `shedos-update --rollback` — snapper pre/post pair wraps every upgrade; `shedos-rollback` swaps `@` with the chosen snapshot; reboot applies. Home (`@home`) is intentionally **not** rolled back. | ✅ Shipped |
+| B#2 | AUR build cache across CI runs — `actions/cache` keyed on `hashFiles('packages/aur.txt')`, shared between `build-packages.yml` and `build-iso.yml`. Cuts the ~35 min AUR tail to near-zero on unchanged releases. | ✅ Shipped |
+| B#3 | `[shedos-testing]` canary channel | ⏸ Deferred — see below |
+| B#4 | Offline-signed packages | ⏸ Deferred — see below |
+
+### B#3 deferred (canary channel)
+
+The client-side opt-in (`shedos-update --channel testing`) is trivial, but
+the work to make it useful lives on the CI side:
+
+- A publish path for testing packages (e.g. `r2:shedos-repo/x86_64-testing/`).
+- A rule for *which* packages go to testing vs stable. Options:
+  dedicated branch (`next`), a PKGBUILD marker, or promote-on-green.
+- Retention policy for `x86_64-testing/` so it doesn't balloon.
+
+Shipping a `--channel testing` flag that drops a `[shedos-testing]` stanza
+pointing at a path CI isn't publishing to would 404 users' next
+`pacman -Sy` — worse UX than the waybar badge today. Reopen once the
+pipeline has a home for RC packages to live.
+
+### B#4 deferred (offline signing)
+
+The current model signs on ephemeral GitHub runners with a secret-scoped
+private key. Moving signing off CI (offline ceremony, detached sig upload)
+only makes sense if the threat model tightens — e.g. a leaked runner key,
+a regulatory requirement, a compromise scare in the broader Arch ecosystem.
+No concrete trigger today.
 
 ---
 

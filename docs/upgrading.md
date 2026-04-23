@@ -264,6 +264,86 @@ never wake up to a broken editor.
 | `shedos-review-configs` | IDE-style merge TUI for `.shedosnew` conflicts. Per-hunk y/t/b/B/x/u, whole-file A/T, atomic save, draft/resume. |
 | `shedos-review-configs --list` | Tab-separated machine-readable conflict list. |
 | `shedos-review-configs --file PATH` | Open merge UI on one file (path relative to `$HOME`). |
+| `shedos-update --list-snapshots` | Print recent snapper snapshots (rollback candidates). |
+| `shedos-update --rollback [N]` | Roll back the root subvolume to snapshot N. Delegates to `shedos-rollback`. Reboot required. |
+| `sudo shedos-rollback <N>` | Low-level subvolume swap: rename `@` to `@.rollback-<ts>`, snapshot N to the new `@`. Root-only. |
+| `sudo shedos-rollback --undo` | Promote the most recent `@.rollback-<ts>` back to `@`. |
+
+## Rollback
+
+Every `shedos-update` run is bracketed by a snapper pre/post snapshot pair
+on the root subvolume (`@`). If an upgrade breaks something, you can revert
+the system to the pre-upgrade state with one command.
+
+> `@home`, `@log`, `@cache`, `@pkg` and the other data-carrying subvolumes
+> are **not** rolled back. This is a system-state rollback — new files you
+> saved under `$HOME` after the upgrade are preserved. If you need a full
+> point-in-time restore, roll back manually with `btrfs subvolume snapshot`
+> on each subvolume you care about.
+
+### Finding the snapshot you want
+
+```
+shedos-update --list-snapshots
+```
+
+Prints something like:
+
+```
+#  | Type   | Pre # | Date                | Description    | Userdata
+---+--------+-------+---------------------+----------------+-----------------------
+0  | single |       | 2026-04-22 10:00:00 | current        |
+42 | pre    |       | 2026-04-23 09:14:00 | shedos-update  | source=shedos-update,kind=pre
+43 | post   | 42    | 2026-04-23 09:21:15 | shedos-update  | source=shedos-update,kind=post
+```
+
+The **pre** number (42 above) is the one to roll back to — that's the
+state *before* the upgrade ran.
+
+### Rolling back
+
+```
+shedos-update --rollback 42     # explicit number
+shedos-update --rollback        # prompts with the recent list
+```
+
+This delegates to `shedos-rollback`, which:
+
+1. Renames the live `@` to `@.rollback-<timestamp>` (kept as a safety net).
+2. Creates a new `@` as a read-write snapshot of snapshot #42.
+3. Prompts for reboot.
+
+`/boot` lives inside `@`, so the kernel, initrd, and modules all get rolled
+back together. Limine's ESP config references kernels by filename
+(`vmlinuz-linux`), so no bootloader tweaking is needed.
+
+### Undoing a rollback
+
+If the rolled-back state turns out to be worse than the broken upgrade:
+
+```
+sudo shedos-rollback --undo
+```
+
+This swaps the most recent `@.rollback-<timestamp>` back into `@`. Reboot
+to apply.
+
+### What if it made things worse?
+
+The `@.rollback-<timestamp>` backup is a real, read-write btrfs subvolume.
+If you've made the situation unbootable even after `--undo`:
+
+1. Boot from the ShedOS ISO.
+2. Mount the btrfs volume at subvolid=5.
+3. `mv @ @.broken` and `mv @.rollback-<ts> @` with the names you want.
+4. Reboot.
+
+### Scheduled snapshots
+
+Outside of `shedos-update` runs, `snapper-timeline.timer` creates hourly
+snapshots in the background (keep 5 hourly + 7 daily by default). Edit
+`/etc/snapper/configs/root` to tune retention or cadence. Config file is
+not pacman-managed after first install, so your edits stick across upgrades.
 
 ## What about kernel upgrades?
 
