@@ -18,6 +18,7 @@
         "pulseaudio",
         "cpu",
         "custom/health",
+        "custom/doctor",
         "custom/conflicts",
         "custom/updates",
         "battery",
@@ -189,6 +190,13 @@
         "return-type": "json",
         "on-click": "/usr/bin/kitty --class btop -e btop --force-utf",
         "signal": 10
+    },
+    "custom/doctor": {
+        "exec": "/usr/bin/shedos-doctor --waybar",
+        "interval": 21600,
+        "return-type": "json",
+        "on-click": "/usr/bin/kitty --class shedos-doctor -e sh -c '/usr/bin/shedos-doctor --diff; echo; read -p \"[enter] to close \"'",
+        "signal": 11
     },
     "custom/screenrecording-indicator": {
         "on-click": "shedos-screenrecord",
