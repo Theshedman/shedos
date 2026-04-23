@@ -50,21 +50,18 @@ surface area was added. They are not bugs — they are known gaps.
 - **Pan (`h`/`l`) and wrap toggle (`z`)** — not wired into `MergeScreen`.
   Long single lines (minified JSON etc.) currently rely on the terminal's
   horizontal behaviour.
-- **Bulk accept/keep flow from FileList** — `a` (accept-theirs-all) and `K`
-  (keep-yours-all) need a confirm modal that walks every listed conflict.
-- **Edge-case modal paths** from the B#2 plan's edge-case table:
-  binary-file handling, symlink refusal, orphan (`.shedosnew` without `YOURS`),
-  `.shedosnew` inside an excluded path, root-user refusal, terminal-too-small
-  exit-2, permission-denied on `$HOME`.
-- **`--file PATH`** — single-file entry (currently only no-arg + `--list`
-  fully work).
-- **`--dry-run`** — compute and print a merge plan without writing.
-- **Drafts resume** — `$XDG_STATE_HOME/shedos/review-drafts/*.draft.json`
-  schema is reserved but not yet written on `q` or SIGTERM, and there is no
-  resume prompt at next launch.
-- **Concurrent-upgrade `flock`** — two TUIs on `$XDG_STATE_HOME/shedos/review.lock`.
-- **Unicode width** in the custom hunk-strip widget
-  (`unicodedata.east_asian_width`).
+- **SIGTERM/SIGHUP draft save** — `q` already saves a draft on cancel, but
+  forced termination (logout, window manager kill, `kill <pid>`) loses the
+  in-progress decisions. A signal handler should flush the current state.
+- **Excluded-path `.shedosnew`** — currently silently skipped during the scan.
+  Surface a note so the user knows a conflict exists there and can choose to
+  delete the stray file.
+- **`$HOME` read-only** — no early guard; the tool runs, presents the UI, and
+  only fails at save time with a cryptic OSError. Detect EROFS / unwritable
+  `$HOME` at startup and exit cleanly.
+- **Unicode width** in the custom hunk-strip widget and the long-line cutoff
+  in `_render_cell` (`unicodedata.east_asian_width`) so CJK/emoji don't
+  desync column math across panes.
 
 ---
 
