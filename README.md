@@ -30,7 +30,7 @@ system stays current via `pacman -Syu` — no reinstall, no image swap.
 - **Native-package install**: All shedOS-specific content is delivered as signed Arch packages (see `packaging/`).
 - **BTRFS**: Pre-configured subvolumes and snapshots.
 - **Secure**: Optional LUKS encryption.
-- **In-place upgrades**: `shedos-update` + the waybar indicator surface updates the moment they land on the repo.
+- **In-place upgrades**: `shedman update` + the waybar indicator surface updates the moment they land on the repo.
 
 ## ⌨️ Keybindings Cheatsheet
 
@@ -49,11 +49,11 @@ system stays current via `pacman -Syu` — no reinstall, no image swap.
 Click the waybar update indicator, or run:
 
 ```bash
-shedos-update
+shedman update
 ```
 
 It surfaces the list of pending updates, waits for your explicit `y/N`, runs
-`pacman -Syu`, then prompts again before `shedos-sync-configs` touches any
+`pacman -Syu`, then prompts again before `shedman config --sync` touches any
 dotfiles. See [`docs/upgrading.md`](docs/upgrading.md) for the full flow,
 including how conflicts surface as `.shedosnew` files (same model as
 pacman's `.pacnew`).

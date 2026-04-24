@@ -245,7 +245,7 @@ directories still exist (one-time migration). Safe to re-run.
    pattern).
 2. If the package ships user configs, use the **dual-install pattern**:
    install to `/etc/skel/` *and* `/usr/share/shedos/shedos-<name>/defaults/`.
-   The second path is what `shedos-sync-configs` reads.
+   The second path is what `shedman config --sync` reads.
 3. If its sync behavior should be stricter (always conflict instead of
    auto-merge), ship a policy file at
    `/usr/share/shedos/shedos-<name>/sync-policy` containing

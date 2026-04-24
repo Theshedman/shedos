@@ -18,9 +18,9 @@ releases via plain `pacman -Syu`. Eleven deliverables (P1–P11) covering:
 - `build-packages.yml` CI publishing signed repo artifacts to R2.
 - `build-iso.yml` CI publishing signed ISOs on tag push, with a
   VERSION-vs-tag guardrail.
-- `shedos-sync-configs` for dotfile sync with pacman-style
+- `shedman config --sync` for dotfile sync with pacman-style
   `.shedosnew`/`.shedosbak` conflict artefacts.
-- `shedos-update` CLI + waybar update indicator.
+- `shedman update` CLI + waybar update indicator.
 - `shedos-keyring` carrying the repo signing key (rotation is a no-touch
   event for users).
 
@@ -28,18 +28,18 @@ releases via plain `pacman -Syu`. Eleven deliverables (P1–P11) covering:
 
 ## Phase 2 — Upgrade UX polish · **Shipped**
 
-Make `shedos-update` feel first-class: unattended, transparent, conflict-aware.
+Make `shedman update` feel first-class: unattended, transparent, conflict-aware.
 
 | # | Deliverable | Status |
 |---|---|---|
-| B#1 | `shedos-update --yes` unattended mode + stranded-file scan | ✅ Shipped |
-| B#2 | `shedos-review-configs` IntelliJ-style merge TUI | ✅ Shipped |
+| B#1 | `shedman update --yes` unattended mode + stranded-file scan | ✅ Shipped |
+| B#2 | `shedman config --review` IntelliJ-style merge TUI | ✅ Shipped |
 | B#3 | Mako notification on update detection (beyond the waybar badge) | ✅ Shipped |
 | B#4 | Waybar conflict-count indicator for unresolved `.shedosnew` files | ✅ Shipped |
 | B#5 | Release cadence: weekly PR + hotfix/RC hatches — [proposal](cadence-proposal.md), [flow](releasing.md) | ✅ Shipped |
 | B#6 | Public website at [shedos.org](https://shedos.org) (Astro + Tailwind, GitHub Pages) | ✅ Shipped |
-| B#7 | First-boot proprietary-apps installer (`shedos-apps-installer`) — opt-in checklist for VS Code, Chrome, Slack, etc. | ✅ Shipped |
-| B#8 | File-level `$HOME/.config/shedos/sync-exclude` matchers — drop a glob list and `shedos-sync-configs` will never seed, auto-update, or flag those files. Template at `/usr/share/shedos/sync-exclude.example`. | ✅ Shipped |
+| B#7 | First-boot proprietary-apps installer (`shedman install`) — opt-in checklist for VS Code, Chrome, Slack, etc. | ✅ Shipped |
+| B#8 | File-level `$HOME/.config/shedos/sync-exclude` matchers — drop a glob list and `shedman config --sync` will never seed, auto-update, or flag those files. Template at `/usr/share/shedos/sync-exclude.example`. | ✅ Shipped |
 | B#9 | Auto-generated GitHub Release notes — every tag push groups Conventional Commits since the previous tag into feat/fix/perf/docs/ci/chore sections and stamps a compare-link in the release body. | ✅ Shipped |
 
 All Phase 2 B#2 deferred polish items (`/` filter, pan/wrap, signal-driven
@@ -58,14 +58,14 @@ bets that don't yet have a forcing function and live deferred below.
 
 | # | Deliverable | Status |
 |---|---|---|
-| B#1 | btrfs snapshot pre-upgrade + `shedos-update --rollback` — snapper pre/post pair wraps every upgrade; `shedos-rollback` swaps `@` with the chosen snapshot; reboot applies. Home (`@home`) is intentionally **not** rolled back. | ✅ Shipped |
+| B#1 | btrfs snapshot pre-upgrade + `shedman update --rollback` — snapper pre/post pair wraps every upgrade; `shedman rollback` swaps `@` with the chosen snapshot; reboot applies. Home (`@home`) is intentionally **not** rolled back. | ✅ Shipped |
 | B#2 | AUR build cache across CI runs — `actions/cache` keyed on `hashFiles('packages/aur.txt')`, shared between `build-packages.yml` and `build-iso.yml`. Cuts the ~35 min AUR tail to near-zero on unchanged releases. | ✅ Shipped |
 | B#3 | `[shedos-testing]` canary channel | ⏸ Deferred — see below |
 | B#4 | Offline-signed packages | ⏸ Deferred — see below |
 
 ### B#3 deferred (canary channel)
 
-The client-side opt-in (`shedos-update --channel testing`) is trivial, but
+The client-side opt-in (`shedman update --channel testing`) is trivial, but
 the work to make it useful lives on the CI side:
 
 - A publish path for testing packages (e.g. `r2:shedos-repo/x86_64-testing/`).
@@ -92,31 +92,31 @@ No concrete trigger today.
 
 Two parallel tracks. Track B (observability) ships first because it reuses
 existing patterns and gives users visible wins early; Track A (declarative
-`/etc/shedos/system.toml` + `shedos-apply` reconciler) is the strategic
+`/etc/shedos/system.toml` + `shedman apply` reconciler) is the strategic
 differentiator. Each bucket is independently shippable.
 
 | # | Deliverable | Status |
 |---|---|---|
-| B#1 | `shedos-check-health` + waybar `custom/health` module — disk/memory/battery/cpu-temp aggregator mirroring the `shedos-check-updates` pattern; signal `SIGRTMIN+10` | ✅ Shipped |
-| B#2 | `shedos-logs` Textual journal browser TUI — three-pane (units / messages / filters); `Super+Shift+J` | ✅ Shipped |
-| B#3 | `shedos-upgrade-history` TUI + waybar click-through — groups snapper pre/post pairs by `userdata.source=shedos-update`; `r` invokes `shedos-update --rollback` | ✅ Shipped |
-| B#4 | `/etc/shedos/system.toml` schema + `shedos-apply` core — stdlib-tomllib reconciler for `systemd.{system,user}.enable`, `drop-ins`, `snapper` (Tier 1 state) | ✅ Shipped |
-| B#5 | `shedos-doctor` drift detector + timer — reuses B#4's diff engine read-only; waybar `custom/doctor` pill on drift; `SIGRTMIN+11` | ✅ Shipped |
+| B#1 | `shedman health` + waybar `custom/health` module — disk/memory/battery/cpu-temp aggregator mirroring the `shedman updates` pattern; signal `SIGRTMIN+10` | ✅ Shipped |
+| B#2 | `shedman logs` Textual journal browser TUI — three-pane (units / messages / filters); `Super+Shift+J` | ✅ Shipped |
+| B#3 | `shedman update --history` TUI + waybar click-through — groups snapper pre/post pairs by `userdata.source=shedos-update`; `r` invokes `shedman update --rollback` | ✅ Shipped |
+| B#4 | `/etc/shedos/system.toml` schema + `shedman apply` core — stdlib-tomllib reconciler for `systemd.{system,user}.enable`, `drop-ins`, `snapper` (Tier 1 state) | ✅ Shipped |
+| B#5 | `shedman doctor` drift detector + timer — reuses B#4's diff engine read-only; waybar `custom/doctor` pill on drift; `SIGRTMIN+11` | ✅ Shipped |
 | B#6 | Tier 2 state: `[pacman.repos]` fence-managed + `[services.postgresql]` (auto-init / per-user-db) | ✅ Shipped |
 
 ### Locked design choices
 
 - **Python + Textual** (already a dep from Phase 2 B#2 review-configs) for
-  `shedos-apply` and every new TUI. Only new runtime dep is `python-pydantic`
+  `shedman apply` and every new TUI. Only new runtime dep is `python-pydantic`
   (already in the installer's `pyproject.toml`, so in most caches).
 - **TOML, not YAML** — stdlib `tomllib` parses it; matches starship / mise /
   elephant conventions already used across ShedOS configs.
 - **Declarative supersedes, doesn't replace, install hooks.** If it's "set
   once at install", it stays in `shedos-system.install`; if it's "user might
   toggle later", it moves to `system.toml`.
-- **`shedos-apply` is manual, not timer-driven.** Surprise-reconciles are
-  hostile. `shedos-doctor` runs on a timer to *detect* drift and nudge,
-  mirroring `shedos-check-updates`.
+- **`shedman apply` is manual, not timer-driven.** Surprise-reconciles are
+  hostile. `shedman doctor` runs on a timer to *detect* drift and nudge,
+  mirroring `shedman updates`.
 
 ### Deferred to Phase 5 (noted up front)
 
@@ -129,7 +129,7 @@ differentiator. Each bucket is independently shippable.
 
 ---
 
-## Phase 5 — Unified `shedman` CLI + migration closure · **In progress**
+## Phase 5 — Unified `shedman` CLI + migration closure · **Shipped**
 
 The `shedos-*` command surface grew to 17 top-level binaries across Phase
 1-4. Phase 5 collapses that into a single Git-style dispatcher: users
@@ -145,7 +145,7 @@ and completion/docs catch-up).
 | B#2 | `shedman status` unified dashboard — one command aggregating updates/conflicts/health/doctor with text + `--json` output | ✅ Shipped |
 | B#3 | zsh + bash completions — `_shedman` + `/etc/bash_completion.d/shedman` with runtime subcommand discovery; opt-in per-subcommand flag completions | ✅ Shipped |
 | B#4 | `shedos-migrate-to-packaged` — fill the declared-but-empty package: detect pre-packaging state, snapper snapshot, fence `/etc/pacman.conf`, `pacman -Syu shedos-meta`, seed sync manifest, `shedman doctor` verify | ✅ Shipped |
-| B#5 | Docs migration — every `shedos-*` reference in `docs/`, `website/`, `README.md` rewrites to `shedman <cmd>` form | ⏳ Pending |
+| B#5 | Docs migration — every `shedos-*` reference in `docs/`, `website/`, `README.md` rewrites to `shedman <cmd>` form | ✅ Shipped |
 
 ---
 

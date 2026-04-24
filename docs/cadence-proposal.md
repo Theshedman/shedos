@@ -12,7 +12,7 @@ ShedOS already has **two independent release gates**:
 1. **Packages** — `build-packages.yml` fires on every push to `main` that
    touches `packaging/**` or `packages/**`. Signed packages land at
    `repo.shedos.org` within ~40 min. Installed systems pick them up via
-   `shedos-update` / `pacman -Syu`. **This gate is already continuous.**
+   `shedman update` / `pacman -Syu`. **This gate is already continuous.**
 2. **ISOs** — `build-iso.yml` fires on `v*` tag push. ~45 min build; the
    7.6 GiB artefact goes to `r2:shedos-repo/iso/` with a 2-stable + 1-RC
    retention sweep. **This gate is manual today** (a human decides when to
@@ -56,7 +56,7 @@ has a stable tag, append `.N`. ISO build fires automatically.
 - **CI churn.** ~45 min/ISO × every merge = routinely >10 h/week of build
   time for changes that don't warrant a new ISO. AUR cache helps but the
   mkarchiso + R2 upload costs are still paid.
-- **User UX noise.** `shedos-update` would show "new release" every day or
+- **User UX noise.** `shedman update` would show "new release" every day or
   two. Great for dogfooding, bad signal.
 - **Retention sweep becomes a firehose.** 2 stable + 1 RC means almost every
   ISO is deleted before anyone downloads it.
@@ -136,7 +136,7 @@ Every push to `main` that touches `packaging/**`:
   package whose `packaging/<pkg>/` tree actually changed in the push.
   Commit goes onto `main` with `[skip ci]` to avoid re-triggering itself.
 
-Installed systems then see the change within a `shedos-update` cycle —
+Installed systems then see the change within a `shedman update` cycle —
 same as today, but without requiring a human to remember to bump pkgrel.
 
 ### Track 2 — Weekly ISO (gate 2, new)

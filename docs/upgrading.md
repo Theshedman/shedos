@@ -11,17 +11,17 @@ dotfiles.
 ## TL;DR
 
 1. Waybar shows `󰚰 N` when `N` updates are waiting.
-2. Click it (or run `shedos-update` in a terminal).
+2. Click it (or run `shedman update` in a terminal).
 3. Review the list, type `y`.
 4. Pacman and yay prompt again with their own lists — type `y` once more each.
-5. `shedos-sync-configs` prints a plan for any ShedOS dotfile changes. Review, type `y`.
+5. `shedman config --sync` prints a plan for any ShedOS dotfile changes. Review, type `y`.
 6. Done. Any file you had personally edited is untouched; upstream's version is sitting next to it as `<file>.shedosnew`.
 
 Nothing is ever applied without an explicit `y`.
 
 ## The waybar indicator
 
-`shedos-check-updates` runs in the background (user-scope systemd timer,
+`shedman updates` runs in the background (user-scope systemd timer,
 hourly). It uses pacman's `checkupdates` tool against a sandboxed temp DB —
 safe to run as your user, doesn't race with pacman's own transactions.
 
@@ -29,9 +29,9 @@ The waybar module:
 
 - `󰚰 0` / empty → system is up to date.
 - `󰚰 N` → `N` pacman + AUR updates available. Tooltip lists the first few.
-- Click → opens a kitty window running `shedos-update`.
+- Click → opens a kitty window running `shedman update`.
 
-After a successful upgrade, `shedos-update` signals waybar to refresh
+After a successful upgrade, `shedman update` signals waybar to refresh
 immediately so you don't wait up to an hour for the icon to clear.
 
 ## The conflict indicator
@@ -43,12 +43,12 @@ sync tool won't clobber your edits, so it leaves them for you to reconcile.
 
 - Empty → no unresolved conflicts.
 - ` N` → `N` conflicts waiting. Tooltip reminds you to open
-  `shedos-review-configs`.
-- Click → opens a kitty window running `shedos-review-configs`.
+  `shedman config --review`.
+- Click → opens a kitty window running `shedman config --review`.
 
-The count is driven by `shedos-check-conflicts`. It's refreshed at three
-known touchpoints: after `shedos-sync-configs` finishes, after
-`shedos-review-configs` saves a merge, and at the end of `shedos-update`.
+The count is driven by `shedman conflicts`. It's refreshed at three
+known touchpoints: after `shedman config --sync` finishes, after
+`shedman config --review` saves a merge, and at the end of `shedman update`.
 A mako notification also fires the first time the count climbs — same
 "silent unless the number went up" semantics as the updates notifier.
 
@@ -60,7 +60,7 @@ workspace.
 
 - Fires on the transition from 0 → N, and again when the count goes **up**.
 - Does **not** re-fire for the same count you've already been told about.
-- Count drops to 0 (e.g. you just ran `shedos-update`) → the "already
+- Count drops to 0 (e.g. you just ran `shedman update`) → the "already
   notified" marker resets, so the next fresh batch notifies you again.
 - Quiet channels: notifications are skipped on TTY logins, SSH sessions,
   and any environment without a DBus session. Mako DND mode (`makoctl
@@ -68,9 +68,9 @@ workspace.
 
 State lives at `$XDG_STATE_HOME/shedos/last-notified-count` (one integer).
 If you want to force a re-notification at the next tick, run
-`shedos-check-updates --reset-notify-state`.
+`shedman updates --reset-notify-state`.
 
-## `shedos-update` (interactive)
+## `shedman update` (interactive)
 
 ```
 ------------------------------------------------------------
@@ -97,18 +97,18 @@ Proceed with upgrade? [y/N]
   after seeing the real package set (including dependency pulls).
 - If AUR updates exist and `yay` is installed, it runs `yay -Sua` after
   pacman. Yay prompts again too.
-- Finally, `shedos-sync-configs` runs to reconcile `$HOME` dotfiles.
+- Finally, `shedman config --sync` runs to reconcile `$HOME` dotfiles.
 
 ### Unattended mode: `--yes`
 
 For cron- or timer-driven upgrades on trusted systems:
 
 ```bash
-shedos-update --yes
+shedman update --yes
 ```
 
 `--yes` skips every prompt and threads `--noconfirm` into pacman, yay,
-and `shedos-sync-configs`. **But it does not auto-resolve config
+and `shedman config --sync`. **But it does not auto-resolve config
 conflicts** — a conflict means you *and* upstream edited the same file,
 and silently picking a side is exactly the data loss the sync tool
 exists to prevent. Conflicts in `--yes` mode still produce `.shedosnew`
@@ -119,10 +119,10 @@ Recommended wrapper for a user-scope systemd timer or cron:
 
 ```bash
 # logs to journal via systemd-cat
-shedos-update --yes 2>&1 | systemd-cat -t shedos-update
+shedman update --yes 2>&1 | systemd-cat -t shedman-update
 ```
 
-## `shedos-sync-configs` (dotfile 3-way merge)
+## `shedman config --sync` (dotfile 3-way merge)
 
 This is the part most distros get wrong. Pacman does not touch user
 home directories — everything in `$HOME` is ShedOS's responsibility.
@@ -136,7 +136,7 @@ For every file ShedOS ships under `/etc/skel` (via `shedos-hyprland`,
 |---|---|---|
 | Pristine default | `/usr/share/shedos/<pkg>/defaults/<relpath>` | pacman (updated on package upgrade) |
 | Your live copy | `$HOME/<relpath>` | you |
-| Last-seen hash | `$XDG_STATE_HOME/shedos/last-seen/<relpath>.sha256` | `shedos-sync-configs` |
+| Last-seen hash | `$XDG_STATE_HOME/shedos/last-seen/<relpath>.sha256` | `shedman config --sync` |
 
 ### The four cases
 
@@ -161,17 +161,17 @@ Properties that fall out:
 
 ### Resolving a `.shedosnew`
 
-After an upgrade that produced conflicts, `shedos-update` offers:
+After an upgrade that produced conflicts, `shedman update` offers:
 
 ```
-3 config conflict(s) remain. Review now with shedos-review-configs? [Y/n]
+3 config conflict(s) remain. Review now with shedman config --review? [Y/n]
 ```
 
-Answering `Y` (or just Enter) launches `shedos-review-configs`, a
+Answering `Y` (or just Enter) launches `shedman config --review`, a
 full-screen TUI that handles every conflict in one sitting. It's the
 recommended path.
 
-#### `shedos-review-configs` (IDE-style merge TUI)
+#### `shedman config --review` (IDE-style merge TUI)
 
 - **File list** — one row per `.shedosnew`, with conflict kind (text /
   binary / symlink / orphan), hunk count, size, and whether a BASE
@@ -216,17 +216,17 @@ If you'd rather not use the TUI, the old flow still works:
   diff -u ~/.config/hypr/hyprland.conf ~/.config/hypr/hyprland.conf.shedosnew
   # edit the live file to taste, then:
   rm ~/.config/hypr/hyprland.conf.shedosnew
-  shedos-sync-configs --rebuild-manifest  # mark as aligned
+  shedman config --sync --rebuild-manifest  # mark as aligned
   ```
 - **Take upstream**:
   ```bash
   mv ~/.config/hypr/hyprland.conf.shedosnew ~/.config/hypr/hyprland.conf
-  shedos-sync-configs --rebuild-manifest
+  shedman config --sync --rebuild-manifest
   ```
 - **Keep yours, ignore upstream**:
   ```bash
   rm ~/.config/hypr/hyprland.conf.shedosnew
-  shedos-sync-configs --rebuild-manifest
+  shedman config --sync --rebuild-manifest
   ```
 
 `--rebuild-manifest` tells the sync tool "trust me, my current files are
@@ -254,24 +254,24 @@ never wake up to a broken editor.
 
 | Command | Purpose |
 |---|---|
-| `shedos-update` | Interactive upgrade flow (pacman + yay + config sync). |
-| `shedos-update --yes` | Unattended variant. Conflicts still produce `.shedosnew`, never overwrite. |
-| `shedos-check-updates` | Waybar JSON emitter. Run manually with `--refresh-waybar` to force an immediate poll. |
-| `shedos-sync-configs` | Print a plan and interactively apply 3-way merge. |
-| `shedos-sync-configs --dry-run` | Print the plan, change nothing. |
-| `shedos-sync-configs --yes` | Apply the plan without the interactive prompt (same conflict semantics). |
-| `shedos-sync-configs --rebuild-manifest` | Reset last-seen state to current defaults. Use after manually resolving conflicts. Reports any leftover `.shedosnew`/`.shedosbak`. |
-| `shedos-review-configs` | IDE-style merge TUI for `.shedosnew` conflicts. Per-hunk y/t/b/B/x/u, whole-file A/T, atomic save, draft/resume. |
-| `shedos-review-configs --list` | Tab-separated machine-readable conflict list. |
-| `shedos-review-configs --file PATH` | Open merge UI on one file (path relative to `$HOME`). |
-| `shedos-update --list-snapshots` | Print recent snapper snapshots (rollback candidates). |
-| `shedos-update --rollback [N]` | Roll back the root subvolume to snapshot N. Delegates to `shedos-rollback`. Reboot required. |
-| `sudo shedos-rollback <N>` | Low-level subvolume swap: rename `@` to `@.rollback-<ts>`, snapshot N to the new `@`. Root-only. |
-| `sudo shedos-rollback --undo` | Promote the most recent `@.rollback-<ts>` back to `@`. |
+| `shedman update` | Interactive upgrade flow (pacman + yay + config sync). |
+| `shedman update --yes` | Unattended variant. Conflicts still produce `.shedosnew`, never overwrite. |
+| `shedman updates` | Waybar JSON emitter. Run manually with `--refresh-waybar` to force an immediate poll. |
+| `shedman config --sync` | Print a plan and interactively apply 3-way merge. |
+| `shedman config --sync --dry-run` | Print the plan, change nothing. |
+| `shedman config --sync --yes` | Apply the plan without the interactive prompt (same conflict semantics). |
+| `shedman config --sync --rebuild-manifest` | Reset last-seen state to current defaults. Use after manually resolving conflicts. Reports any leftover `.shedosnew`/`.shedosbak`. |
+| `shedman config --review` | IDE-style merge TUI for `.shedosnew` conflicts. Per-hunk y/t/b/B/x/u, whole-file A/T, atomic save, draft/resume. |
+| `shedman config --review --list` | Tab-separated machine-readable conflict list. |
+| `shedman config --review --file PATH` | Open merge UI on one file (path relative to `$HOME`). |
+| `shedman update --list-snapshots` | Print recent snapper snapshots (rollback candidates). |
+| `shedman update --rollback [N]` | Roll back the root subvolume to snapshot N. Delegates to `shedman rollback`. Reboot required. |
+| `sudo shedman rollback <N>` | Low-level subvolume swap: rename `@` to `@.rollback-<ts>`, snapshot N to the new `@`. Root-only. |
+| `sudo shedman rollback --undo` | Promote the most recent `@.rollback-<ts>` back to `@`. |
 
 ## Rollback
 
-Every `shedos-update` run is bracketed by a snapper pre/post snapshot pair
+Every `shedman update` run is bracketed by a snapper pre/post snapshot pair
 on the root subvolume (`@`). If an upgrade breaks something, you can revert
 the system to the pre-upgrade state with one command.
 
@@ -284,7 +284,7 @@ the system to the pre-upgrade state with one command.
 ### Finding the snapshot you want
 
 ```
-shedos-update --list-snapshots
+shedman update --list-snapshots
 ```
 
 Prints something like:
@@ -303,11 +303,11 @@ state *before* the upgrade ran.
 ### Rolling back
 
 ```
-shedos-update --rollback 42     # explicit number
-shedos-update --rollback        # prompts with the recent list
+shedman update --rollback 42     # explicit number
+shedman update --rollback        # prompts with the recent list
 ```
 
-This delegates to `shedos-rollback`, which:
+This delegates to `shedman rollback`, which:
 
 1. Renames the live `@` to `@.rollback-<timestamp>` (kept as a safety net).
 2. Creates a new `@` as a read-write snapshot of snapshot #42.
@@ -322,7 +322,7 @@ back together. Limine's ESP config references kernels by filename
 If the rolled-back state turns out to be worse than the broken upgrade:
 
 ```
-sudo shedos-rollback --undo
+sudo shedman rollback --undo
 ```
 
 This swaps the most recent `@.rollback-<timestamp>` back into `@`. Reboot
@@ -340,7 +340,7 @@ If you've made the situation unbootable even after `--undo`:
 
 ### Scheduled snapshots
 
-Outside of `shedos-update` runs, `snapper-timeline.timer` creates hourly
+Outside of `shedman update` runs, `snapper-timeline.timer` creates hourly
 snapshots in the background (keep 5 hourly + 7 daily by default). Edit
 `/etc/snapper/configs/root` to tune retention or cadence. Config file is
 not pacman-managed after first install, so your edits stick across upgrades.
@@ -354,16 +354,16 @@ it, which happens automatically on the next upgrade.
 
 ## FAQ
 
-**Does `shedos-update` modify my system without asking?** No. Every
+**Does `shedman update` modify my system without asking?** No. Every
 destructive step has a `y/N` gate (default N). Pacman and yay re-prompt
 with their own package lists.
 
 **Can I skip the config sync?** Yes — press `N` at the sync prompt.
 Packages stay upgraded; your dotfiles aren't touched. You can run
-`shedos-sync-configs` later whenever you're ready.
+`shedman config --sync` later whenever you're ready.
 
 **I deleted my `$XDG_STATE_HOME/shedos/` directory. Am I stuck with
-conflicts forever?** Run `shedos-sync-configs --rebuild-manifest`.
+conflicts forever?** Run `shedman config --sync --rebuild-manifest`.
 
 **I want to opt out of ShedOS-managed dotfiles entirely for some file.**
 Add a matcher to `~/.config/shedos/sync-exclude` — one glob per line,
@@ -381,13 +381,13 @@ Typical entries:
 Excluded files are never seeded, auto-updated, or flagged as conflicts —
 ShedOS treats them as entirely yours. Globs follow bash pattern-matching
 rules; `#` lines and blanks are ignored. No ShedOS restart needed; the
-file is re-read on every `shedos-sync-configs` run.
+file is re-read on every `shedman config --sync` run.
 
 If a path already has manifest state or a leftover `.shedosnew` from
-before you added the matcher, the next `shedos-sync-configs` run auto-
+before you added the matcher, the next `shedman config --sync` run auto-
 purges those droppings (manifest hash, BASE snapshot, and `.shedosnew`
 sidecar). Your live file in `$HOME` is never touched. You can preview
-what would be purged with `shedos-sync-configs --dry-run`.
+what would be purged with `shedman config --sync --dry-run`.
 
 **Do I need to trust a new key to install updates?** No — the repo key
 lives in `shedos-keyring`, which is itself part of every ShedOS install

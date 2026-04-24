@@ -59,18 +59,18 @@ single keystroke.
 
 ## Rolling back an upgrade
 
-Every `shedos-update` run brackets the upgrade with a pre- and
+Every `shedman update` run brackets the upgrade with a pre- and
 post-snapshot of `/` (btrfs, via snapper). If an upgrade breaks
 something, restoring the pre-state is two commands:
 
 ```sh
-shedos-update --list-snapshots
-shedos-update --rollback <N>
+shedman update --list-snapshots
+shedman update --rollback <N>
 ```
 
 Pick the pre-upgrade snapshot number from the list. A reboot applies
 the rollback. `$HOME` is intentionally **not** rolled back — your work
-since the upgrade is preserved. Run `shedos-rollback --undo` before
+since the upgrade is preserved. Run `shedman rollback --undo` before
 rebooting if you change your mind.
 
 <CalloutBox kind="note">
@@ -99,7 +99,7 @@ relative to `$HOME`:
 Excluded paths are never seeded, auto-updated, or flagged as
 conflicts. Any leftover state (manifest hash, base snapshot,
 `.shedosnew` sidecar) from before the exclude is auto-purged on the
-next `shedos-sync-configs` run. Your live file is never touched.
+next `shedman config --sync` run. Your live file is never touched.
 
 ## FAQ
 
@@ -110,7 +110,7 @@ Packages stay upgraded; dotfiles are unchanged.
 upstream version of a file you've edited. Open the merge review from
 the updater, or diff and reconcile it manually.
 
-**What if the rollback snapshot is missing?** `shedos-update
+**What if the rollback snapshot is missing?** `shedman update
 --list-snapshots` shows everything snapper knows about. If the
 pre-snapshot was cleaned up (retention policy) or snapper was
 disabled, rollback isn't available for that upgrade — reinstalling

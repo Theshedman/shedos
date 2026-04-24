@@ -6,8 +6,8 @@ Native Arch packages that make up a ShedOS installation. Published to
 | Package | Ships |
 |---|---|
 | `shedos-keyring` | GPG pubkey + `pacman-key` trust bootstrap for the `[shedos]` repo (post-install hook `pacman-key --add` + `--lsign-key`). |
-| `shedos-system` | Root-owned system payload: `/usr/bin/shedos-*`, systemd units, `/etc` drop-ins. Appends the `[shedos]` pacman repo block to `/etc/pacman.conf` on install (idempotent marker block). |
-| `shedos-hyprland` | Hyprland desktop profile: `/etc/skel/.config/{hypr,waybar,walker,kitty,mako,rofi,fastfetch,mise}/` + zsh dotfiles, plus pristine mirror under `/usr/share/shedos/hyprland/defaults/` for `shedos-sync-configs`. |
+| `shedos-system` | Root-owned system payload: unified `shedman` CLI + subcommands under `/usr/libexec/shedman/` (with legacy `shedos-*` shims at `/usr/bin/` for back-compat), systemd units, `/etc` drop-ins. Appends the `[shedos]` pacman repo block to `/etc/pacman.conf` on install (idempotent marker block). |
+| `shedos-hyprland` | Hyprland desktop profile: `/etc/skel/.config/{hypr,waybar,walker,kitty,mako,rofi,fastfetch,mise}/` + zsh dotfiles, plus pristine mirror under `/usr/share/shedos/hyprland/defaults/` for `shedman config --sync`. |
 | `shedos-nvim` | Default Neovim config (same dual-install pattern). Separate package so its `always-conflict` sync policy doesn't pollute the generic tool. |
 | `shedos-branding` | Plymouth theme, wallpapers, SDDM theme, `/etc/shedos-ascii.txt`, `/etc/os-release`. |
 | `shedos-meta` | Zero-file metapackage. `depends=` pulls in every `shedos-*` package plus every Arch / AUR package a default install needs. |
@@ -72,7 +72,7 @@ scripts/render-meta-depends.sh      # rewrites packaging/shedos-meta/PKGBUILD
 **`aur-norepublish.txt`** lists AUR packages that we can't legally
 republish binaries for (proprietary: vscode, chrome, slack, obsidian,
 postman, ms-fonts). These stay as `optdepends=()` on `shedos-meta` and
-install via `yay`/`shedos-welcome` post-boot, never via `pacstrap`.
+install via `yay`/`shedman welcome` post-boot, never via `pacstrap`.
 
 ## Dual-install pattern (for `shedos-hyprland`, `shedos-nvim`)
 
@@ -81,9 +81,9 @@ Config packages install the same tree to two places:
 | Path | Role |
 |---|---|
 | `/etc/skel/.config/<app>/` | Seed copy for new users at `useradd -m`. |
-| `/usr/share/shedos/<pkg>/defaults/.config/<app>/` | Pristine reference `shedos-sync-configs` compares against to detect user edits and upstream changes. |
+| `/usr/share/shedos/<pkg>/defaults/.config/<app>/` | Pristine reference `shedman config --sync` compares against to detect user edits and upstream changes. |
 
-`shedos-sync-configs` runs a per-file 3-way merge after `pacman -Syu`.
+`shedman config --sync` runs a per-file 3-way merge after `pacman -Syu`.
 If the user hasn't touched a file, it auto-updates; if they have, it
 drops a `.shedosnew` alongside instead of clobbering. See
 [`docs/upgrading.md`](../docs/upgrading.md) for the full algorithm and
