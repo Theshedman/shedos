@@ -144,7 +144,7 @@ and completion/docs catch-up).
 | B#1 | `shedman` dispatcher + rename all 17 `shedos-*` commands — dispatcher at `/usr/bin/shedman`, subcommands under `/usr/libexec/shedman/`, silent back-compat shims at old paths; all waybar/hypr/systemd/desktop callers flipped in one commit | ✅ Shipped |
 | B#2 | `shedman status` unified dashboard — one command aggregating updates/conflicts/health/doctor with text + `--json` output | ✅ Shipped |
 | B#3 | zsh + bash completions — `_shedman` + `/etc/bash_completion.d/shedman` with runtime subcommand discovery; opt-in per-subcommand flag completions | ✅ Shipped |
-| B#4 | `shedos-migrate-to-packaged` — fill the declared-but-empty package: detect pre-packaging state, snapper snapshot, fence `/etc/pacman.conf`, `pacman -Syu shedos-meta`, seed sync manifest, `shedman doctor` verify | ⏳ Pending |
+| B#4 | `shedos-migrate-to-packaged` — fill the declared-but-empty package: detect pre-packaging state, snapper snapshot, fence `/etc/pacman.conf`, `pacman -Syu shedos-meta`, seed sync manifest, `shedman doctor` verify | ✅ Shipped |
 | B#5 | Docs migration — every `shedos-*` reference in `docs/`, `website/`, `README.md` rewrites to `shedman <cmd>` form | ⏳ Pending |
 
 ---

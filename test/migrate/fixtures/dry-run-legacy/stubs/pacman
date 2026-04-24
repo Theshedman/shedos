@@ -1,0 +1,6 @@
+#!/bin/sh
+printf '%s: pacman %s\n' "$(date -u +%T)" "$*" >>"${PROBE_LOG:-/dev/null}"
+case "$1 $2" in
+    "-Qq shedos-system") exit 1 ;;
+esac
+exit 0

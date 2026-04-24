@@ -1,0 +1,238 @@
+#!/usr/bin/env bash
+# shedman migrate — retrofit a pre-packaging ShedOS install onto the
+# packaged model.
+#
+# Target audience: installs dated before the April 2026 packaging
+# cut-over (commit 2148ff0), where the system was laid down by the
+# ISO's archiso payload as plain dotfiles, with no shedos-* packages
+# installed. Running this tool is idempotent — a packaged install
+# detects "already packaged" on entry and exits 0.
+#
+# What it does on a legacy install:
+#   1. snapper snapshot (pre-migrate-to-packaged) so the whole thing
+#      can be rolled back if anything explodes.
+#   2. append the [shedos] fence block to /etc/pacman.conf (same
+#      format shedos-system.install emits on fresh install).
+#   3. pacman -Syu shedos-meta — brings shedos-keyring, shedos-system,
+#      shedos-hyprland, shedos-nvim, shedos-branding, plus the full
+#      Arch/AUR stack. .pacnew files land on any /etc collisions.
+#   4. shedman config --sync --rebuild-manifest (when Phase 5 adds
+#      that flag; today we just call the plain --sync to seed state).
+#   5. shedman doctor — sanity check that the system is aligned.
+#
+# By default the tool runs in dry-run mode: it prints the plan and
+# exits 0. Pass --yes to execute. This matches every other shedman
+# verb-style subcommand (apply, rollback, etc.).
+#
+# Testable surface:
+#   SHEDOS_MIGRATE_ROOT    synthetic root, defaults to "/". The tool
+#                          reads /etc/pacman.conf and pacman -Q under
+#                          this prefix so fixtures can stub both.
+#   PATH-stubbed pacman / snapper / shedman — fixtures prepend a stub
+#                          dir so the tool invokes the stubs in place
+#                          of the real binaries.
+
+set -uo pipefail
+
+PROG="shedman migrate"
+ROOT=${SHEDOS_MIGRATE_ROOT:-/}
+# Strip a trailing slash so $ROOT/etc/... renders without doubling.
+ROOT=${ROOT%/}
+
+if [[ "${1:-}" == "--help-summary" ]]; then
+    echo "retrofit a pre-packaging ShedOS install onto the packaged model"
+    exit 0
+fi
+
+if [[ "${1:-}" == "--complete-bash" || "${1:-}" == "--complete-zsh" ]]; then
+    printf '%s\n' --yes --detect --dry-run --help
+    exit 0
+fi
+
+usage() {
+    cat <<EOF
+Usage: $PROG [--detect] [--dry-run] [--yes] [--help]
+
+Retrofit a pre-packaging ShedOS install onto the packaged model.
+Idempotent — runs on packaged installs are a fast no-op.
+
+Options:
+  --detect    Print the detected state (packaged | legacy) and exit 0.
+  --dry-run   Print the migration plan and exit. (default)
+  -y, --yes   Execute the migration.
+  -h, --help  This message.
+EOF
+}
+
+log()  { printf '%s: %s\n' "$PROG" "$*"; }
+warn() { printf '%s: %s\n' "$PROG" "$*" >&2; }
+die()  { warn "$*"; exit 2; }
+
+# ---------------------------------------------------------------------------
+# Detection
+# ---------------------------------------------------------------------------
+
+detect_state() {
+    # Two signals: the shedos-system package must be installed via
+    # pacman AND /etc/pacman.conf must carry the [shedos] fence block.
+    # Either missing → "legacy".
+    local conf="$ROOT/etc/pacman.conf"
+    local has_pkg=0 has_fence=0
+    if pacman -Qq shedos-system >/dev/null 2>&1; then
+        has_pkg=1
+    fi
+    if [[ -f $conf ]] && grep -q '^# >>> shedos <<<' "$conf"; then
+        has_fence=1
+    fi
+    if (( has_pkg && has_fence )); then
+        echo packaged
+    else
+        echo legacy
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# Mutations — each function is idempotent and honors $dry_run.
+# ---------------------------------------------------------------------------
+
+_snapshot() {
+    local dry=$1
+    if (( dry )); then
+        log "(dry-run) snapper create --type single --description 'pre-migrate-to-packaged'"
+        return 0
+    fi
+    if ! command -v snapper >/dev/null 2>&1; then
+        warn "snapper not installed; skipping safety snapshot"
+        return 0
+    fi
+    snapper -c root create --type single \
+        --description 'pre-migrate-to-packaged' \
+        --userdata 'source=shedman-migrate' \
+        >/dev/null 2>&1 || warn "snapper snapshot failed (continuing)"
+    log "safety snapshot taken"
+}
+
+_fence_pacman_conf() {
+    local dry=$1
+    local conf="$ROOT/etc/pacman.conf"
+    if [[ ! -f $conf ]]; then
+        die "$conf not found"
+    fi
+    if grep -q '^# >>> shedos <<<' "$conf"; then
+        log "[shedos] fence already present; skipping"
+        return 0
+    fi
+    if (( dry )); then
+        log "(dry-run) append [shedos] fence block to $conf"
+        return 0
+    fi
+    cat >>"$conf" <<'EOF'
+
+# >>> shedos <<<
+# Managed by shedos-system — do not edit between these markers.
+# Run `pacman -R shedos-system` to remove automatically.
+[shedos]
+SigLevel = Required DatabaseRequired
+Server = https://repo.shedos.org/$arch
+# <<< shedos >>>
+EOF
+    log "appended [shedos] fence to $conf"
+}
+
+_pacman_install_meta() {
+    local dry=$1
+    if (( dry )); then
+        log "(dry-run) pacman -Syu --noconfirm shedos-meta"
+        return 0
+    fi
+    pacman -Syu --noconfirm shedos-meta \
+        || die "pacman -Syu shedos-meta failed"
+    log "installed shedos-meta"
+}
+
+_seed_sync_state() {
+    local dry=$1
+    if (( dry )); then
+        log "(dry-run) shedman config --sync --yes"
+        return 0
+    fi
+    if ! command -v shedman >/dev/null 2>&1; then
+        warn "shedman not on PATH (expected after shedos-meta install)"
+        return 1
+    fi
+    shedman config --sync --yes \
+        || warn "shedman config --sync exited non-zero (continuing)"
+    log "seeded dotfile sync state"
+}
+
+_verify_with_doctor() {
+    local dry=$1
+    if (( dry )); then
+        log "(dry-run) shedman doctor"
+        return 0
+    fi
+    if ! command -v shedman >/dev/null 2>&1; then
+        warn "shedman not available; skipping doctor check"
+        return 0
+    fi
+    if shedman doctor >/dev/null 2>&1; then
+        log "shedman doctor: aligned"
+    else
+        warn "shedman doctor reports drift; investigate with 'shedman doctor --diff'"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# Arg parse
+# ---------------------------------------------------------------------------
+
+mode=dry-run
+detect_only=0
+while (( $# )); do
+    case $1 in
+        --detect)    detect_only=1 ;;
+        --dry-run)   mode=dry-run ;;
+        -y|--yes)    mode=yes ;;
+        -h|--help)   usage; exit 0 ;;
+        *)           die "unknown option: $1" ;;
+    esac
+    shift
+done
+
+state=$(detect_state)
+
+if (( detect_only )); then
+    echo "$state"
+    exit 0
+fi
+
+if [[ $state == packaged ]]; then
+    log "already packaged — nothing to do."
+    exit 0
+fi
+
+# ---------------------------------------------------------------------------
+# Plan + execute
+# ---------------------------------------------------------------------------
+
+dry=0
+if [[ $mode == dry-run ]]; then
+    dry=1
+    log "detected legacy (pre-packaging) install"
+    log "plan:"
+else
+    log "detected legacy install; executing migration"
+fi
+
+_snapshot "$dry"
+_fence_pacman_conf "$dry"
+_pacman_install_meta "$dry"
+_seed_sync_state "$dry"
+_verify_with_doctor "$dry"
+
+if (( dry )); then
+    log "dry-run complete. Re-run with --yes to execute."
+else
+    log "migration complete. You may want to reboot."
+fi
+exit 0

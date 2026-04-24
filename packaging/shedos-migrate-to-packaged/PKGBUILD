@@ -1,0 +1,40 @@
+# Maintainer: ShedOS <https://github.com/theshedman/shedos>
+#
+# One-shot retrofit tool for installs dated before the April 2026
+# packaging cut-over (commit 2148ff0). Such installs were laid down by
+# the ISO's archiso payload as plain dotfiles, with no shedos-*
+# packages tracked by pacman. Running `shedman migrate` (or the legacy
+# `shedos-migrate-to-packaged` shim) bootstraps the [shedos] repo,
+# installs shedos-meta, and seeds the sync manifest so subsequent
+# `shedman update` runs work just like on a fresh install.
+#
+# Packaged installs detect "already packaged" on entry and exit 0, so
+# the tool is idempotent.
+
+pkgname=shedos-migrate-to-packaged
+pkgver=2026.04.23
+pkgrel=1
+pkgdesc='One-shot retrofit: bootstrap a pre-packaging ShedOS install onto the packaged model'
+arch=('any')
+url='https://github.com/theshedman/shedos'
+license=('GPL-3.0-or-later')
+depends=(
+    'bash'
+    'pacman-contrib'
+    'snapper'
+    'coreutils'
+)
+
+package() {
+    cd "$startdir"
+
+    # Subcommand — invoked as `shedman migrate`.
+    install -Dm755 tree/usr/libexec/shedman/migrate \
+        "$pkgdir/usr/libexec/shedman/migrate"
+
+    # Silent back-compat shim at the legacy name, in case anyone ever
+    # scripted against `shedos-migrate-to-packaged` on the old roadmap
+    # placeholder.
+    install -Dm755 tree/usr/bin/shedos-migrate-to-packaged \
+        "$pkgdir/usr/bin/shedos-migrate-to-packaged"
+}

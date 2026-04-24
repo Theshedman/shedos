@@ -1,0 +1,11 @@
+#!/bin/sh
+# Stub: respond to `pacman -Qq shedos-system` as if the package is
+# installed. Every other invocation also succeeds silently.
+printf '%s: pacman %s\n' "$(date -u +%T)" "$*" >>"${PROBE_LOG:-/dev/null}"
+case "$1 $2" in
+    "-Qq shedos-system")
+        echo "shedos-system"
+        exit 0
+        ;;
+esac
+exit 0

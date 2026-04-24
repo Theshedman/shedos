@@ -478,6 +478,7 @@ optdepends=(
     'slack-desktop: proprietary AUR package; install via `shedman install` / yay'
     'ttf-ms-fonts: proprietary AUR package; install via `shedman install` / yay'
     'visual-studio-code-bin: proprietary AUR package; install via `shedman install` / yay'
+    'shedos-migrate-to-packaged: one-shot retrofit for pre-April-2026 installs; not needed on fresh installs'
 )
 
 package() {

@@ -24,7 +24,7 @@ YELLOW := \033[0;33m
 RED := \033[0;31m
 NC := \033[0m
 
-.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages test-review-configs test-sync-configs test-check-health test-tui-logs test-tui-history test-apply test-doctor test-shedman test-status test-completions
+.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages test-review-configs test-sync-configs test-check-health test-tui-logs test-tui-history test-apply test-doctor test-shedman test-status test-completions test-migrate
 
 all: iso
 
@@ -51,6 +51,7 @@ help:
 	@echo "  test-shedman       Run shedman dispatcher + shim parity tests"
 	@echo "  test-status        Run shedman status aggregated-dashboard tests"
 	@echo "  test-completions   Run shedman bash + zsh completion tests"
+	@echo "  test-migrate       Run shedman migrate retrofit-tool tests"
 	@echo "  check-deps         Check build dependencies"
 	@echo "  prepare            Prepare build environment"
 	@echo "  generate-packages  Regenerate archiso/packages.x86_64 from packages/"
@@ -326,6 +327,10 @@ test-status:
 test-completions:
 	@echo -e "$(GREEN)Running shedman bash + zsh completion tests...$(NC)"
 	@bash $(TEST_DIR)/completions/run.sh
+
+test-migrate:
+	@echo -e "$(GREEN)Running shedman migrate retrofit-tool tests...$(NC)"
+	@bash $(TEST_DIR)/migrate/run.sh
 
 dev-install:
 	@echo -e "$(GREEN)Installing development dependencies...$(NC)"

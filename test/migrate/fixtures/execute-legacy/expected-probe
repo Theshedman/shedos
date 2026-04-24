@@ -1,0 +1,5 @@
+pacman -Qq shedos-system
+snapper -c root create --type single --description pre-migrate-to-packaged --userdata source=shedman-migrate
+pacman -Syu --noconfirm shedos-meta
+shedman config --sync --yes
+shedman doctor
