@@ -13,6 +13,10 @@ Native Arch packages that make up a ShedOS installation. Published to
 | `shedos-meta` | Zero-file metapackage. `depends=` pulls in every `shedos-*` package plus every Arch / AUR package a default install needs. |
 | `shedos-migrate-to-packaged` | One-shot migration helper for users on pre-packaged ShedOS installs. |
 
+For the user-facing CLI reference (every `shedman` subcommand + flags,
+plus pacman / yay cheatsheets) see
+[shedos.org/docs/commands](https://shedos.org/docs/commands).
+
 ## Versioning
 
 Every `shedos-*` PKGBUILD's `pkgver` is driven from the root `VERSION`

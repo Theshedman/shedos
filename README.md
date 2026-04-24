@@ -60,6 +60,22 @@ pacman's `.pacnew`).
 
 No ISO reinstall is required to move between releases.
 
+## 🧰 Commands
+
+Every ShedOS utility is a subcommand of `shedman`. The headline set:
+
+| Command | Does |
+|---|---|
+| `shedman` | List every subcommand with summaries. |
+| `shedman update` | Interactive upgrade (`pacman -Syu` + `yay -Sua` + config sync, bracketed by a snapper snapshot pair). |
+| `shedman config --sync` | 3-way merge packaged defaults into `$HOME`; conflicts land as `.shedosnew`. |
+| `shedman status` | One-screen dashboard (updates, conflicts, health, doctor). |
+| `shedman rollback -l` | Show recent snapper snapshots to roll back to. |
+| `shedman help <cmd>` | Full usage for any subcommand. |
+
+For the full CLI reference (every flag, short aliases, pacman/yay
+cheatsheets) see [shedos.org/docs/commands](https://shedos.org/docs/commands).
+
 ## 🏗️ Building from source
 
 ```bash

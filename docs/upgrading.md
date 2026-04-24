@@ -252,22 +252,10 @@ never wake up to a broken editor.
 
 ## Commands reference
 
-| Command | Purpose |
-|---|---|
-| `shedman update` | Interactive upgrade flow (pacman + yay + config sync). |
-| `shedman update --yes` | Unattended variant. Conflicts still produce `.shedosnew`, never overwrite. |
-| `shedman updates` | Waybar JSON emitter. Run manually with `--refresh-waybar` to force an immediate poll. |
-| `shedman config --sync` | Print a plan and interactively apply 3-way merge. |
-| `shedman config --sync --dry-run` | Print the plan, change nothing. |
-| `shedman config --sync --yes` | Apply the plan without the interactive prompt (same conflict semantics). |
-| `shedman config --sync --rebuild-manifest` | Reset last-seen state to current defaults. Use after manually resolving conflicts. Reports any leftover `.shedosnew`/`.shedosbak`. |
-| `shedman config --review` | IDE-style merge TUI for `.shedosnew` conflicts. Per-hunk y/t/b/B/x/u, whole-file A/T, atomic save, draft/resume. |
-| `shedman config --review --list` | Tab-separated machine-readable conflict list. |
-| `shedman config --review --file PATH` | Open merge UI on one file (path relative to `$HOME`). |
-| `shedman update --list-snapshots` | Print recent snapper snapshots (rollback candidates). |
-| `shedman update --rollback [N]` | Roll back the root subvolume to snapshot N. Delegates to `shedman rollback`. Reboot required. |
-| `sudo shedman rollback <N>` | Low-level subvolume swap: rename `@` to `@.rollback-<ts>`, snapshot N to the new `@`. Root-only. |
-| `sudo shedman rollback --undo` | Promote the most recent `@.rollback-<ts>` back to `@`. |
+See the [commands reference on shedos.org](https://shedos.org/docs/commands)
+for the full `shedman` surface — every subcommand, every flag (long
+and short), plus pacman + yay cheatsheets. The sections below focus on
+the upgrade *flow*; the exhaustive CLI reference lives on the site.
 
 ## Rollback
 

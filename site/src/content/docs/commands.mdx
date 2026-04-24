@@ -1,0 +1,212 @@
+---
+title: Commands
+description: CLI reference — shedman, pacman, and yay on ShedOS.
+order: 40
+section: Reference
+---
+import CalloutBox from "~/components/CalloutBox.astro";
+
+Every ShedOS tool is reachable as a subcommand of `shedman`. Long flags
+are the canonical spelling; short flags (`-y`, `-n`, `-d`, …) are
+aliases you can use wherever they're listed below.
+
+<CalloutBox kind="note">
+Run `shedman` with no arguments to list every installed subcommand
+with a one-line summary. `shedman help <cmd>` and `shedman <cmd>
+--help` both show a subcommand's full usage.
+</CalloutBox>
+
+## Discovery
+
+| Command | Does |
+|---|---|
+| `shedman` | List every subcommand with one-line summaries. |
+| `shedman help` | Same as above. |
+| `shedman help <cmd>` | Show `<cmd>`'s `--help`. |
+| `shedman <cmd> --help` | Same as above. |
+| `shedman version` | Print the installed `shedos-system` package version. |
+
+Shell tab-completion is installed for zsh and bash. In zsh:
+
+```sh
+shedman <tab>        # lists subcommands
+shedman update -<tab>  # lists short + long flags
+```
+
+Bash requires the `bash-completion` optdepend; zsh picks up
+`/usr/share/zsh/site-functions/_shedman` automatically.
+
+## Daily upgrades
+
+`shedman update` is the primary upgrade command. It wraps `pacman -Syu`,
+`yay -Sua` (if installed), and `shedman config --sync` into one
+interactive flow bracketed by a snapper pre/post snapshot pair.
+
+| Command | Does |
+|---|---|
+| `shedman update` | Interactive: list pending updates, prompt `y/N`, run pacman → yay → config sync. |
+| `shedman update -y` / `--yes` | Unattended: threads `--noconfirm` through pacman/yay and `--yes` through config sync. Conflicts still drop `.shedosnew` — never silently overwrite. |
+| `shedman update -l` / `--list-snapshots` | Print recent snapper snapshots (rollback candidates). |
+| `shedman update -r <N>` / `--rollback <N>` | Roll back to snapshot `N`. Reboot required. |
+| `shedman update --history` | Open the upgrade-history TUI. |
+
+See [Upgrading](/docs/upgrading) for the full flow, notification model,
+and conflict semantics.
+
+## Dotfile sync (`shedman config`)
+
+Per-file 3-way merge between pristine defaults (shipped by packages),
+your live `$HOME` copy, and the last-seen manifest. Conflicts land as
+`<file>.shedosnew` — the tool never silently overwrites your edits.
+
+| Command | Does |
+|---|---|
+| `shedman config -s` / `--sync` | Apply the 3-way merge interactively; prints a plan, asks `y/N`. |
+| `shedman config -s -y` / `--sync --yes` | Non-interactive sync. Still drops `.shedosnew` for genuine conflicts. |
+| `shedman config -s -n` / `--sync --dry-run` | Print what would change, do nothing. |
+| `shedman config -s --rebuild-manifest` | Re-hash `$HOME` against current defaults — effectively "trust me, I'm aligned". |
+| `shedman config -r` / `--review` | Open the IDE-style merge TUI for unresolved `.shedosnew` files. |
+| `shedman config -r --file PATH` | Open the TUI directly on one file. |
+
+## Rollback (`shedman rollback`)
+
+Low-level subvolume swap. Usually you want `shedman update -r <N>`;
+this is the tool that it delegates to when you need the raw controls
+or a reboot without a preceding upgrade.
+
+| Command | Does |
+|---|---|
+| `shedman rollback <N>` | Rename `@` to `@.rollback-<ts>`, snapshot `<N>` into a fresh `@`. Reboot required. |
+| `shedman rollback -l` / `--list` | Show recent snapper snapshots and exit. |
+| `shedman rollback -u` / `--undo` | Promote the most recent `@.rollback-<ts>` back to `@`. |
+| `shedman rollback -y` / `--yes` | Skip the confirmation prompt. |
+| `shedman rollback -k` / `--keep-current` | Pair with `--undo`: keep the prior backup around. |
+
+## Observability
+
+Four waybar-backed signals. Each command prints human-readable text by
+default; click the matching waybar pill for the same action.
+
+| Command | Does |
+|---|---|
+| `shedman updates` | Pending pacman + AUR update count. |
+| `shedman conflicts` | Unresolved `.shedosnew` count. |
+| `shedman health` | Disk / memory / battery / CPU-temp summary. |
+| `shedman doctor` | Drift between `/etc/shedos/system.toml` and live state. |
+| `shedman status` | **All four signals plus a verdict line**, in one screen. |
+| `shedman status -j` / `--json` | Aggregated JSON payload (schema-versioned). |
+
+<CalloutBox kind="info">
+`shedman status --json` is the recommended integration point for
+monitoring scripts — it passes each underlying waybar payload through
+verbatim under its signal key, plus a top-level `summary` section.
+</CalloutBox>
+
+## Declarative state (`shedman apply` / `shedman doctor`)
+
+`/etc/shedos/system.toml` is the source of truth for systemd units,
+drop-ins, pacman repos, snapper configs, and the Postgres service
+shape. `shedman apply` reconciles live state *to* the TOML;
+`shedman doctor` is the read-only drift detector.
+
+| Command | Does |
+|---|---|
+| `shedman apply` | Plan, prompt, apply. |
+| `shedman apply -n` / `--dry-run` | Plan and exit. |
+| `shedman apply -y` / `--yes` | Apply without prompting. |
+| `shedman apply -c PATH` / `--config PATH` | Use a non-default TOML. |
+| `shedman apply --validate` | Parse and validate the TOML; exit 0 if OK, 2 on schema error. |
+| `shedman doctor` | Summarize drift (default human text). |
+| `shedman doctor -d` / `--diff` | Unified diff for every drift entry. |
+| `shedman doctor -j` / `--json` | JSON drift report. |
+| `shedman doctor -f` / `--fix` | Delegate to `shedman apply --yes`. |
+
+<CalloutBox kind="warn">
+`shedman apply` is intentionally **not** timer-driven — surprise
+reconciles are hostile. `shedman doctor` runs on a 6-hour user timer
+and pings the waybar pill + mako if drift appears.
+</CalloutBox>
+
+## Logs & history
+
+| Command | Does |
+|---|---|
+| `shedman logs` | Textual journalctl browser (three-pane TUI). |
+| `shedman update --history` | Snapper pre/post pair browser; `r` invokes rollback. |
+
+## Installation helpers
+
+| Command | Does |
+|---|---|
+| `shedman install` | Interactive proprietary-apps installer (VS Code, Chrome, Slack, …). |
+| `shedman install -f` / `--force` | Bypass "already installed" guards. |
+| `shedman install -n` / `--dry-run` | Print what would run, change nothing. |
+| `shedman welcome` | First-boot welcome flow (git identity, Calamares follow-up). |
+| `shedman migrate --detect` | Print `packaged` or `legacy` based on current state. |
+| `shedman migrate -n` / `--dry-run` | Print the retrofit plan (default). |
+| `shedman migrate -y` / `--yes` | Execute retrofit onto pre-April-2026 installs. |
+
+<CalloutBox kind="note">
+`shedman migrate` is only relevant on systems installed from an ISO
+dated before April 2026. Fresh installs see "already packaged" and
+exit 0.
+</CalloutBox>
+
+## pacman cheatsheet
+
+`shedman update` wraps `pacman -Syu` for you, but the raw commands are
+still useful for targeted work. These are the invocations a ShedOS
+user actually types:
+
+| Command | Does |
+|---|---|
+| `sudo pacman -Syu` | System upgrade (skips the config-sync step `shedman update` runs). |
+| `pacman -Ss <term>` | Search the repos for packages matching `<term>`. |
+| `sudo pacman -S <pkg>` | Install `<pkg>`. |
+| `sudo pacman -Rns <pkg>` | Remove `<pkg>` with its config + orphaned deps. |
+| `pacman -Qi <pkg>` | Inspect installed-package metadata. |
+| `pacman -Qs <term>` | Search installed packages. |
+| `pacman -Qo <path>` | Which package owns `<path>`? |
+| `pacman -Qdt` | List orphaned dependencies (candidates for removal). |
+| `sudo pacman -Fy` | Refresh the file database. |
+| `pacman -F <file>` | Which (possibly uninstalled) package ships `<file>`? |
+| `sudo pacman -Scc` | Clean the package cache (reclaim disk). |
+
+## yay cheatsheet (AUR)
+
+`shedman update` already runs `yay -Sua` after `pacman -Syu`. The raw
+invocations for ad-hoc AUR work:
+
+| Command | Does |
+|---|---|
+| `yay -Sua` | AUR-only upgrade (skips repo packages). |
+| `yay -Ss <term>` | Search AUR + repos. |
+| `yay -S <pkg>` | Install from AUR (prompts, builds, installs). |
+| `yay -Rns <pkg>` | Remove an AUR package. |
+| `yay -Yc` | Clean orphan + unneeded AUR deps. |
+| `yay -Ps` | Print AUR/pacman stats. |
+
+<CalloutBox kind="info">
+Proprietary AUR packages (VS Code, Chrome, Slack, Obsidian, Postman)
+are listed in `shedos-meta`'s `optdepends=()` but never installed by
+default — `shedman install` is the curated path, `yay -S <pkg>` the
+manual one.
+</CalloutBox>
+
+## Flag combining
+
+Python-backed subcommands (`apply`, `doctor`, `status`, `_config-review`,
+`logs`, `upgrade-history`) accept combined shorts:
+
+```sh
+shedman apply -yn        # same as --yes --dry-run
+shedman doctor -df       # --diff --fix
+```
+
+Bash-backed subcommands (`update`, `rollback`, `config`, `_config-sync`,
+`services`, `install`, `migrate`) don't — pass them separately:
+
+```sh
+shedman update -y -l     # OK
+shedman update -yl       # → "unknown option: -yl"
+```

@@ -147,6 +147,20 @@ and completion/docs catch-up).
 | B#4 | `shedos-migrate-to-packaged` — fill the declared-but-empty package: detect pre-packaging state, snapper snapshot, fence `/etc/pacman.conf`, `pacman -Syu shedos-meta`, seed sync manifest, `shedman doctor` verify | ✅ Shipped |
 | B#5 | Docs migration — every `shedos-*` reference in `docs/`, `website/`, `README.md` rewrites to `shedman <cmd>` form | ✅ Shipped |
 
+### Post-Phase-5 polish (landed)
+
+- **Short-flag coverage.** Conventional single-letter aliases added to
+  every user-typed `shedman` subcommand flag (`-y`, `-n`, `-c`, `-j`,
+  `-d`, `-f`, `-l`, `-u`, `-k`, `-s`, `-r`). Machine-facing flags
+  (`--waybar`, `--tick`, etc.) stay long-only since systemd and waybar
+  invoke them by name. Completions updated; new `T5b` asserts shorts
+  are emitted by `--complete-bash` for every opt-in subcommand.
+- **Commands reference page.** `site/src/content/docs/commands.mdx` —
+  every `shedman` subcommand, short + long flag, plus pacman and yay
+  cheatsheets. Linked from README.md, packaging/README.md, and
+  getting-started.mdx; replaces the exhaustive table at the bottom of
+  `docs/upgrading.md` (which now points at the site).
+
 ---
 
 ## Conventions
