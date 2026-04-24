@@ -118,14 +118,11 @@ differentiator. Each bucket is independently shippable.
   hostile. `shedman doctor` runs on a timer to *detect* drift and nudge,
   mirroring `shedman updates`.
 
-### Deferred to Phase 5 (noted up front)
+### Deferred to later phases (resolved in Phase 6A)
 
-- Keyring trust in `system.toml` (destructive on uninstall — needs a safer
-  protocol).
-- Plymouth theme in `system.toml` (mkinitcpio regen side-effect — scope
-  pollution).
-- Kernel parameters, mount points, user accounts, firewall rules — each a
-  future schema section, not v1 scope.
+The Tier 3 schema candidates flagged here — keyring trust, kernel
+cmdline, mounts, user accounts, firewall rules — all land in
+**Phase 6A** below. Plymouth stays deferred indefinitely.
 
 ---
 
@@ -160,6 +157,70 @@ and completion/docs catch-up).
   cheatsheets. Linked from README.md, packaging/README.md, and
   getting-started.mdx; replaces the exhaustive table at the bottom of
   `docs/upgrading.md` (which now points at the site).
+
+---
+
+## Phase 6 — Declarative state expansion · **In progress**
+
+Phase 4 established the TOML reconciler over five domains
+(`systemd.{system,user}`, `drop-ins`, `snapper`, `pacman.repos`,
+`services.postgresql`). Phase 6 extends that surface and ties up the
+last imperative loose ends — firewall, kernel cmdline, mounts, users,
+keyring trust — then closes out the two longer-deferred items
+(canary channel, polish bucket).
+
+Sub-phases ship in this order:
+
+- **6A — Tier 3 declarative schema.** Five new TOML sections
+  (`[network.firewall]`, `[security.keyring]`, `[fs.mounts]`,
+  `[kernel.cmdline]`, `[[users]]` + `[[groups]]`). Every section is
+  bidirectional: edits via the raw tool (`ufw allow`, `pacman-key
+  --lsign-key`, `usermod -aG`, `vi /etc/fstab`, edit `limine.conf`)
+  get adopted into `system.toml` on the next `shedman apply`.
+  Install-time baseline state is protected — Calamares,
+  `trust-keys.sh`, and pacman scriptlets create state we never risk
+  destroying.
+- **6C — Polish bucket.** Man pages, third-party plugin doc,
+  fish completion, `shedman status --watch`. Lower-stakes
+  refinement once the surface is settled.
+- **6B — `[shedos-testing]` canary channel.** Phase 3-deferred. CI
+  publish path to `r2:shedos-repo/x86_64-testing/`, promote-on-green
+  rule, `shedman update --channel testing` client opt-in.
+
+### 6A — Tier 3 declarative schema
+
+The bidirectional model is described in
+`~/.claude/plans/let-s-deeply-and-carefully-purring-twilight.md`. Key
+properties:
+
+- TOML is the persisted canonical form.
+- Per-bucket safety posture: `reconcile` (firewall, mounts, cmdline)
+  vs `warn-don't-remove` (keyring) vs `warn-and-preserve-membership`
+  (users/groups).
+- Install-time state is baseline-snapshotted on first apply and
+  protected forever.
+
+| # | Deliverable | Status |
+|---|---|---|
+| B#1 | `[network.firewall]` reconciler — declarative ufw with full grammar; reconcile posture; bidirectional adoption. Lands the cross-cutting scaffolding (python-tomlkit dep, three-way merge, baseline helpers, env overrides). | ⏳ Pending |
+| B#2 | `[security.keyring]` reconciler — `pacman-key --lsign-key` wrapper; warn-don't-remove posture; baseline = shedos's install-time trust chain. | ⏳ Pending |
+| B#3 | `[fs.mounts]` reconciler — declarative `/etc/fstab` entries with marker fence; baseline-protects Calamares-shipped lines; auto-named adoption. | ⏳ Pending |
+| B#4 | `[kernel.cmdline]` reconciler — Limine append tokens; baseline = install-time cmdline; reboot-required marker on every Change. | ⏳ Pending |
+| B#5 | `[[users]]` + `[[groups]]` — additive only; never `userdel`/`groupdel`; warn on TOML removal of any membership. | ⏳ Pending |
+
+### 6A's deferred (carried forward from Phase 4 + sharpened)
+
+- **Plymouth theme in `system.toml`** — mkinitcpio regen side-effect
+  on every change still makes the cost/benefit lopsided.
+- **User account deletion** — too destructive for any declarative
+  layer; stays an explicit `userdel` gesture.
+- **Keyring key revocation** — `warn-don't-remove` is the v1 answer;
+  revocation requires a safer protocol than declarative omission.
+- **fstab activation without reboot** — deferred `activate = true`
+  key on `[fs.mounts]`; revisit when there's a concrete use case.
+- **Per-user systemd `enable`/`disable`** — current
+  `[systemd.user]` is `--global`; future
+  `[systemd.user.<username>]` needs its own design pass.
 
 ---
 
