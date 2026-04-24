@@ -5,8 +5,8 @@ post_install() {
 
 ShedOS Hyprland profile installed.
 
-For the current user: run `shedos-sync-configs` to seed the defaults into
-your $HOME (or re-run after upgrades — shedos-update already does this for
+For the current user: run `shedman config --sync` to seed the defaults into
+your $HOME (or re-run after upgrades — `shedman update` already does this for
 you). Files you've edited are never overwritten; conflicts land as
 .shedosnew alongside, mirroring pacman's .pacnew convention.
 
@@ -15,6 +15,6 @@ EOF
 
 post_upgrade() {
     # Nothing system-scoped to do — the sync into $HOME is per-user and runs
-    # through shedos-sync-configs / shedos-update.
+    # through `shedman config --sync` / `shedman update`.
     :
 }

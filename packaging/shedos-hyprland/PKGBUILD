@@ -7,11 +7,11 @@
 #
 # Dual-installed: everything under /etc/skel/ is mirrored byte-for-byte at
 # /usr/share/shedos/hyprland/defaults/. The mirror is the pristine source
-# shedos-sync-configs compares against for its 3-way merge.
+# `shedman config --sync` compares against for its 3-way merge.
 
 pkgname=shedos-hyprland
 pkgver=2026.04.23
-pkgrel=1
+pkgrel=2
 pkgdesc='ShedOS Hyprland desktop profile (dotfiles + DE helpers)'
 arch=('any')
 url='https://github.com/theshedman/shedos'
@@ -39,7 +39,7 @@ optdepends=(
     'pavucontrol: volume mixer launched from waybar pulseaudio icon'
     'blueman: bluetooth manager launched from waybar'
     'btop: system monitor launched from waybar cpu icon'
-    'yad: dialog used by shedos-welcome'
+    'yad: dialog used by `shedman welcome`'
 )
 
 package() {
@@ -50,15 +50,23 @@ package() {
 
     # /usr/share/shedos/hyprland/defaults/ — pristine mirror for sync tool.
     # Identical to what we put in /etc/skel/, rooted at the same layout the
-    # user sees (so relpath logic in shedos-sync-configs is straightforward).
+    # user sees (so relpath logic in `shedman config --sync` is straightforward).
     install -d "$pkgdir/usr/share/shedos/hyprland/defaults"
     cp -a tree/etc/skel/. "$pkgdir/usr/share/shedos/hyprland/defaults/"
 
-    # DE-specific helpers in /usr/bin.
+    # DE-specific shedman subcommands: `shedman launcher` (Walker) and
+    # `shedman power` (shutdown/reboot/logout confirm).
+    install -Dm755 tree/usr/libexec/shedman/launcher \
+        "$pkgdir/usr/libexec/shedman/launcher"
+    install -Dm755 tree/usr/libexec/shedman/power \
+        "$pkgdir/usr/libexec/shedman/power"
+
+    # Silent back-compat shims for the old /usr/bin/shedos-* names.
     install -Dm755 tree/usr/bin/shedos-launch-walker \
         "$pkgdir/usr/bin/shedos-launch-walker"
     install -Dm755 tree/usr/bin/shedos-power-confirm \
         "$pkgdir/usr/bin/shedos-power-confirm"
+
     install -Dm755 tree/usr/bin/toggle-hyprsunset.sh \
         "$pkgdir/usr/bin/toggle-hyprsunset.sh"
 }

@@ -39,6 +39,8 @@ Make `shedos-update` feel first-class: unattended, transparent, conflict-aware.
 | B#5 | Release cadence: weekly PR + hotfix/RC hatches — [proposal](cadence-proposal.md), [flow](releasing.md) | ✅ Shipped |
 | B#6 | Public website at [shedos.org](https://shedos.org) (Astro + Tailwind, GitHub Pages) | ✅ Shipped |
 | B#7 | First-boot proprietary-apps installer (`shedos-apps-installer`) — opt-in checklist for VS Code, Chrome, Slack, etc. | ✅ Shipped |
+| B#8 | File-level `$HOME/.config/shedos/sync-exclude` matchers — drop a glob list and `shedos-sync-configs` will never seed, auto-update, or flag those files. Template at `/usr/share/shedos/sync-exclude.example`. | ✅ Shipped |
+| B#9 | Auto-generated GitHub Release notes — every tag push groups Conventional Commits since the previous tag into feat/fix/perf/docs/ci/chore sections and stamps a compare-link in the release body. | ✅ Shipped |
 
 All Phase 2 B#2 deferred polish items (`/` filter, pan/wrap, signal-driven
 draft save, excluded-path surfacing, `$HOME` read-only guard, Unicode-aware
@@ -86,7 +88,7 @@ No concrete trigger today.
 
 ---
 
-## Phase 4 — Declarative system state + operational awareness · **In progress**
+## Phase 4 — Declarative system state + operational awareness · **Shipped**
 
 Two parallel tracks. Track B (observability) ships first because it reuses
 existing patterns and gives users visible wins early; Track A (declarative
@@ -127,21 +129,23 @@ differentiator. Each bucket is independently shippable.
 
 ---
 
-## Phase 5+ — Unscoped
+## Phase 5 — Unified `shedman` CLI + migration closure · **In progress**
 
-Placeholder for ideas that have been mentioned but not committed to a phase:
-`shedos-migrate-to-packaged` for pre-packaging installs.
+The `shedos-*` command surface grew to 17 top-level binaries across Phase
+1-4. Phase 5 collapses that into a single Git-style dispatcher: users
+type `shedman update`, `shedman apply`, `shedman doctor`, etc., with
+silent shims at the old `/usr/bin/shedos-*` paths preserving muscle
+memory and third-party scripts. This phase also closes the two
+open-ended items from the old Phase 5+ placeholder (`shedos-migrate-to-packaged`
+and completion/docs catch-up).
 
-**Landed as unscoped follow-ups:**
-
-- File-level `$HOME/.config/shedos/sync-exclude` matchers (April 2026,
-  `shedos-system` pkgrel=4): drop a glob list at that path and ShedOS will
-  never seed, auto-update, or flag those files. Example template at
-  `/usr/share/shedos/sync-exclude.example`.
-- Auto-generated GitHub Release notes (April 2026, `build-iso.yml`): every
-  tag push groups its Conventional Commits since the previous tag into
-  feat/fix/perf/docs/ci/chore sections and stamps a compare-link in the
-  release body. No manual release-note maintenance.
+| # | Deliverable | Status |
+|---|---|---|
+| B#1 | `shedman` dispatcher + rename all 17 `shedos-*` commands — dispatcher at `/usr/bin/shedman`, subcommands under `/usr/libexec/shedman/`, silent back-compat shims at old paths; all waybar/hypr/systemd/desktop callers flipped in one commit | ⏳ Pending |
+| B#2 | `shedman status` unified dashboard — one command aggregating updates/conflicts/health/doctor with text + `--json` output | ⏳ Pending |
+| B#3 | zsh + bash completions — `_shedman` + `/etc/bash_completion.d/shedman` with runtime subcommand discovery; opt-in per-subcommand flag completions | ⏳ Pending |
+| B#4 | `shedos-migrate-to-packaged` — fill the declared-but-empty package: detect pre-packaging state, snapper snapshot, fence `/etc/pacman.conf`, `pacman -Syu shedos-meta`, seed sync manifest, `shedman doctor` verify | ⏳ Pending |
+| B#5 | Docs migration — every `shedos-*` reference in `docs/`, `website/`, `README.md` rewrites to `shedman <cmd>` form | ⏳ Pending |
 
 ---
 

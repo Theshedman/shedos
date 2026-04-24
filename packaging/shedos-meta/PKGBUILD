@@ -472,12 +472,12 @@ depends=(
     'zsh-theme-powerlevel10k-git'
 )
 optdepends=(
-    'google-chrome: proprietary AUR package; install via shedos-welcome / yay'
-    'obsidian-bin: proprietary AUR package; install via shedos-welcome / yay'
-    'postman-bin: proprietary AUR package; install via shedos-welcome / yay'
-    'slack-desktop: proprietary AUR package; install via shedos-welcome / yay'
-    'ttf-ms-fonts: proprietary AUR package; install via shedos-welcome / yay'
-    'visual-studio-code-bin: proprietary AUR package; install via shedos-welcome / yay'
+    'google-chrome: proprietary AUR package; install via `shedman install` / yay'
+    'obsidian-bin: proprietary AUR package; install via `shedman install` / yay'
+    'postman-bin: proprietary AUR package; install via `shedman install` / yay'
+    'slack-desktop: proprietary AUR package; install via `shedman install` / yay'
+    'ttf-ms-fonts: proprietary AUR package; install via `shedman install` / yay'
+    'visual-studio-code-bin: proprietary AUR package; install via `shedman install` / yay'
 )
 
 package() {

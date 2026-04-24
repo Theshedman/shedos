@@ -24,7 +24,7 @@ YELLOW := \033[0;33m
 RED := \033[0;31m
 NC := \033[0m
 
-.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages test-review-configs test-sync-configs test-check-health test-tui-logs test-tui-history test-apply test-doctor
+.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages test-review-configs test-sync-configs test-check-health test-tui-logs test-tui-history test-apply test-doctor test-shedman
 
 all: iso
 
@@ -48,6 +48,7 @@ help:
 	@echo "  test-tui-history   Run shedos-upgrade-history pilot tests"
 	@echo "  test-apply         Run shedos-apply fixture tests"
 	@echo "  test-doctor        Run shedos-doctor pilot tests"
+	@echo "  test-shedman       Run shedman dispatcher + shim parity tests"
 	@echo "  check-deps         Check build dependencies"
 	@echo "  prepare            Prepare build environment"
 	@echo "  generate-packages  Regenerate archiso/packages.x86_64 from packages/"
@@ -311,6 +312,10 @@ test-apply:
 test-doctor:
 	@echo -e "$(GREEN)Running shedos-doctor pilot tests...$(NC)"
 	@bash $(TEST_DIR)/doctor/run.sh
+
+test-shedman:
+	@echo -e "$(GREEN)Running shedman dispatcher + shim parity tests...$(NC)"
+	@bash $(TEST_DIR)/shedman/run.sh
 
 dev-install:
 	@echo -e "$(GREEN)Installing development dependencies...$(NC)"

@@ -171,31 +171,31 @@
         "tooltip": false
     },
     "custom/updates": {
-        "exec": "/usr/bin/shedos-check-updates --waybar",
+        "exec": "/usr/bin/shedman updates --waybar",
         "interval": 3600,
         "return-type": "json",
-        "on-click": "/usr/bin/kitty --class shedos-update -e /usr/bin/shedos-update",
+        "on-click": "/usr/bin/kitty --class shedos-update -e /usr/bin/shedman update",
         "signal": 8
     },
     "custom/conflicts": {
-        "exec": "/usr/bin/shedos-check-conflicts --waybar",
+        "exec": "/usr/bin/shedman conflicts --waybar",
         "interval": 3600,
         "return-type": "json",
-        "on-click": "/usr/bin/kitty --class shedos-review -e /usr/bin/shedos-review-configs",
+        "on-click": "/usr/bin/kitty --class shedos-review -e /usr/bin/shedman config --review",
         "signal": 9
     },
     "custom/health": {
-        "exec": "/usr/bin/shedos-check-health --waybar",
+        "exec": "/usr/bin/shedman health --waybar",
         "interval": 300,
         "return-type": "json",
         "on-click": "/usr/bin/kitty --class btop -e btop --force-utf",
         "signal": 10
     },
     "custom/doctor": {
-        "exec": "/usr/bin/shedos-doctor --waybar",
+        "exec": "/usr/bin/shedman doctor --waybar",
         "interval": 21600,
         "return-type": "json",
-        "on-click": "/usr/bin/kitty --class shedos-doctor -e sh -c '/usr/bin/shedos-doctor --diff; echo; read -p \"[enter] to close \"'",
+        "on-click": "/usr/bin/kitty --class shedos-doctor -e sh -c '/usr/bin/shedman doctor --diff; echo; read -p \"[enter] to close \"'",
         "signal": 11
     },
     "custom/screenrecording-indicator": {
@@ -214,9 +214,9 @@
         "menu": "on-click",
         "menu-file": "~/.config/waybar/power-menu.xml",
         "menu-actions": {
-            "shutdown": "shedos-power-confirm shutdown",
-            "reboot": "shedos-power-confirm reboot",
-            "logout": "shedos-power-confirm logout"
+            "shutdown": "shedman power shutdown",
+            "reboot": "shedman power reboot",
+            "logout": "shedman power logout"
         }
     }
 }
