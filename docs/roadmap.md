@@ -160,7 +160,7 @@ and completion/docs catch-up).
 
 ---
 
-## Phase 6 — Declarative state expansion · **In progress**
+## Phase 6 — Declarative state expansion · **6A shipped, 6C/6B pending**
 
 Phase 4 established the TOML reconciler over five domains
 (`systemd.{system,user}`, `drop-ins`, `snapper`, `pacman.repos`,
@@ -202,11 +202,11 @@ properties:
 
 | # | Deliverable | Status |
 |---|---|---|
-| B#1 | `[network.firewall]` reconciler — declarative ufw with full grammar; reconcile posture; bidirectional adoption. Lands the cross-cutting scaffolding (python-tomlkit dep, three-way merge, baseline helpers, env overrides). | ⏳ Pending |
-| B#2 | `[security.keyring]` reconciler — `pacman-key --lsign-key` wrapper; warn-don't-remove posture; baseline = shedos's install-time trust chain. | ⏳ Pending |
-| B#3 | `[fs.mounts]` reconciler — declarative `/etc/fstab` entries with marker fence; baseline-protects Calamares-shipped lines; auto-named adoption. | ⏳ Pending |
-| B#4 | `[kernel.cmdline]` reconciler — Limine append tokens; baseline = install-time cmdline; reboot-required marker on every Change. | ⏳ Pending |
-| B#5 | `[[users]]` + `[[groups]]` — additive only; never `userdel`/`groupdel`; warn on TOML removal of any membership. | ⏳ Pending |
+| B#1 | `[network.firewall]` reconciler — declarative ufw with full grammar; reconcile posture; bidirectional adoption. Lands the cross-cutting scaffolding (python-tomlkit dep, three-way merge, baseline helpers, env overrides). | ✅ Shipped |
+| B#2 | `[security.keyring]` reconciler — `pacman-key --lsign-key` wrapper; warn-don't-remove posture; baseline = shedos's install-time trust chain. | ✅ Shipped |
+| B#3 | `[fs.mounts]` reconciler — declarative `/etc/fstab` entries with marker fence; baseline-protects Calamares-shipped lines; auto-named adoption. | ✅ Shipped |
+| B#4 | `[kernel.cmdline]` reconciler — Limine append tokens; baseline = install-time cmdline; reboot-required marker on every Change. | ✅ Shipped |
+| B#5 | `[[users]]` + `[[groups]]` — additive only; never `userdel`/`groupdel`; warn on TOML removal of any membership. | ✅ Shipped |
 
 ### 6A's deferred (carried forward from Phase 4 + sharpened)
 
