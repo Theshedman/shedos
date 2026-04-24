@@ -45,22 +45,22 @@ if [[ "${1:-}" == "--help-summary" ]]; then
 fi
 
 if [[ "${1:-}" == "--complete-bash" || "${1:-}" == "--complete-zsh" ]]; then
-    printf '%s\n' --yes --detect --dry-run --help
+    printf '%s\n' --yes -y --detect --dry-run -n --help -h
     exit 0
 fi
 
 usage() {
     cat <<EOF
-Usage: $PROG [--detect] [--dry-run] [--yes] [--help]
+Usage: $PROG [--detect] [-n|--dry-run] [-y|--yes] [-h|--help]
 
 Retrofit a pre-packaging ShedOS install onto the packaged model.
 Idempotent — runs on packaged installs are a fast no-op.
 
 Options:
-  --detect    Print the detected state (packaged | legacy) and exit 0.
-  --dry-run   Print the migration plan and exit. (default)
-  -y, --yes   Execute the migration.
-  -h, --help  This message.
+  --detect        Print the detected state (packaged | legacy) and exit 0.
+  -n, --dry-run   Print the migration plan and exit. (default)
+  -y, --yes       Execute the migration.
+  -h, --help      This message.
 EOF
 }
 
@@ -191,7 +191,7 @@ detect_only=0
 while (( $# )); do
     case $1 in
         --detect)    detect_only=1 ;;
-        --dry-run)   mode=dry-run ;;
+        -n|--dry-run)   mode=dry-run ;;
         -y|--yes)    mode=yes ;;
         -h|--help)   usage; exit 0 ;;
         *)           die "unknown option: $1" ;;
