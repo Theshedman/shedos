@@ -133,7 +133,7 @@ cmdline, mounts, user accounts, firewall rules — all land in
 ## Phase 5 — Unified `shedman` CLI + migration closure · **Shipped**
 
 The `shedos-*` command surface grew to 17 top-level binaries across Phase
-1-4. Phase 5 collapses that into a single Git-style dispatcher: users
+1-4. Phase 5 collapses that into a single dispatcher binary: users
 type `shedman update`, `shedman apply`, `shedman doctor`, etc., with
 silent shims at the old `/usr/bin/shedos-*` paths preserving muscle
 memory and third-party scripts. This phase also closes the two

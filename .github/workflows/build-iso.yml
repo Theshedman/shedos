@@ -34,7 +34,11 @@ jobs:
       - name: Install build dependencies
         run: |
           pacman -Syu --noconfirm
-          pacman -S --needed --noconfirm archiso base-devel git sudo rclone rsync grub
+          # scdoc renders shedos-system's man/*.scd sources to groff at
+          # build time; without it the prepare() step fails. Pulled in
+          # directly because the inner makepkg uses --nodeps (see
+          # scripts/build-shedos-packages.sh).
+          pacman -S --needed --noconfirm archiso base-devel git sudo rclone rsync grub scdoc
           # archlinux:latest ships an empty pacman keyring. Initialize +
           # populate the archlinux trust chain so makepkg --syncdeps (invoked
           # transitively by the AUR prebuild below) can verify signed

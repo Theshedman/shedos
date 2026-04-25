@@ -38,7 +38,10 @@ jobs:
       - name: Install build dependencies
         run: |
           pacman -Syu --noconfirm
-          pacman -S --needed --noconfirm base-devel git sudo gnupg rclone pacman-contrib
+          # scdoc is a makedep of shedos-system (renders man/*.scd → *.1).
+          # makepkg runs with --nodeps below, so this can't be left to
+          # --syncdeps — install it directly on the runner.
+          pacman -S --needed --noconfirm base-devel git sudo gnupg rclone pacman-contrib scdoc
           # archlinux:latest ships an empty pacman keyring. Initialize + populate
           # the archlinux trust chain so makepkg --syncdeps can verify signed
           # packages from core/extra during dependency resolution.

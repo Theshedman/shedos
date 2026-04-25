@@ -1,9 +1,9 @@
 # Writing a `shedman` plugin
 
-`shedman` is a Git-style dispatcher: every executable file in
-`/usr/libexec/shedman/` is exposed as `shedman <name>`. There is no
-plugin registry, no manifest format, no `init` hook. Drop a binary
-in that directory and it's a subcommand.
+`shedman` is a runtime-discovery dispatcher: every executable file
+in `/usr/libexec/shedman/` is exposed as `shedman <name>`. There is
+no plugin registry, no manifest format, no `init` hook. Drop a
+binary in that directory and it's a subcommand.
 
 This page documents the conventions a plugin should follow so it
 behaves like the rest of the shedman surface — discoverable in
