@@ -156,8 +156,11 @@ tag into the GitHub Release body.
 
 - **Hotfix**: `scripts/bump-version.sh 2026.04.21.1` + sign + push +
   `git tag v2026.04.21.1` + push tag. Fires ISO. No schedule change.
-- **RC**: tag `v<date>-rcN` any time. Already works (RC tags skip
-  retention-stable slot, use RC slot).
+- **RC**: tag `v<date>-rcN` any time. RC tag pushes fire both
+  `build-iso.yml` (RC ISO into the RC retention slot) **and**
+  `build-packages.yml` (RC packages into `r2:shedos-repo/x86_64-testing/`,
+  Phase 6B). Stable users (`[shedos]` only) don't see them; testing
+  users (`[shedos-testing]` declared in `system.toml`) do.
 - **Skip a Monday**: `touch .no-release-this-week` in the repo root; the
   weekly workflow checks for and removes the file before cutting.
 

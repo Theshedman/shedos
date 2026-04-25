@@ -12,6 +12,8 @@ on:
       - 'packages/**'
       - 'scripts/render-meta-depends.sh'
       - '.github/workflows/build-packages.yml'
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 concurrency:
@@ -225,8 +227,86 @@ jobs:
           # and skips the probe. Without it copyto to the bucket root 403s.
           RCLONE_S3_NO_CHECK_BUCKET: "true"
         run: |
-          rclone sync dist/x86_64/ "r2:$R2_BUCKET/x86_64/" --progress
+          # Channel routing (Phase 6B):
+          #   * push to main           → /x86_64/ + /x86_64-testing/ (same content)
+          #   * stable tag (v<date>)   → /x86_64/ + /x86_64-testing/ (parity)
+          #   * RC tag (v<date>-rcN)   → /x86_64-testing/ only (testing is "ahead")
+          #
+          # The testing channel is therefore "stable cuts + RC iterations"; the
+          # stable channel is "stable cuts only". Promotion is automatic on
+          # stable tag (same package set lands in both prefixes).
+          publish_stable=true
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]] && [[ "${GITHUB_REF_NAME}" == *-rc* ]]; then
+              publish_stable=false
+              echo "RC tag detected (${GITHUB_REF_NAME}); publishing to testing channel only."
+          fi
+          if $publish_stable; then
+              rclone sync dist/x86_64/ "r2:$R2_BUCKET/x86_64/" --progress
+          fi
+          rclone sync dist/x86_64/ "r2:$R2_BUCKET/x86_64-testing/" --progress
           # Ship the bootstrap pubkey at the bucket root so the migration
           # script can fetch it without the keyring installed.
           rclone copyto packaging/shedos-keyring/tree/shedos.gpg \
               "r2:$R2_BUCKET/shedos.gpg"
+
+      - name: Retention sweep for testing channel
+        # Keep the latest 3 RC iterations + 2 stables-of-each-package in
+        # /x86_64-testing/. Anything older is purged. Stable repo
+        # (/x86_64/) has no sweep — repo-add already manages its
+        # generation, and stable users want the long tail of older
+        # versions for downgrade.
+        env:
+          RCLONE_CONFIG_R2_TYPE: s3
+          RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+          RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          RCLONE_CONFIG_R2_ENDPOINT: ${{ env.R2_ENDPOINT }}
+          RCLONE_CONFIG_R2_REGION: auto
+          RCLONE_S3_NO_CHECK_BUCKET: "true"
+        run: |
+          KEEP_PER_PKG=5  # latest N versions per package name
+          set -u
+          # Group by pkgname; sort by mtime; delete everything past the
+          # keep threshold per group. rclone lsf gives "name;mtime" lines
+          # we can sort over.
+          mapfile -t entries < <(
+              rclone lsf --format "ts" --files-only --absolute \
+                  "r2:$R2_BUCKET/x86_64-testing/" 2>/dev/null \
+                  | grep -E '\.pkg\.tar\.zst$' \
+                  | sort
+          )
+          # No-op early if the testing prefix is empty (first publish).
+          if (( ${#entries[@]} == 0 )); then
+              echo "testing prefix empty or unreadable; skipping sweep."
+              exit 0
+          fi
+          declare -A by_pkg=()
+          for line in "${entries[@]}"; do
+              ts=${line%%;*}
+              path=${line#*;}
+              base=$(basename "$path")
+              # pkgname is everything up to the last "-<ver>-<rel>-<arch>".
+              # `<arch>` is always the last token (after final `-`).
+              pkgname=${base%-*-*-*.pkg.tar.zst}
+              by_pkg["$pkgname"]+="$ts;$path"$'\n'
+          done
+          purged=0
+          for pkgname in "${!by_pkg[@]}"; do
+              # Sort newest first; keep first $KEEP_PER_PKG; purge rest.
+              mapfile -t versions < <(
+                  printf '%s' "${by_pkg[$pkgname]}" \
+                      | grep -v '^$' | sort -r
+              )
+              if (( ${#versions[@]} <= KEEP_PER_PKG )); then continue; fi
+              for v in "${versions[@]:KEEP_PER_PKG}"; do
+                  path=${v#*;}
+                  base=$(basename "$path")
+                  echo "purge testing/$base (over keep=$KEEP_PER_PKG)"
+                  rclone delete "r2:$R2_BUCKET/x86_64-testing/$base" \
+                      || true
+                  rclone delete "r2:$R2_BUCKET/x86_64-testing/$base.sig" \
+                      || true
+                  purged=$((purged+1))
+              done
+          done
+          echo "purged $purged old testing-channel package files."

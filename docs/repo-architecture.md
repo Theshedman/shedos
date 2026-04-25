@@ -44,7 +44,7 @@ inside the free tier at current scale.
 
 ```
 r2:shedos-repo/
-├── x86_64/                       # The signed pacman repo
+├── x86_64/                       # Stable signed pacman repo
 │   ├── shedos.db                 # uploaded as two identical objects (R2 has no symlinks)
 │   ├── shedos.db.tar.gz
 │   ├── shedos.db.tar.gz.sig
@@ -54,6 +54,10 @@ r2:shedos-repo/
 │   ├── shedos-<pkg>-<ver>-<rel>-<arch>.pkg.tar.zst
 │   └── shedos-<pkg>-<ver>-<rel>-<arch>.pkg.tar.zst.sig
 │
+├── x86_64-testing/               # Canary channel (Phase 6B)
+│   ├── shedos.db
+│   └── …                         # same layout as /x86_64/
+│
 ├── iso/                          # Release artifacts (flat, one file per release)
 │   ├── shedos-2026.04.21-rc1-x86_64.iso
 │   ├── shedos-2026.04.21-rc1-x86_64.iso.sha256
@@ -62,6 +66,24 @@ r2:shedos-repo/
 │
 └── shedos.gpg                    # Bootstrap pubkey for the migration script
 ```
+
+**`/x86_64/` vs `/x86_64-testing/`** (Phase 6B). The two prefixes
+serve different audiences:
+
+- **`/x86_64/`** — stable channel. Receives every push to `main` and
+  every stable tag (`v<date>`). Long-tail retention; no automated
+  sweep beyond what `repo-add` does.
+- **`/x86_64-testing/`** — canary channel. Receives **the same
+  content as `/x86_64/`** plus RC tag pushes (`v<date>-rcN`).
+  Retention sweep keeps the latest 5 versions per package; older
+  builds are purged after each publish.
+
+Users opt into the testing channel by adding a
+`[pacman.repos.shedos-testing]` stanza to `/etc/shedos/system.toml`
+and running `shedman apply` (or by uncommenting the
+`[shedos-testing]` block that the install scriptlet writes into
+`/etc/pacman.conf`). See `docs/upgrading.md` for the user-facing
+walkthrough.
 
 **Why `/iso/` is flat.** An earlier layout nested by tag
 (`/iso/v<tag>/<file>`). That worked but made browsing harder and

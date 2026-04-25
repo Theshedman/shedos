@@ -60,23 +60,27 @@ bets that don't yet have a forcing function and live deferred below.
 |---|---|---|
 | B#1 | btrfs snapshot pre-upgrade + `shedman update --rollback` — snapper pre/post pair wraps every upgrade; `shedman rollback` swaps `@` with the chosen snapshot; reboot applies. Home (`@home`) is intentionally **not** rolled back. | ✅ Shipped |
 | B#2 | AUR build cache across CI runs — `actions/cache` keyed on `hashFiles('packages/aur.txt')`, shared between `build-packages.yml` and `build-iso.yml`. Cuts the ~35 min AUR tail to near-zero on unchanged releases. | ✅ Shipped |
-| B#3 | `[shedos-testing]` canary channel | ⏸ Deferred — see below |
+| B#3 | `[shedos-testing]` canary channel | ✅ Shipped (in Phase 6B) |
 | B#4 | Offline-signed packages | ⏸ Deferred — see below |
 
-### B#3 deferred (canary channel)
+### B#3 — canary channel (shipped in Phase 6B)
 
-The client-side opt-in (`shedman update --channel testing`) is trivial, but
-the work to make it useful lives on the CI side:
+Shipped in Phase 6B (commit on `main`). The deferred prerequisites
+all resolved naturally:
 
-- A publish path for testing packages (e.g. `r2:shedos-repo/x86_64-testing/`).
-- A rule for *which* packages go to testing vs stable. Options:
-  dedicated branch (`next`), a PKGBUILD marker, or promote-on-green.
-- Retention policy for `x86_64-testing/` so it doesn't balloon.
-
-Shipping a `--channel testing` flag that drops a `[shedos-testing]` stanza
-pointing at a path CI isn't publishing to would 404 users' next
-`pacman -Sy` — worse UX than the waybar badge today. Reopen once the
-pipeline has a home for RC packages to live.
+- **Publish path**: `r2:shedos-repo/x86_64-testing/` (parallel prefix).
+- **Promotion rule**: every push to `main` and every stable tag
+  publishes to **both** `/x86_64/` and `/x86_64-testing/`. RC tags
+  publish to `/x86_64-testing/` only. So testing is "stable cuts
+  + RC iterations"; stable is "stable cuts only". No per-package
+  marker needed.
+- **Retention**: `build-packages.yml` sweeps `/x86_64-testing/` after
+  every publish, keeping the latest 5 versions per package. `/x86_64/`
+  retains its long tail.
+- **Client opt-in**: no new flag — the existing Phase 6A
+  `[pacman.repos]` reconciler handles it. Add a
+  `[pacman.repos.shedos-testing]` stanza to
+  `/etc/shedos/system.toml`, run `shedman apply -y`, you're in.
 
 ### B#4 deferred (offline signing)
 
