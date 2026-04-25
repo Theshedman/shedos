@@ -26,15 +26,23 @@ with a one-line summary. `shedman help <cmd>` and `shedman <cmd>
 | `shedman <cmd> --help` | Same as above. |
 | `shedman version` | Print the installed `shedos-system` package version. |
 
-Shell tab-completion is installed for zsh and bash. In zsh:
+Shell tab-completion is installed for zsh, bash, and fish. In any of
+them:
 
 ```sh
 shedman <tab>        # lists subcommands
 shedman update -<tab>  # lists short + long flags
 ```
 
-Bash requires the `bash-completion` optdepend; zsh picks up
-`/usr/share/zsh/site-functions/_shedman` automatically.
+Each shell's optdepend (`bash-completion`, `zsh`, `fish`) picks up
+the completion file automatically. Man pages are available too:
+`man shedman`, `man shedman-update`, `man shedman-apply`, etc.
+
+Third-party packages can drop their own subcommands into
+`/usr/libexec/shedman/`. See the [plugin
+guide](https://github.com/theshedman/shedos/blob/main/docs/plugins.md)
+for the conventions (one-line summaries, completion handlers,
+naming).
 
 ## Daily upgrades
 

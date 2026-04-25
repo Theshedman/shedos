@@ -256,6 +256,11 @@ directories still exist (one-time migration). Safe to re-run.
 6. Commit + push. `build-packages.yml` picks it up automatically via
    the `packaging/**` path filter.
 
+If your package ships an executable that should be a `shedman`
+subcommand, drop it in `/usr/libexec/shedman/` and follow the
+plugin convention — see [plugins.md](plugins.md) for the
+`--help-summary` / `--complete-{bash,zsh,fish}` contract.
+
 ## Changing what a default install ships
 
 `archiso/packages.x86_64` is **generated**, not hand-edited. The real
