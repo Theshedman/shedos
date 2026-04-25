@@ -250,6 +250,39 @@ every file it owns. Even files you haven't touched drop `.shedosnew`
 instead of auto-updating. You'll be pasting more often, but you'll
 never wake up to a broken editor.
 
+## Notable dotfile changes worth knowing about
+
+These are the changes most likely to surface as `.shedosnew` files
+under `$HOME` after an upgrade. Resolve them as described in the
+section above (`shedman config --review`).
+
+### April 2026
+
+- **`Super+Shift+R` no longer reloads Hyprland.** The chord is now
+  `shedman screenrecord --stop` (matches `Super+R` to start). The
+  reload binding moved to `Super+Shift+Ctrl+R`. Surfaces in
+  `~/.config/hypr/hyprland.conf.shedosnew` as a 3-way change.
+- **`Super+C` clipboard switched from `walker -m clipboard` to
+  cliphist + walker dmenu.** Walker's elephant-backed clipboard
+  provider didn't read the cliphist daemon's history; the new
+  pipe (`cliphist list | walker --dmenu | cliphist decode | wl-copy`)
+  is what actually surfaces every copied entry. Affects
+  `~/.config/hypr/hyprland.conf`.
+- **Floating terminal works again.** `Super+Shift+Return` spawns
+  `kitty --class=floating-terminal`, but a matching windowrule was
+  missing, so it tiled. Now centered, 1100×700, floating. No user
+  action required — the windowrule lives in the packaged
+  `hyprland.conf` and you'll inherit it via `.shedosnew`.
+- **`shedman screenrecord` is now real.** Replaces the broken
+  `shedos-screenrecord{,-indicator}` waybar references with a
+  single libexec command (modal flags: `--toggle`, `--start`,
+  `--stop`, `--region`, `--waybar`). The waybar pill now actually
+  flips to `󰑊 REC` while recording.
+- **`Super+Shift+R` still works for stopping.** The keybind is the
+  same chord — only the action behind it changed (was per-user
+  `~/.config/hypr/scripts/stop-recording.sh`, now `shedman
+  screenrecord --stop`).
+
 ## Commands reference
 
 See the [commands reference on shedos.org](https://shedos.org/docs/commands)

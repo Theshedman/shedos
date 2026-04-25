@@ -220,8 +220,9 @@ properties:
 |---|---|---|
 | B#1 | `shedman status --watch` — Textual live-refreshing dashboard wrapping the one-shot `shedman status` aggregator. `--interval N` configurable; `q` quits. | ✅ Shipped |
 | B#2 | Fish shell completion — mirror Phase 5 B#3's bash/zsh completers. New `--complete-fish` handler convention. | ✅ Shipped |
-| B#3 | Man pages — 7 hand-written groff `.1` pages (`shedman(1)` + 6 subcommands). Installed under `/usr/share/man/man1/`. | ✅ Shipped |
+| B#3 | Man pages — 7 `shedman(1)` + subcommand pages installed under `/usr/share/man/man1/`. Originally hand-written groff; later migrated to scdoc source (`packaging/shedos-system/man/*.scd`) rendered to `.1` at `prepare()` time, makedep `scdoc`. | ✅ Shipped |
 | B#4 | Third-party plugin doc — `docs/plugins.md` covering the `/usr/libexec/shedman/<cmd>` convention, `--help-summary` contract, and completion handlers. | ✅ Shipped |
+| B#5 | Fish completion rich descriptions — `--complete-fish` emits tab-separated `flag\tdescription`, fish completion script reads both columns and passes `-d` to `complete`. | ✅ Shipped |
 
 ### 6B — Canary channel
 
@@ -256,13 +257,6 @@ properties:
 
 ### 6C's deferred
 
-- **Tab-driven `--complete-fish` rich descriptions** — fish supports
-  `complete -d "<description>"` for per-flag tooltips; the v1 here
-  emits flag tokens only. Adding descriptions requires extending the
-  `--complete-fish` output format (probably tab-separated `flag\tdesc`).
-- **scdoc-rendered man pages** — switching from hand-written groff
-  to markdown→scdoc would reduce edit friction at the cost of a
-  build dep. Revisit if the man-page count grows past ~15.
 - **Plugin doc on shedos.org** — `docs/plugins.md` is currently
   GitHub-rendered; promoting it into `site/src/content/docs/` would
   give it the Astro nav. Defer until a third-party plugin actually

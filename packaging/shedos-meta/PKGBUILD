@@ -9,7 +9,7 @@
 # as the source of truth for "what's on a fresh install".
 
 pkgname=shedos-meta
-pkgver=2026.04.24
+pkgver=2026.04.25
 pkgrel=1
 pkgdesc='ShedOS meta-package — installs the full default ShedOS environment'
 arch=('any')
@@ -472,13 +472,12 @@ depends=(
     'zsh-theme-powerlevel10k-git'
 )
 optdepends=(
-    'google-chrome: proprietary AUR package; install via `shedman install` / yay'
-    'obsidian-bin: proprietary AUR package; install via `shedman install` / yay'
-    'postman-bin: proprietary AUR package; install via `shedman install` / yay'
-    'slack-desktop: proprietary AUR package; install via `shedman install` / yay'
-    'ttf-ms-fonts: proprietary AUR package; install via `shedman install` / yay'
-    'visual-studio-code-bin: proprietary AUR package; install via `shedman install` / yay'
-    'shedos-migrate-to-packaged: one-shot retrofit for pre-April-2026 installs; not needed on fresh installs'
+    'google-chrome: proprietary AUR package; install via shedos-welcome / yay'
+    'obsidian-bin: proprietary AUR package; install via shedos-welcome / yay'
+    'postman-bin: proprietary AUR package; install via shedos-welcome / yay'
+    'slack-desktop: proprietary AUR package; install via shedos-welcome / yay'
+    'ttf-ms-fonts: proprietary AUR package; install via shedos-welcome / yay'
+    'visual-studio-code-bin: proprietary AUR package; install via shedos-welcome / yay'
 )
 
 package() {
