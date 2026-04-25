@@ -11,6 +11,8 @@ on:
       - 'packaging/**'
       - 'packages/**'
       - 'scripts/render-meta-depends.sh'
+      - 'scripts/build-aur-packages.sh'
+      - 'scripts/build-shedos-packages.sh'
       - '.github/workflows/build-packages.yml'
     tags:
       - 'v*'
