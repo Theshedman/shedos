@@ -11,7 +11,7 @@
 
 pkgname=shedos-hyprland
 pkgver=2026.04.24
-pkgrel=1
+pkgrel=2
 pkgdesc='ShedOS Hyprland desktop profile (dotfiles + DE helpers)'
 arch=('any')
 url='https://github.com/theshedman/shedos'
@@ -40,6 +40,8 @@ optdepends=(
     'blueman: bluetooth manager launched from waybar'
     'btop: system monitor launched from waybar cpu icon'
     'yad: dialog used by `shedman welcome`'
+    'wf-recorder: required for `shedman screenrecord` (Super+R / waybar pill)'
+    'slurp: region selection for `shedman screenrecord --region`'
 )
 
 package() {
@@ -54,18 +56,25 @@ package() {
     install -d "$pkgdir/usr/share/shedos/hyprland/defaults"
     cp -a tree/etc/skel/. "$pkgdir/usr/share/shedos/hyprland/defaults/"
 
-    # DE-specific shedman subcommands: `shedman launcher` (Walker) and
-    # `shedman power` (shutdown/reboot/logout confirm).
-    install -Dm755 tree/usr/libexec/shedman/launcher \
-        "$pkgdir/usr/libexec/shedman/launcher"
-    install -Dm755 tree/usr/libexec/shedman/power \
-        "$pkgdir/usr/libexec/shedman/power"
+    # DE-specific shedman subcommands: `shedman launcher` (Walker),
+    # `shedman power` (shutdown/reboot/logout confirm), and
+    # `shedman screenrecord` (wf-recorder wrapper + waybar indicator).
+    install -d "$pkgdir/usr/libexec/shedman"
+    local _libexec_shedman=(launcher power screenrecord)
+    local _name
+    for _name in "${_libexec_shedman[@]}"; do
+        install -Dm755 "tree/usr/libexec/shedman/$_name" \
+            "$pkgdir/usr/libexec/shedman/$_name"
+    done
 
     # Silent back-compat shims for the old /usr/bin/shedos-* names.
-    install -Dm755 tree/usr/bin/shedos-launch-walker \
-        "$pkgdir/usr/bin/shedos-launch-walker"
-    install -Dm755 tree/usr/bin/shedos-power-confirm \
-        "$pkgdir/usr/bin/shedos-power-confirm"
+    local _shims=(
+        shedos-launch-walker shedos-power-confirm
+        shedos-screenrecord shedos-screenrecord-indicator
+    )
+    for _name in "${_shims[@]}"; do
+        install -Dm755 "tree/usr/bin/$_name" "$pkgdir/usr/bin/$_name"
+    done
 
     install -Dm755 tree/usr/bin/toggle-hyprsunset.sh \
         "$pkgdir/usr/bin/toggle-hyprsunset.sh"

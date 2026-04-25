@@ -199,8 +199,9 @@
         "signal": 11
     },
     "custom/screenrecording-indicator": {
-        "on-click": "shedos-screenrecord",
-        "exec": "shedos-screenrecord-indicator",
+        "on-click": "/usr/bin/shedman screenrecord",
+        "exec": "/usr/bin/shedman screenrecord --waybar",
+        "interval": 5,
         "signal": 8,
         "return-type": "json"
     },

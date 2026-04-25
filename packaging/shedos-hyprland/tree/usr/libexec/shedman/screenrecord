@@ -1,0 +1,256 @@
+#!/usr/bin/env bash
+# shedman screenrecord — wf-recorder wrapper with toggle, mode prompt,
+# region selection, and a waybar indicator. Single binary; the waybar
+# pill, the keybind, and the on-click hook all dispatch here via flags.
+#
+# Modes:
+#   (no args) | --toggle  toggle: stop if recording, otherwise prompt
+#                         (walker if available) and start.
+#   --start [--region]    start a recording. --region invokes slurp.
+#   --stop                stop the active recording.
+#   --waybar              JSON for waybar's custom/screenrecording-indicator.
+#                         Always exits 0 — empty payload when idle.
+#   --help-summary        one-line summary for `shedman help`.
+#   --help | -h           usage.
+#   --complete-{bash,zsh,fish}  emit flag list for shell completion.
+#
+# State:
+#   $SHEDOS_SCREENRECORD_PID_FILE  test override for the PID file path.
+#                                  Production default: /run/user/$UID/shedman-screenrecord.pid.
+#                                  File contents: line 1 = wf-recorder PID,
+#                                  line 2 = output filepath. We track the
+#                                  path so --waybar's tooltip can show it.
+
+set -uo pipefail
+
+PROG="shedman screenrecord"
+
+# -- Completion --------------------------------------------------------------
+case "${1:-}" in
+    --complete-bash|--complete-zsh|--complete-fish)
+        printf '%s\n' --start --stop --toggle --region --waybar \
+            --help -h --help-summary
+        exit 0
+        ;;
+    --help-summary)
+        echo "start/stop screen recording (wf-recorder + waybar pill)"
+        exit 0
+        ;;
+    --help|-h)
+        cat <<EOF
+Usage: $PROG               Toggle: stop active recording, else prompt + start.
+       $PROG --toggle      Same as no args.
+       $PROG --start       Start a full-screen recording.
+       $PROG --start --region
+                           Start recording a slurp-selected region.
+       $PROG --stop        Stop the active recording.
+       $PROG --waybar      Emit JSON for waybar custom/screenrecording-indicator.
+
+Recordings land in \$XDG_VIDEOS_DIR/Recordings (or ~/Videos/Recordings).
+Requires wf-recorder. --region requires slurp. The toggle uses walker if
+available; otherwise it defaults to full-screen without prompting.
+EOF
+        exit 0
+        ;;
+esac
+
+# -- Paths -------------------------------------------------------------------
+_uid=$(id -u)
+DEFAULT_PID_FILE="${XDG_RUNTIME_DIR:-/run/user/$_uid}/shedman-screenrecord.pid"
+PID_FILE="${SHEDOS_SCREENRECORD_PID_FILE:-$DEFAULT_PID_FILE}"
+
+_recordings_dir() {
+    local d="${XDG_VIDEOS_DIR:-$HOME/Videos}/Recordings"
+    printf '%s\n' "$d"
+}
+
+_have() { command -v "$1" >/dev/null 2>&1; }
+
+_notify() {
+    # Best-effort desktop notification. Silently no-ops in headless / test
+    # environments where DBUS_SESSION_BUS_ADDRESS is unset or notify-send
+    # isn't installed.
+    local urgency=$1 title=$2 body=$3
+    _have notify-send || return 0
+    [[ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]] || return 0
+    notify-send -u "$urgency" "$title" "$body" 2>/dev/null || true
+}
+
+# -- State helpers -----------------------------------------------------------
+_active_pid() {
+    # Print the live recording PID, or empty if none.
+    [[ -f $PID_FILE ]] || return 0
+    local pid
+    pid=$(awk 'NR==1 {print $1; exit}' "$PID_FILE" 2>/dev/null)
+    [[ -n $pid ]] || return 0
+    if kill -0 "$pid" 2>/dev/null; then
+        printf '%s\n' "$pid"
+    fi
+}
+
+_active_path() {
+    [[ -f $PID_FILE ]] || return 0
+    awk 'NR==2 {print; exit}' "$PID_FILE" 2>/dev/null
+}
+
+_clear_state() {
+    rm -f -- "$PID_FILE" 2>/dev/null || true
+}
+
+# -- Subcommands -------------------------------------------------------------
+_cmd_waybar() {
+    # Always exits 0. Active payload when a recording is live; idle otherwise.
+    local pid path
+    pid=$(_active_pid)
+    if [[ -n $pid ]]; then
+        path=$(_active_path)
+        local tip="Recording"
+        [[ -n $path ]] && tip="Recording to $path"
+        # Escape backslashes and double-quotes for JSON safety.
+        tip=${tip//\\/\\\\}
+        tip=${tip//\"/\\\"}
+        printf '{"text":" REC","tooltip":"%s","class":"recording"}\n' "$tip"
+    else
+        # Stale PID file (process died without --stop) — clean up.
+        [[ -f $PID_FILE ]] && _clear_state
+        printf '{"text":"","tooltip":"","class":"idle"}\n'
+    fi
+}
+
+_refresh_waybar() {
+    # Custom/screenrecording-indicator uses signal 8 — same as custom/updates.
+    # Both modules re-poll on that signal, which is harmless: each runs its
+    # own exec command. Keep the kick best-effort; missing waybar is fine.
+    pkill -RTMIN+8 waybar 2>/dev/null || true
+}
+
+_cmd_start() {
+    local region=0
+    while (( $# > 0 )); do
+        case "$1" in
+            --region) region=1; shift ;;
+            *) echo "$PROG --start: unknown flag: $1" >&2; return 2 ;;
+        esac
+    done
+
+    if [[ -n $(_active_pid) ]]; then
+        echo "$PROG: already recording (pid $(_active_pid))" >&2
+        _notify normal "Screen Recording" "Recording already in progress"
+        return 1
+    fi
+
+    if ! _have wf-recorder; then
+        echo "$PROG: wf-recorder is required but not installed" >&2
+        _notify critical "Screen Recording" "wf-recorder not installed"
+        return 1
+    fi
+
+    local rec_dir
+    rec_dir=$(_recordings_dir)
+    mkdir -p -- "$rec_dir" || {
+        echo "$PROG: cannot create $rec_dir" >&2
+        return 1
+    }
+    local outfile="$rec_dir/recording_$(date +%Y-%m-%d_%H-%M-%S).mp4"
+
+    # Prepare args. --region selects an area via slurp; failure to select
+    # (user cancels with Escape, or slurp not installed) aborts cleanly.
+    local -a wf_args=(-f "$outfile")
+    if (( region )); then
+        if ! _have slurp; then
+            echo "$PROG: slurp is required for --region but not installed" >&2
+            _notify critical "Screen Recording" "slurp not installed"
+            return 1
+        fi
+        local geom
+        geom=$(slurp 2>/dev/null) || geom=""
+        if [[ -z $geom ]]; then
+            _notify low "Screen Recording" "Recording cancelled"
+            return 1
+        fi
+        wf_args=(-g "$geom" "${wf_args[@]}")
+    fi
+
+    # Make sure the PID-file directory exists (XDG_RUNTIME_DIR usually does;
+    # custom test paths may need creation).
+    mkdir -p -- "$(dirname -- "$PID_FILE")" 2>/dev/null || true
+
+    _notify normal "Screen Recording" "Starting recording…"
+    setsid wf-recorder "${wf_args[@]}" </dev/null >/dev/null 2>&1 &
+    local pid=$!
+    printf '%s\n%s\n' "$pid" "$outfile" > "$PID_FILE"
+    _notify normal "Screen Recording" "Recording to $outfile
+Press Super+Shift+R to stop"
+    _refresh_waybar
+}
+
+_cmd_stop() {
+    local pid
+    pid=$(_active_pid)
+    if [[ -z $pid ]]; then
+        # Stale PID file or no recording.
+        _clear_state
+        echo "$PROG: no recording in progress" >&2
+        _notify low "Screen Recording" "No recording in progress"
+        return 1
+    fi
+    local path
+    path=$(_active_path)
+
+    # SIGINT lets wf-recorder finalize the mp4 cleanly (mux + close).
+    if kill -INT "$pid" 2>/dev/null; then
+        # Wait briefly for the process to flush + exit. wf-recorder usually
+        # finalizes within a second; cap the wait so a hung process doesn't
+        # leave the user staring at a frozen pill.
+        local i
+        for i in 1 2 3 4 5; do
+            kill -0 "$pid" 2>/dev/null || break
+            sleep 0.4
+        done
+    fi
+    _clear_state
+    if [[ -n $path ]]; then
+        _notify normal "Screen Recording" "Saved to $path"
+    else
+        _notify normal "Screen Recording" "Recording stopped"
+    fi
+    _refresh_waybar
+}
+
+_cmd_toggle() {
+    if [[ -n $(_active_pid) ]]; then
+        _cmd_stop
+        return $?
+    fi
+
+    # No live recording — prompt for mode if walker is available; default
+    # to full-screen otherwise (so a keybind from a non-walker session
+    # still works).
+    if _have walker; then
+        local choice
+        choice=$(printf 'Full Screen\nArea Selection\nCancel\n' \
+            | walker --dmenu --placeholder "Record screen" 2>/dev/null) \
+            || choice=""
+        case "$choice" in
+            "Full Screen")  _cmd_start ;;
+            "Area Selection") _cmd_start --region ;;
+            *) _notify low "Screen Recording" "Recording cancelled"; return 0 ;;
+        esac
+    else
+        _cmd_start
+    fi
+}
+
+# -- Dispatch ----------------------------------------------------------------
+case "${1:-}" in
+    --waybar)        shift; _cmd_waybar "$@" ;;
+    --start)         shift; _cmd_start "$@" ;;
+    --stop)          shift; _cmd_stop "$@" ;;
+    --toggle|"")     [[ ${1:-} == --toggle ]] && shift
+                     _cmd_toggle ;;
+    *)
+        echo "$PROG: unknown flag: $1" >&2
+        echo "Try: $PROG --help" >&2
+        exit 2
+        ;;
+esac
