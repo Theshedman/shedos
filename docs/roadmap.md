@@ -49,7 +49,7 @@ outstanding B#2 polish list.
 
 ---
 
-## Phase 3 — Rollback + canary · **Shipped** (B#3, B#4 deferred)
+## Phase 3 — Rollback + canary · **Shipped** (B#4 deferred — see below)
 
 Once Phase 2 is closed, the next class of user story is "I ran the update
 and something broke; get me back." B#1 (btrfs rollback) and B#2 (AUR CI
@@ -164,7 +164,7 @@ and completion/docs catch-up).
 
 ---
 
-## Phase 6 — Declarative state expansion · **6A shipped, 6C/6B pending**
+## Phase 6 — Declarative state expansion · **Shipped**
 
 Phase 4 established the TOML reconciler over five domains
 (`systemd.{system,user}`, `drop-ins`, `snapper`, `pacman.repos`,
@@ -184,12 +184,14 @@ Sub-phases ship in this order:
   Install-time baseline state is protected — Calamares,
   `trust-keys.sh`, and pacman scriptlets create state we never risk
   destroying.
-- **6C — Polish bucket.** Man pages, third-party plugin doc,
-  fish completion, `shedman status --watch`. Lower-stakes
-  refinement once the surface is settled.
-- **6B — `[shedos-testing]` canary channel.** Phase 3-deferred. CI
-  publish path to `r2:shedos-repo/x86_64-testing/`, promote-on-green
-  rule, `shedman update --channel testing` client opt-in.
+- **6C — Polish bucket.** ✅ Shipped. `shedman status --watch` live
+  TUI (B#1), fish shell completion (B#2), 7 hand-written groff man
+  pages (B#3), third-party plugin doc (B#4).
+- **6B — `[shedos-testing]` canary channel.** ✅ Shipped. CI now
+  publishes to `r2:shedos-repo/x86_64-testing/` on every push to
+  main + every tag; RC tags route to testing-only. Client opt-in
+  via `[pacman.repos.shedos-testing]` in `system.toml` — no new flag
+  needed thanks to the Phase 6A reconciler.
 
 ### 6A — Tier 3 declarative schema
 
@@ -212,6 +214,21 @@ properties:
 | B#4 | `[kernel.cmdline]` reconciler — Limine append tokens; baseline = install-time cmdline; reboot-required marker on every Change. | ✅ Shipped |
 | B#5 | `[[users]]` + `[[groups]]` — additive only; never `userdel`/`groupdel`; warn on TOML removal of any membership. | ✅ Shipped |
 
+### 6C — Polish bucket
+
+| # | Deliverable | Status |
+|---|---|---|
+| B#1 | `shedman status --watch` — Textual live-refreshing dashboard wrapping the one-shot `shedman status` aggregator. `--interval N` configurable; `q` quits. | ✅ Shipped |
+| B#2 | Fish shell completion — mirror Phase 5 B#3's bash/zsh completers. New `--complete-fish` handler convention. | ✅ Shipped |
+| B#3 | Man pages — 7 hand-written groff `.1` pages (`shedman(1)` + 6 subcommands). Installed under `/usr/share/man/man1/`. | ✅ Shipped |
+| B#4 | Third-party plugin doc — `docs/plugins.md` covering the `/usr/libexec/shedman/<cmd>` convention, `--help-summary` contract, and completion handlers. | ✅ Shipped |
+
+### 6B — Canary channel
+
+| # | Deliverable | Status |
+|---|---|---|
+| B#1 | `[shedos-testing]` channel — CI dual-publishes to `/x86_64/` + `/x86_64-testing/`; RC tags route to testing-only. Client opt-in via `[pacman.repos.shedos-testing]` in `system.toml`. Retention sweep keeps the latest 5 versions per package on testing. | ✅ Shipped |
+
 ### 6A's deferred (carried forward from Phase 4 + sharpened)
 
 - **Plymouth theme in `system.toml`** — mkinitcpio regen side-effect
@@ -225,6 +242,31 @@ properties:
 - **Per-user systemd `enable`/`disable`** — current
   `[systemd.user]` is `--global`; future
   `[systemd.user.<username>]` needs its own design pass.
+
+### 6B's deferred
+
+- **Per-package testing markers / split metapackage** — every package
+  flows to both channels by tag. Per-package "testing-only" routing
+  needs a concrete trigger (e.g. wanting to ship a v2 of a package
+  that's incompatible with stable users).
+- **`shedman update --channel testing` flag** — the TOML route is
+  canonical. CLI shortcut is a tiny follow-up if asked for.
+- **Promote-on-green workflow_dispatch action** — promotion is
+  automatic on stable tag; manual gating isn't needed today.
+
+### 6C's deferred
+
+- **Tab-driven `--complete-fish` rich descriptions** — fish supports
+  `complete -d "<description>"` for per-flag tooltips; the v1 here
+  emits flag tokens only. Adding descriptions requires extending the
+  `--complete-fish` output format (probably tab-separated `flag\tdesc`).
+- **scdoc-rendered man pages** — switching from hand-written groff
+  to markdown→scdoc would reduce edit friction at the cost of a
+  build dep. Revisit if the man-page count grows past ~15.
+- **Plugin doc on shedos.org** — `docs/plugins.md` is currently
+  GitHub-rendered; promoting it into `site/src/content/docs/` would
+  give it the Astro nav. Defer until a third-party plugin actually
+  exists in the wild.
 
 ---
 
