@@ -55,7 +55,7 @@ base="https://gitlab.archlinux.org/archlinux/packaging/packages/linux-zen/-/raw/
 echo "Fetching $base/PKGBUILD…"
 upstream_pkgbuild=$(mktemp)
 trap 'rm -f -- "$upstream_pkgbuild"' EXIT
-curl -fsS -o "$upstream_pkgbuild" "$base/PKGBUILD"
+curl -fsS --max-time 30 -o "$upstream_pkgbuild" "$base/PKGBUILD"
 
 # Extract the four checksum arrays we mirror.
 _extract_array() {
@@ -102,7 +102,7 @@ if [[ "$new_validpgpkeys" != "$our_validpgpkeys" ]]; then
 fi
 
 echo "Fetching $base/config.x86_64…"
-curl -fsS -o "$config_file" "$base/config.x86_64"
+curl -fsS --max-time 30 -o "$config_file" "$base/config.x86_64"
 local_x86_64_sha=$(sha256sum "$config_file" | awk '{print $1}')
 
 # Cross-check our config matches the sha256 listed upstream — if not,
