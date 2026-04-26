@@ -24,7 +24,7 @@ YELLOW := \033[0;33m
 RED := \033[0;31m
 NC := \033[0m
 
-.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages test-review-configs test-sync-configs test-check-health test-tui-logs test-tui-history test-apply test-apply-checkpoint test-doctor test-shedman test-status test-completions test-migrate test-man test-screenrecord test-kernel test-installer
+.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages test-review-configs test-sync-configs test-check-health test-tui-logs test-tui-history test-apply test-apply-checkpoint test-doctor test-shedman test-status test-completions test-migrate test-man test-screenrecord test-kernel test-installer test-config test-rollback test-update test-install
 
 all: iso
 
@@ -57,6 +57,10 @@ help:
 	@echo "  test-screenrecord  Run shedman screenrecord fixture tests"
 	@echo "  test-kernel        Run shedos-kernel storage + build-infra contract tests"
 	@echo "  test-installer     Run installer pytest suite (LUKS, disk, BTRFS, hardware parsers)"
+	@echo "  test-config        Run shedman config umbrella tests"
+	@echo "  test-rollback      Run shedman rollback smoke tests"
+	@echo "  test-update        Run shedman update smoke tests"
+	@echo "  test-install       Run shedman install smoke tests"
 	@echo "  check-deps         Check build dependencies"
 	@echo "  prepare            Prepare build environment"
 	@echo "  generate-packages  Regenerate archiso/packages.x86_64 from packages/"
@@ -361,6 +365,22 @@ test-kernel:
 test-installer:
 	@echo -e "$(GREEN)Running installer pytest suite...$(NC)"
 	@cd installer && python -m pytest tests/ -v
+
+test-config:
+	@echo -e "$(GREEN)Running shedman config umbrella tests...$(NC)"
+	@bash $(TEST_DIR)/config/run.sh
+
+test-rollback:
+	@echo -e "$(GREEN)Running shedman rollback smoke tests...$(NC)"
+	@bash $(TEST_DIR)/rollback/run.sh
+
+test-update:
+	@echo -e "$(GREEN)Running shedman update smoke tests...$(NC)"
+	@bash $(TEST_DIR)/update/run.sh
+
+test-install:
+	@echo -e "$(GREEN)Running shedman install smoke tests...$(NC)"
+	@bash $(TEST_DIR)/install/run.sh
 
 dev-install:
 	@echo -e "$(GREEN)Installing development dependencies...$(NC)"
