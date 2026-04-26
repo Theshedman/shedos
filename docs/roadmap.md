@@ -264,6 +264,24 @@ properties:
 
 ---
 
+## Phase 7 — Custom kernel + system tuning · **In flight**
+
+| # | Deliverable | Status |
+|---|---|---|
+| 7.1 | Userspace tuning: sysctl + udev (per-class I/O scheduler, HDD readahead, USB autosuspend), modprobe blacklist, zram-generator, seed `[kernel.cmdline]` defaults via `system.toml` | ✅ Shipped |
+| 7.2 | Services: systemd-oomd, tlp (single power manager), ananicy-cpp, realtime audio group + limits.d. Drop power-profiles-daemon (declared as conflict + replaces=) | ✅ Shipped |
+| 7.3 | `shedos-kernel` package (vendored linux-zen rebuild, x86_64) + `shedos-kernel-headers`, packaged Limine renderer + pacman hook + `shedman kernel` CLI, kernel-version-watcher CI workflow, storage-driver non-removal contract test | ✅ Shipped |
+
+### 7's deferred
+
+- **`shedos-kernel-x86_64-v3`** — AVX2-targeted variant for post-Haswell hardware. Single follow-up bucket once V1 build pipeline is proven.
+- **BORE / sched_ext schedulers** — wait for upstream landing in linux-zen rather than maintaining a patch series.
+- **Clang+LTO build** — extra toolchain complexity; revisit if measurable perf win.
+- **Secure Boot shim signing** — separate workstream; needs a UEFI keypair in CI secrets. SB users stay on stock `linux` (which Arch signs via `linux-firmware`'s SB shim chain).
+- **Per-board `.config` variants** (Framework, Thinkpad, Steam Deck) — wait for user demand.
+
+---
+
 ## Conventions
 
 - A phase is "shipped" when every `B#N` in it is on `main`, documented in

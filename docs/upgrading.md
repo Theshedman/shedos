@@ -258,6 +258,47 @@ section above (`shedman config --review`).
 
 ### April 2026
 
+- **`shedos-kernel` becomes the default boot entry on next upgrade.**
+  `shedos-kernel` (a vendored linux-zen rebuild) installs alongside
+  stock `linux` via `shedman update`. The Limine menu (`timeout: 3`)
+  shows both, and the renderer makes `shedos-kernel` the first entry
+  by default — meaning **your next reboot after upgrading boots
+  shedos-kernel, not linux.** Stock `linux` stays in the menu as a
+  one-keystroke fallback if shedos-kernel doesn't suit your hardware.
+
+  To stay on stock linux instead:
+  ```
+  sudo shedman kernel --set-default linux
+  ```
+  Reboot. To switch back: `sudo shedman kernel --set-default
+  shedos-kernel`. `shedman kernel --list` shows both kernels with
+  the configured default starred.
+
+- **Power management consolidated under `tlp`.** `tlp` and `tlp-rdw`
+  now own CPU governor, disk spin-down, SATA link power, WiFi/BT
+  radio idle, PCIe runtime PM, and battery charge thresholds.
+  `power-profiles-daemon` is declared as a conflict and is removed
+  on upgrade (`replaces=()` does the swap transactionally; no
+  manual cleanup needed). If you had a custom `/etc/tlp.conf`,
+  pacman preserves it as `.pacnew`.
+
+- **systemd-oomd, ananicy-cpp, zram, and the new sysctl/udev tuning
+  ship enabled by default.** They start on first boot (oomd
+  threshold tuned to 85% swap / 60% memory pressure; ananicy
+  ruleset comes with the package; zram sized at ram/2 capped at
+  8 GB; udev assigns BFQ to HDDs and mq-deadline to SSDs). To
+  inspect: `systemctl status systemd-oomd tlp ananicy-cpp`,
+  `cat /sys/block/<dev>/queue/scheduler`, `swapon`.
+
+- **`realtime` group exists but is empty by default.** Add yourself
+  to opt into Pipewire's RT audio path:
+  ```
+  sudo gpasswd -a $USER realtime
+  ```
+  Or declaratively: edit `/etc/shedos/system.toml`'s `[[users]]`
+  and add `realtime` to your groups, then `sudo shedman apply`.
+  Re-login for the new group to take effect.
+
 - **`Super+Shift+R` no longer reloads Hyprland.** The chord is now
   `shedman screenrecord --stop` (matches `Super+R` to start). The
   reload binding moved to `Super+Shift+Ctrl+R`. Surfaces in
