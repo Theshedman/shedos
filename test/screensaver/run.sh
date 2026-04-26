@@ -73,7 +73,8 @@ expect_contains "T2 --help mentions effect" "effect" "$out"
 # T3: --list (effects)
 out=$("$BIN" --list 2>&1); code=$?
 expect_exit "T3 --list exits 0" 0 "$code" "$out"
-for effect in rain decrypt print scattered wipe slide expand crumble spotlights burn colorshift glitch quantum synthgrid matrix-rain hologram; do
+for effect in rain decrypt print scattered wipe slide expand crumble spotlights burn colorshift glitch quantum synthgrid matrix-rain hologram \
+              neon-trace blackhole shockwave liquid-fill constellation interlace thermal data-stream tetris boot-sequence; do
     expect_contains "T3 --list contains $effect" "$effect" "$out"
 done
 
