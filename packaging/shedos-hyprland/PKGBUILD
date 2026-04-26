@@ -11,7 +11,7 @@
 
 pkgname=shedos-hyprland
 pkgver=2026.04.25
-pkgrel=1
+pkgrel=2
 pkgdesc='ShedOS Hyprland desktop profile (dotfiles + DE helpers)'
 arch=('any')
 url='https://github.com/theshedman/shedos'
