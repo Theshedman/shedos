@@ -41,9 +41,12 @@ jobs:
         run: |
           pacman -Syu --noconfirm
           # scdoc is a makedep of shedos-system (renders man/*.scd → *.1).
-          # makepkg runs with --nodeps below, so this can't be left to
-          # --syncdeps — install it directly on the runner.
-          pacman -S --needed --noconfirm base-devel git sudo gnupg rclone pacman-contrib scdoc
+          # ccache is wired into makepkg via the build user's ~/.makepkg.conf
+          # below; it cuts shedos-kernel rebuilds from ~40 min to ~5 min on
+          # warm cache.
+          # makepkg runs with --nodeps for the pure-copy shedos-* packages,
+          # so makedeps can't be left to --syncdeps — install them directly.
+          pacman -S --needed --noconfirm base-devel git sudo gnupg rclone pacman-contrib scdoc ccache
           # archlinux:latest ships an empty pacman keyring. Initialize + populate
           # the archlinux trust chain so makepkg --syncdeps can verify signed
           # packages from core/extra during dependency resolution.
@@ -55,6 +58,30 @@ jobs:
           chmod 440 /etc/sudoers.d/wheel
 
       - uses: actions/checkout@v4
+
+      - name: Restore ccache
+        # ccache survives across runs, keyed on the kernel pkgver so a
+        # version bump doesn't try to reuse stale objects. Restore-keys
+        # falls back to any prior cache for partial reuse.
+        uses: actions/cache@v4
+        with:
+          path: /home/builder/.ccache
+          key: ccache-${{ runner.os }}-${{ hashFiles('packaging/shedos-kernel/PKGBUILD') }}
+          restore-keys: |
+            ccache-${{ runner.os }}-
+
+      - name: Wire ccache into makepkg
+        run: |
+          install -d -o builder -g builder /home/builder/.ccache
+          # Prepend ccache to PATH inside builder's makepkg invocations.
+          # ccache transparently fronts /usr/bin/{gcc,cc,g++}; binutils
+          # untouched.
+          install -d -o builder -g builder /home/builder
+          cat > /home/builder/.makepkg.conf <<'EOF'
+          BUILDENV=(!distcc color !check !sign ccache)
+          MAKEFLAGS="-j$(nproc)"
+          EOF
+          chown builder:builder /home/builder/.makepkg.conf
 
       - name: Refresh shedos-meta depends
         run: |

@@ -36,6 +36,7 @@ BUILD_ORDER=(
     shedos-branding
     shedos-hyprland
     shedos-nvim
+    shedos-kernel
     shedos-meta
 )
 
@@ -178,15 +179,25 @@ for dir in "${PKG_DIRS[@]}"; do
     rm -rf "$work"
     cp -a "$dir" "$work"
 
-    # Every shedos-* package is a pure-copy package: no compile step, no
-    # makedepends, just `cp -a tree/… $pkgdir`. Runtime depends=() are needed
-    # on the INSTALLED system, not on the build host. Using --syncdeps here
-    # installs runtime deps into the build container for no benefit — and is
-    # actively harmful when the installed dep mutates build-host state via
-    # its .install scriptlet. (shedos-system's post_install appends [shedos]
-    # to /etc/pacman.conf; the next `pacman -Sy` then 404s because the prod
-    # repo doesn't exist yet inside CI.) --nodeps sidesteps the whole problem.
-    mk_flags=(--nodeps --noconfirm --force --cleanbuild)
+    # Every shedos-* package except shedos-kernel is a pure-copy package: no
+    # compile step, no makedepends, just `cp -a tree/… $pkgdir`. Runtime
+    # depends=() are needed on the INSTALLED system, not on the build host.
+    # Using --syncdeps for those installs runtime deps into the build
+    # container for no benefit — and is actively harmful when the installed
+    # dep mutates build-host state via its .install scriptlet
+    # (shedos-system's post_install appends [shedos] to /etc/pacman.conf;
+    # the next `pacman -Sy` then 404s because the prod repo doesn't exist
+    # yet inside CI). --nodeps sidesteps the whole problem.
+    #
+    # shedos-kernel is the exception: it actually compiles a Linux kernel,
+    # so makepkg legitimately needs gcc / bison / flex / pahole / openssl /
+    # bc / kmod / libelf / perl / etc. Drop --nodeps for that one package
+    # so makepkg --syncdeps pulls them from pacman.
+    if [[ $pkgname == shedos-kernel ]]; then
+        mk_flags=(--syncdeps --noconfirm --force --cleanbuild)
+    else
+        mk_flags=(--nodeps --noconfirm --force --cleanbuild)
+    fi
 
     if [[ $EUID -eq 0 ]]; then
         chown -R builduser:builduser "$work"
