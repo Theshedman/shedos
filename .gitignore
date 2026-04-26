@@ -97,3 +97,7 @@ test/OVMF_VARS.fd
 # is defense-in-depth in case someone forgets to shred before `git add`.
 packaging/shedos-keyring/shedos-private.asc
 *-private.asc
+
+# Local code-review documents. Per-session audit reports that aren't
+# part of the project's durable docs.
+REVIEW-*.md
