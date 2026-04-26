@@ -24,7 +24,7 @@ YELLOW := \033[0;33m
 RED := \033[0;31m
 NC := \033[0m
 
-.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages test-review-configs test-sync-configs test-check-health test-tui-logs test-tui-history test-apply test-doctor test-shedman test-status test-completions test-migrate test-man test-screenrecord test-kernel test-installer
+.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages test-review-configs test-sync-configs test-check-health test-tui-logs test-tui-history test-apply test-apply-checkpoint test-doctor test-shedman test-status test-completions test-migrate test-man test-screenrecord test-kernel test-installer
 
 all: iso
 
@@ -47,6 +47,7 @@ help:
 	@echo "  test-tui-logs      Run shedos-logs pilot tests"
 	@echo "  test-tui-history   Run shedos-upgrade-history pilot tests"
 	@echo "  test-apply         Run shedos-apply fixture tests"
+	@echo "  test-apply-checkpoint  Run apply_core StateCheckpoint tests"
 	@echo "  test-doctor        Run shedos-doctor pilot tests"
 	@echo "  test-shedman       Run shedman dispatcher + shim parity tests"
 	@echo "  test-status        Run shedman status aggregated-dashboard tests"
@@ -320,6 +321,10 @@ test-tui-history:
 test-apply:
 	@echo -e "$(GREEN)Running shedos-apply fixture tests...$(NC)"
 	@bash $(TEST_DIR)/apply/run.sh
+
+test-apply-checkpoint:
+	@echo -e "$(GREEN)Running apply_core StateCheckpoint tests...$(NC)"
+	@bash $(TEST_DIR)/apply-checkpoint/run.sh
 
 test-doctor:
 	@echo -e "$(GREEN)Running shedos-doctor pilot tests...$(NC)"
