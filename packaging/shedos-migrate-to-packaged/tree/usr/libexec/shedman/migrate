@@ -16,8 +16,8 @@
 #   3. pacman -Syu shedos-meta — brings shedos-keyring, shedos-system,
 #      shedos-hyprland, shedos-nvim, shedos-branding, plus the full
 #      Arch/AUR stack. .pacnew files land on any /etc collisions.
-#   4. shedman config --sync --rebuild-manifest (when Phase 5 adds
-#      that flag; today we just call the plain --sync to seed state).
+#   4. shedman config --sync --rebuild-manifest if available, else
+#      plain --sync to seed state.
 #   5. shedman doctor — sanity check that the system is aligned.
 #
 # By default the tool runs in dry-run mode: it prints the plan and
