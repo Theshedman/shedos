@@ -284,18 +284,19 @@ properties:
 
 ## Phase 8 — Animated screensaver subsystem · **Shipped**
 
-The user explicitly compared this to Omarchy's tte-based screensaver
-and asked for "much more modern and better than theirs". Omarchy's
-formula is one ASCII art file × 37 tte effects. ShedOS ships
-**N art variants × M effects** = far higher visual variety with no
-Python runtime dependency.
+ShedOS ships a target-based forming-effect screensaver: each cycle
+picks one of 8 SHEDOS art variants and one of 26 forming effects,
+animates the variant into existence using the effect, holds the
+resolved art for `--hold` seconds, then picks a new pair and loops.
+**8 variants × 26 effects = 208 visually distinct sessions**, all in
+a single native Rust binary (no runtime scripting deps).
 
 | # | Deliverable | Status |
 |---|---|---|
 | 8.1 | Replace `/etc/shedos-ascii.txt` with legible "SHEDOS" block-letter art (consumed by fastfetch + every screensaver effect that reads a logo target). | ✅ Shipped |
 | 8.2 | `shedos-screensaver` Rust workspace: 8 crates (core / i18n / logos / effects / tty / wayland / audio / cli) under `packaging/shedos-screensaver/`. fluent-rs i18n, ChaCha8 deterministic RNG, signal-hook for SIGINT/SIGTERM/SIGUSR1, scdoc man page, full bash/zsh/fish completion. | ✅ Shipped |
 | 8.3 | Logo catalog (`shedos-screensaver-logos`): 8 SHEDOS art variants (block, ansi-shadow, slant, big, small, doom, outline, mini) — each `include_str!`'d at compile time so the binary has zero runtime art file dependencies. `pick_random_for_canvas` filters to variants that fit the current canvas, with `mini` as the always-fits fallback. Each variant has a curated Catppuccin Mocha default color. | ✅ Shipped |
-| 8.4 | Effects registry (`shedos-screensaver-effects`): 16 forming animations, each implementing the `Effect` trait that takes a target Frame and animates the canvas toward it. Effects: rain, decrypt, print, scattered, wipe, slide, expand, crumble, spotlights, burn, colorshift, glitch, quantum, synthgrid, matrix-rain, hologram. Integration tests assert every effect runs to completion, lands on ≥80% of target glyphs, and survives reset/setup cycles. | ✅ Shipped |
+| 8.4 | Effects registry (`shedos-screensaver-effects`): 26 forming animations, each implementing the `Effect` trait that takes a target Frame and animates the canvas toward it. Effects: rain, decrypt, print, scattered, wipe, slide, expand, crumble, spotlights, burn, colorshift, glitch, quantum, synthgrid, matrix-rain, hologram, neon-trace, blackhole, shockwave, liquid-fill, constellation, interlace, thermal, data-stream, tetris, boot-sequence. Integration tests assert every effect runs to completion, lands on a solid target with zero residue, and survives reset/setup cycles. | ✅ Shipped |
 | 8.5 | Engine: cycles `(LogoVariant, Effect)` pairs forever (or for `--duration`). Animation runs to completion, holds the resolved art for `--hold` seconds, picks a new pair, loops. `--effect=NAME` and `--logo=NAME` lock either axis; `--cycle NAME --cycle NAME` builds a custom rotation; defaults to "random both axes each cycle". | ✅ Shipped |
 | 8.6 | TTY backend (crossterm + diff-emit + RAII alt-screen guard) and Wayland backend (wlr-layer-shell + wl_shm CPU-rasterized framebuffer + fontdue-baked DejaVu Sans Mono atlas). Wallpaper compositing with `--wallpaper auto\|none\|<path>` and `--wallpaper-dim`. Keyboard interactivity = exclusive (idle-daemon mode uses on-demand so SIGUSR1 wins the lock-handoff race). | ✅ Shipped |
 | 8.7 | cpal-backed audio reactivity (mic + desktop-monitor sources, log-spaced 32-band FFT, bass-energy beat detector with warmup gate). Audio-reactive effects: rain (beat → spawn-rate spike), colorshift (peak → cycle speed), glitch (beat → row destabilization), matrix-rain (audio-aware trail freezing). | ✅ Shipped |
@@ -307,7 +308,7 @@ Python runtime dependency.
 - **Custom fonts beyond DejaVu Sans Mono** — `--font-path` accepts any TTF, but the doc/comparisons assume DejaVu. Bitmap-font support is out of scope for v1.
 - **Per-output sizing on multi-monitor setups** — Wayland renderer currently anchors to a single output. Multi-monitor mirrored overlay is a follow-up.
 - **Locales beyond en-US** — fluent catalog system is wired and the embedded en-US fallback always works; community-contributed `fr-FR.ftl`, `de-DE.ftl`, etc. drop into `/usr/share/locale/<lang>/LC_MESSAGES/` without a code change.
-- **More effects** — 16 ship initially. tte has 37; we deliberately curated. Adding more is a one-file PR per effect (template + Registry row + integration tests cover it automatically).
+- **More effects** — 26 ship initially; adding more is a one-file PR per effect (template + Registry row + integration tests cover it automatically).
 - **More logo variants** — 8 ship initially. Adding more is a one-file PR (drop `.txt` + add LIBRARY row).
 
 ---
