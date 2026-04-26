@@ -24,7 +24,7 @@ YELLOW := \033[0;33m
 RED := \033[0;31m
 NC := \033[0m
 
-.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages test-review-configs test-sync-configs test-check-health test-tui-logs test-tui-history test-apply test-apply-checkpoint test-doctor test-shedman test-status test-completions test-migrate test-man test-screenrecord test-kernel test-installer test-config test-rollback test-update test-install
+.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages test-review-configs test-sync-configs test-check-health test-tui-logs test-tui-history test-apply test-apply-checkpoint test-doctor test-shedman test-status test-completions test-migrate test-man test-screenrecord test-kernel test-installer test-config test-rollback test-update test-install test-screensaver test-screensaver-rust lint-rust
 
 all: iso
 
@@ -381,6 +381,19 @@ test-update:
 test-install:
 	@echo -e "$(GREEN)Running shedman install smoke tests...$(NC)"
 	@bash $(TEST_DIR)/install/run.sh
+
+test-screensaver:
+	@echo -e "$(GREEN)Running shedos-screensaver shell tests...$(NC)"
+	@bash $(TEST_DIR)/screensaver/run.sh
+
+test-screensaver-rust:
+	@echo -e "$(GREEN)Running shedos-screensaver cargo tests...$(NC)"
+	@cd packaging/shedos-screensaver && cargo test --workspace --locked
+
+lint-rust:
+	@echo -e "$(GREEN)Running cargo clippy + rustfmt --check...$(NC)"
+	@cd packaging/shedos-screensaver && cargo clippy --workspace --locked -- -D warnings || true
+	@cd packaging/shedos-screensaver && cargo fmt --all -- --check || true
 
 dev-install:
 	@echo -e "$(GREEN)Installing development dependencies...$(NC)"
