@@ -24,7 +24,7 @@ YELLOW := \033[0;33m
 RED := \033[0;31m
 NC := \033[0m
 
-.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages test-review-configs test-sync-configs test-check-health test-tui-logs test-tui-history test-apply test-doctor test-shedman test-status test-completions test-migrate test-man test-screenrecord test-kernel
+.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages test-review-configs test-sync-configs test-check-health test-tui-logs test-tui-history test-apply test-doctor test-shedman test-status test-completions test-migrate test-man test-screenrecord test-kernel test-installer
 
 all: iso
 
@@ -55,6 +55,7 @@ help:
 	@echo "  test-man           Run shedman man-page sanity tests"
 	@echo "  test-screenrecord  Run shedman screenrecord fixture tests"
 	@echo "  test-kernel        Run shedos-kernel storage + build-infra contract tests"
+	@echo "  test-installer     Run installer pytest suite (LUKS, disk, BTRFS, hardware parsers)"
 	@echo "  check-deps         Check build dependencies"
 	@echo "  prepare            Prepare build environment"
 	@echo "  generate-packages  Regenerate archiso/packages.x86_64 from packages/"
@@ -351,6 +352,10 @@ test-screenrecord:
 test-kernel:
 	@echo -e "$(GREEN)Running shedos-kernel storage + build-infra contract tests...$(NC)"
 	@bash $(TEST_DIR)/kernel/run.sh
+
+test-installer:
+	@echo -e "$(GREEN)Running installer pytest suite...$(NC)"
+	@cd installer && python -m pytest tests/ -v
 
 dev-install:
 	@echo -e "$(GREEN)Installing development dependencies...$(NC)"
