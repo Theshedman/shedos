@@ -53,13 +53,14 @@ source=(
     $_zen_url/releases/download/$_srctag/linux-$_srctag.patch.zst{,.sig}
 )
 source_x86_64=(config.x86_64)
-# Hardcoded so makepkg --syncdeps doesn't pull a fresh keyring at build
-# time. scripts/bump-kernel.sh diffs upstream's validpgpkeys against
-# this list on every kernel bump and prints a warning if they differ —
-# the bump still proceeds, but a maintainer-reviewed PR is required to
-# update the keys (matching how Arch tracks Greg KH / Linus / heftig
-# rotations). Keys come from
+# Auto-synced from Arch's linux-zen on every kernel bump — see
+# scripts/bump-kernel.sh's _replace_array call. Trust delegation:
+# we trust whatever fingerprints the linux-zen maintainer trusts,
+# which is the same trust we already extend by mirroring their
+# source URLs and source checksums from
 # https://gitlab.archlinux.org/archlinux/packaging/packages/linux-zen.
+# Don't hand-edit this list; bump-kernel.sh will overwrite it.
+# Rotations show up as a NOTE in the bump output for visibility.
 validpgpkeys=(
     ABAF11C65A2970B130ABE3C479BE3E4300411886  # Linus Torvalds
     647F28654894E3BD457199BE38DBBDC86092693E  # Greg Kroah-Hartman

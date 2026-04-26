@@ -78,24 +78,25 @@ if [[ -z $new_b2sums || -z $new_sha256sums ]]; then
     exit 1
 fi
 
-# Diff upstream's validpgpkeys against ours. The kernel bump does NOT
-# auto-replace keys — when Linus/Greg/heftig rotate, this prints a
-# warning so the maintainer can update the PKGBUILD by hand and verify
-# the new fingerprints out-of-band.
+if [[ -z $new_validpgpkeys ]]; then
+    echo "FATAL: couldn't extract validpgpkeys from upstream PKGBUILD" >&2
+    exit 1
+fi
+
+# Note when upstream's validpgpkeys differ from ours so the maintainer
+# sees the trust delta in the bump output. The arrays auto-sync below
+# (we delegate to whoever Arch's linux-zen maintainer trusts), but a
+# silent rotation should still be visible in the bump log.
 our_validpgpkeys=$(_extract_array "validpgpkeys" "$pkgbuild")
-if [[ -n $new_validpgpkeys && "$new_validpgpkeys" != "$our_validpgpkeys" ]]; then
+if [[ "$new_validpgpkeys" != "$our_validpgpkeys" ]]; then
     {
         echo
-        echo "WARNING: upstream validpgpkeys differ from ours."
-        echo "  --- ours -----------------------------------"
+        echo "NOTE: upstream validpgpkeys differ from ours; auto-syncing."
+        echo "  --- was --------------------------------"
         printf '%s\n' "$our_validpgpkeys"
-        echo "  --- upstream -------------------------------"
+        echo "  --- now --------------------------------"
         printf '%s\n' "$new_validpgpkeys"
-        echo "  --------------------------------------------"
-        echo "  The bump WILL proceed. Verify the new fingerprints"
-        echo "  out-of-band (kernel.org, Greg KH's keyring, etc.)"
-        echo "  before committing, then update validpgpkeys in"
-        echo "  packaging/shedos-kernel/PKGBUILD by hand."
+        echo "  ----------------------------------------"
         echo
     } >&2
 fi
@@ -124,7 +125,12 @@ import re, sys
 name, new_path, target = sys.argv[1], sys.argv[2], sys.argv[3]
 with open(new_path) as f: new_block = f.read().rstrip("\n")
 with open(target) as f: src = f.read()
-pattern = re.compile(rf'^{re.escape(name)}=\(.*?^\)', re.MULTILINE | re.DOTALL)
+# Match `name=(` at start of line through the next `)`. Closing paren
+# may sit inline with the last entry (`'SKIP')`) or on its own line —
+# both are valid bash. Non-greedy + DOTALL stops at the first `)`,
+# which is correct for the arrays we mirror (string entries without
+# embedded parens; comments in validpgpkeys are paren-free).
+pattern = re.compile(rf'^{re.escape(name)}=\(.*?\)', re.MULTILINE | re.DOTALL)
 if not pattern.search(src):
     sys.exit(f"missing {name}=( … ) block in {target}")
 with open(target, 'w') as f:
@@ -140,11 +146,13 @@ printf '%s' "$new_b2sums"            > "$tmpdir/b2sums"
 printf '%s' "$new_sha256sums"        > "$tmpdir/sha256sums"
 printf '%s' "$new_b2sums_x86_64"     > "$tmpdir/b2sums_x86_64"
 printf '%s' "$new_sha256sums_x86_64" > "$tmpdir/sha256sums_x86_64"
+printf '%s' "$new_validpgpkeys"      > "$tmpdir/validpgpkeys"
 
 _replace_array b2sums            "$tmpdir/b2sums"            "$pkgbuild"
 _replace_array sha256sums        "$tmpdir/sha256sums"        "$pkgbuild"
 _replace_array b2sums_x86_64     "$tmpdir/b2sums_x86_64"     "$pkgbuild"
 _replace_array sha256sums_x86_64 "$tmpdir/sha256sums_x86_64" "$pkgbuild"
+_replace_array validpgpkeys      "$tmpdir/validpgpkeys"      "$pkgbuild"
 
 echo "shedos-kernel: $current → $target"
 echo "Diff:"
