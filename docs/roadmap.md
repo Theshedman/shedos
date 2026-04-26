@@ -282,6 +282,27 @@ properties:
 
 ---
 
+## Phase 8 — Animated screensaver subsystem · **Shipped**
+
+| # | Deliverable | Status |
+|---|---|---|
+| 8.1 | Replace `/etc/shedos-ascii.txt` with legible "SHEDOS" block-letter art (consumed by fastfetch + every screensaver style that reads the logo). | ✅ Shipped |
+| 8.2 | `shedos-screensaver` Rust workspace: 7 crates (core / i18n / styles / tty / wayland / audio / cli) under `packaging/shedos-screensaver/`. fluent-rs i18n, ChaCha8 deterministic RNG, signal-hook for SIGINT/SIGTERM/SIGUSR1, scdoc man page, full bash/zsh/fish completion. | ✅ Shipped |
+| 8.3 | TTY backend (crossterm + diff-emit + RAII alt-screen guard) and 8 styles: logo-bounce, matrix, plasma, starfield, conway, tunnel, waves, mandala. Per-style typed option schemas (`--style-opt KEY=VAL` validated against ranges/enums). 8 insta golden-snapshot regression tests. | ✅ Shipped |
+| 8.4 | Wayland backend (`wlr-layer-shell-unstable-v1` overlay + `wl_shm` CPU-rasterized framebuffer + fontdue-baked DejaVu Sans Mono atlas). Wallpaper compositing with `--wallpaper auto\|none\|<path>` and `--wallpaper-dim`. Keyboard interactivity = exclusive (idle-daemon mode uses on-demand so SIGUSR1 wins the lock-handoff race). | ✅ Shipped |
+| 8.5 | cpal-backed audio reactivity (mic + desktop-monitor sources, log-spaced 32-band FFT, bass-energy beat detector with warmup gate). 5 styles consume audio: matrix (beat → spawn burst), plasma (bass → freq_x, treble → freq_y), starfield (beat → warp pulse), tunnel (peak → ring brightness), waves (bass → wavelength, peak → amplitude). | ✅ Shipped |
+| 8.6 | Default-on hypridle integration via `/etc/skel/.config/hypr/hypridle.conf` — fires 60 s before lock with `systemd-run --user --scope --unit=shedos-screensaver`, on-resume sends SIGUSR1. Doc files at `/usr/share/doc/shedos-screensaver/` (hypridle-example.conf, styles.md, audio-setup.md). `shedos-screensaver` added to `scripts/render-meta-depends.sh`'s `shedos_pkgs` so the meta package pulls it on every install. | ✅ Shipped |
+
+### 8's deferred
+
+- **wgpu/Vulkan GPU pipeline** — current Wayland backend rasterizes on CPU via `wl_shm`. Plenty fast for terminal-cell-density rendering at 60 fps; revisit if a future style needs real per-pixel shading.
+- **Real-tty headless animation snapshot tests** — the cell-grid digest snapshots cover style logic; capturing actual SGR-byte output through a controlled pty is deferred until a frame-rendering bug forces the issue.
+- **Custom fonts beyond DejaVu Sans Mono** — `--font-path` accepts any TTF, but the doc/comparisons assume DejaVu. Bitmap-font support is out of scope for v1.
+- **Per-output sizing on multi-monitor setups** — Wayland renderer currently anchors to a single output. Multi-monitor mirrored overlay is a follow-up.
+- **Locales beyond en-US** — fluent catalog system is wired and the embedded en-US fallback always works; community-contributed `fr-FR.ftl`, `de-DE.ftl`, etc. drop into `/usr/share/locale/<lang>/LC_MESSAGES/` without a code change.
+
+---
+
 ## Conventions
 
 - A phase is "shipped" when every `B#N` in it is on `main`, documented in
