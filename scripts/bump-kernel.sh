@@ -71,10 +71,33 @@ new_b2sums=$(_extract_array "b2sums" "$upstream_pkgbuild")
 new_sha256sums=$(_extract_array "sha256sums" "$upstream_pkgbuild")
 new_b2sums_x86_64=$(_extract_array "b2sums_x86_64" "$upstream_pkgbuild")
 new_sha256sums_x86_64=$(_extract_array "sha256sums_x86_64" "$upstream_pkgbuild")
+new_validpgpkeys=$(_extract_array "validpgpkeys" "$upstream_pkgbuild")
 
 if [[ -z $new_b2sums || -z $new_sha256sums ]]; then
     echo "FATAL: couldn't extract checksum arrays from upstream PKGBUILD" >&2
     exit 1
+fi
+
+# Diff upstream's validpgpkeys against ours. The kernel bump does NOT
+# auto-replace keys — when Linus/Greg/heftig rotate, this prints a
+# warning so the maintainer can update the PKGBUILD by hand and verify
+# the new fingerprints out-of-band.
+our_validpgpkeys=$(_extract_array "validpgpkeys" "$pkgbuild")
+if [[ -n $new_validpgpkeys && "$new_validpgpkeys" != "$our_validpgpkeys" ]]; then
+    {
+        echo
+        echo "WARNING: upstream validpgpkeys differ from ours."
+        echo "  --- ours -----------------------------------"
+        printf '%s\n' "$our_validpgpkeys"
+        echo "  --- upstream -------------------------------"
+        printf '%s\n' "$new_validpgpkeys"
+        echo "  --------------------------------------------"
+        echo "  The bump WILL proceed. Verify the new fingerprints"
+        echo "  out-of-band (kernel.org, Greg KH's keyring, etc.)"
+        echo "  before committing, then update validpgpkeys in"
+        echo "  packaging/shedos-kernel/PKGBUILD by hand."
+        echo
+    } >&2
 fi
 
 echo "Fetching $base/config.x86_64…"

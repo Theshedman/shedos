@@ -77,8 +77,13 @@ check-root:
 check-deps:
 	@echo -e "$(GREEN)Checking dependencies...$(NC)"
 	@command -v mkarchiso >/dev/null 2>&1 || { echo -e "$(RED)Error: archiso is not installed. Run: pacman -S archiso$(NC)"; exit 1; }
-	@command -v qemu-system-x86_64 >/dev/null 2>&1 || echo -e "$(YELLOW)Warning: qemu not installed (needed for testing)$(NC)"
 	@command -v repo-add >/dev/null 2>&1 || { echo -e "$(RED)Error: repo-add is not installed. Run: pacman -S pacman$(NC)"; exit 1; }
+	@command -v git >/dev/null 2>&1 || { echo -e "$(RED)Error: git is not installed. Run: pacman -S git$(NC)"; exit 1; }
+	@command -v python >/dev/null 2>&1 || { echo -e "$(RED)Error: python is not installed (used by bump-kernel.sh, render-meta-depends.sh, installer tests). Run: pacman -S python$(NC)"; exit 1; }
+	@command -v ruff >/dev/null 2>&1 || echo -e "$(YELLOW)Warning: ruff not installed (needed for 'make lint'). Run: cd installer && pip install -e .[dev]$(NC)"
+	@command -v mypy >/dev/null 2>&1 || echo -e "$(YELLOW)Warning: mypy not installed (needed for 'make lint'). Run: cd installer && pip install -e .[dev]$(NC)"
+	@command -v qemu-system-x86_64 >/dev/null 2>&1 || echo -e "$(YELLOW)Warning: qemu not installed (needed for 'make test')$(NC)"
+	@command -v yay >/dev/null 2>&1 || echo -e "$(YELLOW)Warning: yay not installed (needed for AUR builds outside CI)$(NC)"
 	@echo -e "$(GREEN)All required dependencies found$(NC)"
 
 
