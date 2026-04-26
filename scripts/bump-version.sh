@@ -41,9 +41,22 @@ if ! [[ $new_version =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}(\.[0-9]+)?$ ]]; then
     exit 1
 fi
 
+# Packages that track upstream pkgver instead of ShedOS CalVer.
+# Their version comes from a dedicated bumper (e.g. scripts/bump-kernel.sh
+# for shedos-kernel pulls upstream linux-zen). Skip them here.
+declare -A skip_pkgs=(
+    [shedos-kernel]=1
+)
+
 changed=0
+skipped=0
 for pkgbuild in "$root"/packaging/shedos-*/PKGBUILD; do
     pkg=$(basename "$(dirname "$pkgbuild")")
+    if [[ -n ${skip_pkgs[$pkg]:-} ]]; then
+        echo "  $pkg: skipped (tracks upstream pkgver)"
+        skipped=$((skipped + 1))
+        continue
+    fi
     current_ver=$(awk -F= '/^pkgver=/ {print $2; exit}' "$pkgbuild")
     current_rel=$(awk -F= '/^pkgrel=/ {print $2; exit}' "$pkgbuild")
 
@@ -63,7 +76,7 @@ for pkgbuild in "$root"/packaging/shedos-*/PKGBUILD; do
     changed=$((changed + 1))
 done
 
-echo "Updated $changed PKGBUILDs."
+echo "Updated $changed PKGBUILDs (skipped $skipped)."
 echo
 echo "Next:"
 echo "  git diff packaging/ VERSION"
