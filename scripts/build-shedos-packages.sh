@@ -195,6 +195,39 @@ for dir in "${PKG_DIRS[@]}"; do
     # so makepkg --syncdeps pulls them from pacman.
     if [[ $pkgname == shedos-kernel ]]; then
         mk_flags=(--syncdeps --noconfirm --force --cleanbuild)
+
+        # makepkg verifies linux-X.Y.Z.tar.sign and the zen patch .sig
+        # against the BUILDER user's gpg keyring. validpgpkeys=() in the
+        # PKGBUILD only WHITELISTS trust — it does not import the keys.
+        # On a fresh CI runner (no cached ~/.gnupg) the verification fails
+        # with "unknown public key 38DBBDC86092693E" / "B8AC08600F108CDF"
+        # and aborts the build. Parse the fingerprints out of the PKGBUILD
+        # itself so this auto-tracks bump-kernel.sh's auto-syncs and never
+        # falls out of step with upstream key rotations.
+        mapfile -t kfps < <(awk '
+            /^validpgpkeys=\(/ { seen=1; next }
+            seen && /^\)/      { exit }
+            seen               { sub(/#.*/, ""); for (i=1;i<=NF;i++) if ($i ~ /^[A-F0-9]{40}$/) print $i }
+        ' "$dir/PKGBUILD")
+        if (( ${#kfps[@]} == 0 )); then
+            echo "FATAL: shedos-kernel PKGBUILD has no parseable validpgpkeys" >&2
+            exit 1
+        fi
+        echo "→ Importing ${#kfps[@]} kernel-source signing key(s) into builduser keyring..."
+        _recv_kernel_keys() {
+            local user_prefix=()
+            [[ $EUID -eq 0 ]] && user_prefix=(sudo -u builduser)
+            "${user_prefix[@]}" gpg --batch --keyserver hkps://keyserver.ubuntu.com \
+                --recv-keys "${kfps[@]}" 2>&1 \
+                || "${user_prefix[@]}" gpg --batch --keyserver hkps://keys.openpgp.org \
+                    --recv-keys "${kfps[@]}" 2>&1 \
+                || "${user_prefix[@]}" gpg --batch --keyserver hkps://pgp.mit.edu \
+                    --recv-keys "${kfps[@]}" 2>&1
+        }
+        if ! _recv_kernel_keys; then
+            echo "FATAL: could not retrieve kernel signing keys from any keyserver" >&2
+            exit 1
+        fi
     else
         mk_flags=(--nodeps --noconfirm --force --cleanbuild)
     fi
