@@ -284,22 +284,31 @@ properties:
 
 ## Phase 8 — Animated screensaver subsystem · **Shipped**
 
+The user explicitly compared this to Omarchy's tte-based screensaver
+and asked for "much more modern and better than theirs". Omarchy's
+formula is one ASCII art file × 37 tte effects. ShedOS ships
+**N art variants × M effects** = far higher visual variety with no
+Python runtime dependency.
+
 | # | Deliverable | Status |
 |---|---|---|
-| 8.1 | Replace `/etc/shedos-ascii.txt` with legible "SHEDOS" block-letter art (consumed by fastfetch + every screensaver style that reads the logo). | ✅ Shipped |
-| 8.2 | `shedos-screensaver` Rust workspace: 7 crates (core / i18n / styles / tty / wayland / audio / cli) under `packaging/shedos-screensaver/`. fluent-rs i18n, ChaCha8 deterministic RNG, signal-hook for SIGINT/SIGTERM/SIGUSR1, scdoc man page, full bash/zsh/fish completion. | ✅ Shipped |
-| 8.3 | TTY backend (crossterm + diff-emit + RAII alt-screen guard) and 8 styles: logo-bounce, matrix, plasma, starfield, conway, tunnel, waves, mandala. Per-style typed option schemas (`--style-opt KEY=VAL` validated against ranges/enums). 8 insta golden-snapshot regression tests. | ✅ Shipped |
-| 8.4 | Wayland backend (`wlr-layer-shell-unstable-v1` overlay + `wl_shm` CPU-rasterized framebuffer + fontdue-baked DejaVu Sans Mono atlas). Wallpaper compositing with `--wallpaper auto\|none\|<path>` and `--wallpaper-dim`. Keyboard interactivity = exclusive (idle-daemon mode uses on-demand so SIGUSR1 wins the lock-handoff race). | ✅ Shipped |
-| 8.5 | cpal-backed audio reactivity (mic + desktop-monitor sources, log-spaced 32-band FFT, bass-energy beat detector with warmup gate). 5 styles consume audio: matrix (beat → spawn burst), plasma (bass → freq_x, treble → freq_y), starfield (beat → warp pulse), tunnel (peak → ring brightness), waves (bass → wavelength, peak → amplitude). | ✅ Shipped |
-| 8.6 | Default-on hypridle integration via `/etc/skel/.config/hypr/hypridle.conf` — fires 60 s before lock with `systemd-run --user --scope --unit=shedos-screensaver`, on-resume sends SIGUSR1. Doc files at `/usr/share/doc/shedos-screensaver/` (hypridle-example.conf, styles.md, audio-setup.md). `shedos-screensaver` added to `scripts/render-meta-depends.sh`'s `shedos_pkgs` so the meta package pulls it on every install. | ✅ Shipped |
+| 8.1 | Replace `/etc/shedos-ascii.txt` with legible "SHEDOS" block-letter art (consumed by fastfetch + every screensaver effect that reads a logo target). | ✅ Shipped |
+| 8.2 | `shedos-screensaver` Rust workspace: 8 crates (core / i18n / logos / effects / tty / wayland / audio / cli) under `packaging/shedos-screensaver/`. fluent-rs i18n, ChaCha8 deterministic RNG, signal-hook for SIGINT/SIGTERM/SIGUSR1, scdoc man page, full bash/zsh/fish completion. | ✅ Shipped |
+| 8.3 | Logo catalog (`shedos-screensaver-logos`): 8 SHEDOS art variants (block, ansi-shadow, slant, big, small, doom, outline, mini) — each `include_str!`'d at compile time so the binary has zero runtime art file dependencies. `pick_random_for_canvas` filters to variants that fit the current canvas, with `mini` as the always-fits fallback. Each variant has a curated Catppuccin Mocha default color. | ✅ Shipped |
+| 8.4 | Effects registry (`shedos-screensaver-effects`): 16 forming animations, each implementing the `Effect` trait that takes a target Frame and animates the canvas toward it. Effects: rain, decrypt, print, scattered, wipe, slide, expand, crumble, spotlights, burn, colorshift, glitch, quantum, synthgrid, matrix-rain, hologram. Integration tests assert every effect runs to completion, lands on ≥80% of target glyphs, and survives reset/setup cycles. | ✅ Shipped |
+| 8.5 | Engine: cycles `(LogoVariant, Effect)` pairs forever (or for `--duration`). Animation runs to completion, holds the resolved art for `--hold` seconds, picks a new pair, loops. `--effect=NAME` and `--logo=NAME` lock either axis; `--cycle NAME --cycle NAME` builds a custom rotation; defaults to "random both axes each cycle". | ✅ Shipped |
+| 8.6 | TTY backend (crossterm + diff-emit + RAII alt-screen guard) and Wayland backend (wlr-layer-shell + wl_shm CPU-rasterized framebuffer + fontdue-baked DejaVu Sans Mono atlas). Wallpaper compositing with `--wallpaper auto\|none\|<path>` and `--wallpaper-dim`. Keyboard interactivity = exclusive (idle-daemon mode uses on-demand so SIGUSR1 wins the lock-handoff race). | ✅ Shipped |
+| 8.7 | cpal-backed audio reactivity (mic + desktop-monitor sources, log-spaced 32-band FFT, bass-energy beat detector with warmup gate). Audio-reactive effects: rain (beat → spawn-rate spike), colorshift (peak → cycle speed), glitch (beat → row destabilization), matrix-rain (audio-aware trail freezing). | ✅ Shipped |
+| 8.8 | Default-on hypridle integration via `/etc/skel/.config/hypr/hypridle.conf` — fires 60 s before lock with `systemd-run --user --scope --unit=shedos-screensaver`, on-resume sends SIGUSR1. Doc files at `/usr/share/doc/shedos-screensaver/` (hypridle-example.conf, effects.md, logos.md, audio-setup.md). `shedos-screensaver` added to `scripts/render-meta-depends.sh`'s `shedos_pkgs` so the meta package pulls it on every install. | ✅ Shipped |
 
 ### 8's deferred
 
-- **wgpu/Vulkan GPU pipeline** — current Wayland backend rasterizes on CPU via `wl_shm`. Plenty fast for terminal-cell-density rendering at 60 fps; revisit if a future style needs real per-pixel shading.
-- **Real-tty headless animation snapshot tests** — the cell-grid digest snapshots cover style logic; capturing actual SGR-byte output through a controlled pty is deferred until a frame-rendering bug forces the issue.
+- **wgpu/Vulkan GPU pipeline** — current Wayland backend rasterizes on CPU via `wl_shm`. Plenty fast for terminal-cell-density rendering at 60 fps; revisit if a future effect needs real per-pixel shading.
 - **Custom fonts beyond DejaVu Sans Mono** — `--font-path` accepts any TTF, but the doc/comparisons assume DejaVu. Bitmap-font support is out of scope for v1.
 - **Per-output sizing on multi-monitor setups** — Wayland renderer currently anchors to a single output. Multi-monitor mirrored overlay is a follow-up.
 - **Locales beyond en-US** — fluent catalog system is wired and the embedded en-US fallback always works; community-contributed `fr-FR.ftl`, `de-DE.ftl`, etc. drop into `/usr/share/locale/<lang>/LC_MESSAGES/` without a code change.
+- **More effects** — 16 ship initially. tte has 37; we deliberately curated. Adding more is a one-file PR per effect (template + Registry row + integration tests cover it automatically).
+- **More logo variants** — 8 ship initially. Adding more is a one-file PR (drop `.txt` + add LIBRARY row).
 
 ---
 
