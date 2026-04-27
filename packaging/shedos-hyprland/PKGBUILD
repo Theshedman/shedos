@@ -11,7 +11,7 @@
 
 pkgname=shedos-hyprland
 pkgver=2026.04.27
-pkgrel=1
+pkgrel=2
 pkgdesc='ShedOS Hyprland desktop profile (dotfiles + DE helpers)'
 arch=('any')
 url='https://github.com/theshedman/shedos'
@@ -33,13 +33,13 @@ depends=(
     'zsh-syntax-highlighting'
     'hyprsunset'
     'pacman-contrib'
+    'yad'
 )
 optdepends=(
     'impala: network TUI launched from waybar network icon'
     'pavucontrol: volume mixer launched from waybar pulseaudio icon'
     'blueman: bluetooth manager launched from waybar'
     'btop: system monitor launched from waybar cpu icon'
-    'yad: dialog used by `shedman welcome`'
     'wf-recorder: required for `shedman screenrecord` (Super+R / waybar pill)'
     'slurp: region selection for `shedman screenrecord --region`'
 )
