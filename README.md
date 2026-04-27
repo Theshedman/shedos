@@ -32,6 +32,8 @@ system stays current via `pacman -Syu` — no reinstall, no image swap.
 - **Secure**: Optional LUKS encryption.
 - **In-place upgrades**: `shedman update` + the waybar indicator surface updates the moment they land on the repo.
 
+> **WiFi firmware:** ShedOS ships firmware for AMD/Intel/NVIDIA GPUs and Atheros + Realtek WiFi (covers ~95% of laptops). If your WiFi card is Mediatek, Marvell, Broadcom, or Qualcomm, run `pacman -S linux-firmware-mediatek` (or `-marvell` / `-broadcom` / `-qcom`) on a wired connection after first boot.
+
 ## ⌨️ Keybindings Cheatsheet
 
 | Key | Action |
