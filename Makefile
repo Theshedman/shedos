@@ -273,21 +273,60 @@ clean-all: check-root
 	@rm -rf db-cache
 	@echo -e "$(GREEN)Full clean complete (packages and frozen databases removed)$(NC)"
 
+# `make test` and `make test-bios` resolve the ISO to boot in this order:
+#   1. ISO=path/to/file.iso        — explicit override on the command line
+#   2. $(OUTPUT_DIR)/$(ISO_NAME)   — the ISO matching the current $(VERSION),
+#                                    i.e. what `sudo make iso` *would* produce
+#   3. newest $(OUTPUT_DIR)/shedos-*.iso — any ISO you've built locally,
+#                                    even if its CalVer no longer matches
+#                                    the current VERSION
+# (3) is what makes the dev loop work after a `git pull` that bumps
+# VERSION: your previously-built ISO still gets tested.
+ISO ?=
+
 test:
-	@if [ ! -f "$(OUTPUT_DIR)/$(ISO_NAME)" ]; then \
-		echo -e "$(RED)Error: ISO not found. Run 'sudo make iso' first$(NC)"; \
+	@if [ -n "$(ISO)" ] && [ ! -f "$(ISO)" ]; then \
+		echo -e "$(RED)Error: ISO=$(ISO) not found.$(NC)" >&2; \
 		exit 1; \
 	fi
-	@echo -e "$(GREEN)Testing ISO in QEMU (UEFI mode)...$(NC)"
-	./scripts/test-iso.sh "$(OUTPUT_DIR)/$(ISO_NAME)" uefi
+	@iso="$(ISO)"; \
+	if [ -z "$$iso" ] && [ -f "$(OUTPUT_DIR)/$(ISO_NAME)" ]; then \
+		iso="$(OUTPUT_DIR)/$(ISO_NAME)"; \
+	fi; \
+	if [ -z "$$iso" ]; then \
+		iso=$$(ls -1t $(OUTPUT_DIR)/shedos-*.iso 2>/dev/null | head -n1); \
+		if [ -n "$$iso" ]; then \
+			echo -e "$(YELLOW)Note: $(ISO_NAME) not in $(OUTPUT_DIR)/; using newest ISO: $$iso$(NC)"; \
+		fi; \
+	fi; \
+	if [ -z "$$iso" ]; then \
+		echo -e "$(RED)Error: no ISO found in $(OUTPUT_DIR)/. Run 'sudo make iso' or pass ISO=path/to/file.iso.$(NC)" >&2; \
+		exit 1; \
+	fi; \
+	echo -e "$(GREEN)Testing $$iso in QEMU (UEFI mode)...$(NC)"; \
+	./scripts/test-iso.sh "$$iso" uefi
 
 test-bios:
-	@if [ ! -f "$(OUTPUT_DIR)/$(ISO_NAME)" ]; then \
-		echo -e "$(RED)Error: ISO not found. Run 'sudo make iso' first$(NC)"; \
+	@if [ -n "$(ISO)" ] && [ ! -f "$(ISO)" ]; then \
+		echo -e "$(RED)Error: ISO=$(ISO) not found.$(NC)" >&2; \
 		exit 1; \
 	fi
-	@echo -e "$(GREEN)Testing ISO in QEMU (BIOS mode)...$(NC)"
-	./scripts/test-iso.sh "$(OUTPUT_DIR)/$(ISO_NAME)" bios
+	@iso="$(ISO)"; \
+	if [ -z "$$iso" ] && [ -f "$(OUTPUT_DIR)/$(ISO_NAME)" ]; then \
+		iso="$(OUTPUT_DIR)/$(ISO_NAME)"; \
+	fi; \
+	if [ -z "$$iso" ]; then \
+		iso=$$(ls -1t $(OUTPUT_DIR)/shedos-*.iso 2>/dev/null | head -n1); \
+		if [ -n "$$iso" ]; then \
+			echo -e "$(YELLOW)Note: $(ISO_NAME) not in $(OUTPUT_DIR)/; using newest ISO: $$iso$(NC)"; \
+		fi; \
+	fi; \
+	if [ -z "$$iso" ]; then \
+		echo -e "$(RED)Error: no ISO found in $(OUTPUT_DIR)/. Run 'sudo make iso' or pass ISO=path/to/file.iso.$(NC)" >&2; \
+		exit 1; \
+	fi; \
+	echo -e "$(GREEN)Testing $$iso in QEMU (BIOS mode)...$(NC)"; \
+	./scripts/test-iso.sh "$$iso" bios
 
 test-installed:
 	@if [ ! -f "$(TEST_DIR)/test-disk.qcow2" ]; then \
