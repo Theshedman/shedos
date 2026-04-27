@@ -22,6 +22,7 @@ depends=(
     'shedos-nvim'
     'shedos-branding'
     'shedos-kernel'
+    'shedos-kernel-headers'
     'shedos-screensaver'
     'acpid'
     'age'
