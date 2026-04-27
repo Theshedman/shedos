@@ -109,20 +109,25 @@ shedos-packages:
 	@./scripts/build-shedos-packages.sh
 	@echo -e "$(GREEN)ShedOS packages built into $(REPO_DIR)$(NC)"
 
-download-packages: check-root
-	@# NOTE: intentionally does NOT depend on `generate-packages`. That target
-	@# regenerates archiso/packages.x86_64 to include EVERY package in
-	@# packages/official/*.txt + packages/aur.txt, which blows past the
-	@# "shedos-meta + 5 live-boot essentials" design and pacstraps proprietary
-	@# AUR packages (VS Code, Chrome, Slack, …) straight into the ISO. The
-	@# committed archiso/packages.x86_64 is the minimal one; keep it that way.
-	@# download-packages.sh reads packages/official/*.txt + aur.txt directly.
+download-packages: check-root generate-packages
+	@# generate-packages is a hard prereq: archiso/packages.x86_64 is the
+	@# AUTO-GENERATED flat list of every package the ISO ships, derived from
+	@# packages/official/*.txt + packages/aur.txt (with aur-norepublish.txt
+	@# excluded). prepare/verify-cache.sh reads this file ~3h into the build,
+	@# so any drift between sources and the committed file blows up the
+	@# pipeline ages after the offending commit. Always regenerate first;
+	@# the committed copy exists for grep/diff convenience, not as a build
+	@# input that's allowed to rot.
 	@echo -e "$(GREEN)Pre-downloading all packages...$(NC)"
 	@echo -e "$(YELLOW)This avoids network issues during ISO build$(NC)"
 	@./scripts/download-packages.sh
 	@echo -e "$(GREEN)Packages downloaded and cached$(NC)"
 
-prepare: check-root check-deps
+prepare: check-root check-deps generate-packages
+	@# generate-packages prereq: see download-packages note. archiso/
+	@# packages.x86_64 is generated from packages/*.txt; never trust the
+	@# committed copy at build time — regenerate so verify-cache.sh below
+	@# checks against fresh truth.
 	@echo -e "$(GREEN)Preparing build environment...$(NC)"
 	@# Verify package cache BEFORE starting build
 	@echo -e "$(GREEN)Verifying package cache completeness...$(NC)"
