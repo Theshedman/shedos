@@ -295,6 +295,23 @@ for dir in "${PKG_DIRS[@]}"; do
     BUILT=$((BUILT + 1))
 done
 
+# Strip -debug splits from the local repo before mkarchiso runs. Mirror
+# of the corresponding step in .github/workflows/build-iso.yml so local
+# `make iso` produces the same trimmed payload as CI. -debug packages
+# ship debug symbols that the live/installed system never uses.
+echo ""
+echo "Stripping -debug packages from $REPO_DIR/ ..."
+shopt -s nullglob
+debug_pkgs=( "$REPO_DIR"/*-debug-*.pkg.tar.zst )
+if (( ${#debug_pkgs[@]} > 0 )); then
+    rm -f "$REPO_DIR"/*-debug-*.pkg.tar.zst "$REPO_DIR"/*-debug-*.pkg.tar.zst.sig
+    echo "  removed ${#debug_pkgs[@]} debug split(s)"
+    _refresh_repo_db
+else
+    echo "  no -debug splits present; nothing to do"
+fi
+shopt -u nullglob
+
 echo ""
 echo "Final shedos-repo database state:"
 ls -lh "$REPO_DIR"/shedos-repo.*

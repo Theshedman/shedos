@@ -213,6 +213,20 @@ jobs:
           path: /tmp/shedos-kernel-pkg-cache
           key: shedos-kernel-pkg-${{ runner.os }}-${{ hashFiles('packaging/shedos-kernel/PKGBUILD', 'packaging/shedos-kernel/config.x86_64') }}
 
+      - name: Strip debug packages from shedos-repo
+        # Cleanup pass before mksquashfs: -debug variants ship debug
+        # symbols that no end user needs at runtime, and they bloat both
+        # archiso/shedos-repo/ on the ISO and pacman resolution. Re-index
+        # the repo db so pacman doesn't trip on a now-missing debug split.
+        run: |
+          rm -f archiso/shedos-repo/*-debug-*.pkg.tar.zst archiso/shedos-repo/*-debug-*.pkg.tar.zst.sig
+          cd archiso/shedos-repo
+          shopt -s nullglob
+          pkgs=( *.pkg.tar.zst )
+          if (( ${#pkgs[@]} > 0 )); then
+              repo-add -R -n -p shedos-repo.db.tar.gz "${pkgs[@]}"
+          fi
+
       - name: Build ISO
         env:
           # Strip the leading "v" from the tag so the ISO filename is

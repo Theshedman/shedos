@@ -24,7 +24,7 @@ system stays current via `pacman -Syu` — no reinstall, no image swap.
 ### 🛠️ Developer Ready
 - **Tools**: Neovim (LazyVim), VSCode, Zsh + Oh My Zsh.
 - **Languages**: Pre-configured for Python, Node, Go, Rust, C++.
-- **Containers**: Docker, Podman, K8s tools ready.
+- **Containers**: Docker + K8s tools ready (kubectl, kind, helm, k9s).
 
 ### 🔒 System
 - **Native-package install**: All shedOS-specific content is delivered as signed Arch packages (see `packaging/`).
