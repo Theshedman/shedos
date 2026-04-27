@@ -129,6 +129,11 @@ prepare: check-root check-deps generate-packages
 	@# committed copy at build time — regenerate so verify-cache.sh below
 	@# checks against fresh truth.
 	@echo -e "$(GREEN)Preparing build environment...$(NC)"
+	@# Pre-flight: every shedos-* PKGBUILD depend must be in some
+	@# source list (or the base allowlist / virtual-provider table).
+	@# 0.2 s here saves a 50-min pacstrap stall later.
+	@echo -e "$(GREEN)Verifying shedos-* PKGBUILD deps are covered by source lists...$(NC)"
+	@./scripts/verify-shedos-deps.sh
 	@# Verify package cache BEFORE starting build
 	@echo -e "$(GREEN)Verifying package cache completeness...$(NC)"
 	@./scripts/verify-cache.sh || { \
