@@ -218,21 +218,38 @@ for dir in "${PKG_DIRS[@]}"; do
     # the next `pacman -Sy` then 404s because the prod repo doesn't exist
     # yet inside CI). --nodeps sidesteps the whole problem.
     #
-    # shedos-kernel is the exception: it actually compiles a Linux kernel,
-    # so makepkg legitimately needs gcc / bison / flex / pahole / openssl /
-    # bc / kmod / libelf / perl / etc. Drop --nodeps for that one package
-    # so makepkg --syncdeps pulls them from pacman.
-    if [[ $pkgname == shedos-kernel ]]; then
-        mk_flags=(--syncdeps --noconfirm --force --cleanbuild)
+    # Two exceptions actually compile code and need their build-time
+    # dependencies installed:
+    #   shedos-kernel       — full Linux kernel compile; gcc / bison /
+    #                         flex / pahole / openssl / bc / kmod /
+    #                         libelf / perl / etc.
+    #   shedos-screensaver  — Rust workspace including cpal → alsa-sys,
+    #                         which fails its build script if alsa-lib's
+    #                         pkg-config file isn't present at compile
+    #                         time. Both makedepends and depends are
+    #                         pulled in.
+    # Both keep --syncdeps so makepkg pulls the deps via pacman before
+    # the build kicks off. Every other shedos-* package is a pure
+    # cp -a tree/… payload with no compile step, so --nodeps is safe
+    # and avoids running the runtime deps' .install scriptlets in the
+    # build container.
+    case "$pkgname" in
+        shedos-kernel|shedos-screensaver)
+            mk_flags=(--syncdeps --noconfirm --force --cleanbuild)
+            ;;
+        *)
+            mk_flags=(--nodeps --noconfirm --force --cleanbuild)
+            ;;
+    esac
 
-        # makepkg verifies linux-X.Y.Z.tar.sign and the zen patch .sig
-        # against the BUILDER user's gpg keyring. validpgpkeys=() in the
-        # PKGBUILD only WHITELISTS trust — it does not import the keys.
-        # On a fresh CI runner (no cached ~/.gnupg) the verification fails
-        # with "unknown public key 38DBBDC86092693E" / "B8AC08600F108CDF"
-        # and aborts the build. Parse the fingerprints out of the PKGBUILD
-        # itself so this auto-tracks bump-kernel.sh's auto-syncs and never
-        # falls out of step with upstream key rotations.
+    # Kernel-only: import upstream signing keys for the source-tarball
+    # signature checks. validpgpkeys=() in the PKGBUILD only WHITELISTS
+    # trust — it doesn't fetch the keys. On a fresh CI runner (no cached
+    # ~/.gnupg) the source verification fails with "unknown public key …"
+    # and aborts. Parse the fingerprints out of the PKGBUILD itself so
+    # this auto-tracks bump-kernel.sh's auto-syncs and never falls out
+    # of step with upstream key rotations.
+    if [[ $pkgname == shedos-kernel ]]; then
         mapfile -t kfps < <(awk '
             /^validpgpkeys=\(/ { seen=1; next }
             seen && /^\)/      { exit }
@@ -257,8 +274,6 @@ for dir in "${PKG_DIRS[@]}"; do
             echo "FATAL: could not retrieve kernel signing keys from any keyserver" >&2
             exit 1
         fi
-    else
-        mk_flags=(--nodeps --noconfirm --force --cleanbuild)
     fi
 
     if [[ $EUID -eq 0 ]]; then
