@@ -42,7 +42,12 @@ jobs:
           # package here that actually compiles). Wired into makepkg via
           # /etc/makepkg.conf below; cuts the kernel from ~2h45m cold to
           # ~5 min on warm cache. Same pattern as build-packages.yml.
-          pacman -S --needed --noconfirm archiso base-devel git sudo rclone rsync grub scdoc ccache
+          # python: render-meta-depends.sh shells to it indirectly
+          # via shedos-* PKGBUILDs; `make check-deps` warns if missing
+          # but several `make` targets do hard-require it. Belt-and-
+          # braces: install explicitly so we don't depend on rust /
+          # llvm / similar transitive pull-ins to bring it in.
+          pacman -S --needed --noconfirm archiso base-devel git sudo rclone rsync grub scdoc ccache python
           # archlinux:latest ships an empty pacman keyring. Initialize +
           # populate the archlinux trust chain so makepkg --syncdeps (invoked
           # transitively by the AUR prebuild below) can verify signed

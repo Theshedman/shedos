@@ -82,11 +82,20 @@ check-root:
 	fi
 
 check-deps:
+	@# `check-deps` covers the **iso build path only**. Tools that are
+	@# only needed by other targets (bump-kernel.sh → python; installer
+	@# tests → python+pytest; lint → ruff/mypy; `make test` → qemu;
+	@# AUR upkeep → yay) live as warnings and let those targets fail
+	@# with their own error if the tool is missing. Why: this target
+	@# runs at the start of `make iso` in CI, where adding a
+	@# transitively-pulled tool like python to the required set means
+	@# every CI environment that doesn't happen to drag it in via
+	@# --syncdeps gets a 5-minute fail instead of a working ISO build.
 	@echo -e "$(GREEN)Checking dependencies...$(NC)"
 	@command -v mkarchiso >/dev/null 2>&1 || { echo -e "$(RED)Error: archiso is not installed. Run: pacman -S archiso$(NC)"; exit 1; }
 	@command -v repo-add >/dev/null 2>&1 || { echo -e "$(RED)Error: repo-add is not installed. Run: pacman -S pacman$(NC)"; exit 1; }
 	@command -v git >/dev/null 2>&1 || { echo -e "$(RED)Error: git is not installed. Run: pacman -S git$(NC)"; exit 1; }
-	@command -v python >/dev/null 2>&1 || { echo -e "$(RED)Error: python is not installed (used by bump-kernel.sh, render-meta-depends.sh, installer tests). Run: pacman -S python$(NC)"; exit 1; }
+	@command -v python >/dev/null 2>&1 || echo -e "$(YELLOW)Warning: python not installed (needed by bump-kernel.sh + installer tests). Run: pacman -S python$(NC)"
 	@command -v ruff >/dev/null 2>&1 || echo -e "$(YELLOW)Warning: ruff not installed (needed for 'make lint'). Run: cd installer && pip install -e .[dev]$(NC)"
 	@command -v mypy >/dev/null 2>&1 || echo -e "$(YELLOW)Warning: mypy not installed (needed for 'make lint'). Run: cd installer && pip install -e .[dev]$(NC)"
 	@command -v qemu-system-x86_64 >/dev/null 2>&1 || echo -e "$(YELLOW)Warning: qemu not installed (needed for 'make test')$(NC)"

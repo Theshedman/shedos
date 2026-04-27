@@ -46,7 +46,7 @@ jobs:
           # warm cache.
           # makepkg runs with --nodeps for the pure-copy shedos-* packages,
           # so makedeps can't be left to --syncdeps — install them directly.
-          pacman -S --needed --noconfirm base-devel git sudo gnupg rclone pacman-contrib scdoc ccache
+          pacman -S --needed --noconfirm base-devel git sudo gnupg rclone pacman-contrib scdoc ccache python
           # archlinux:latest ships an empty pacman keyring. Initialize + populate
           # the archlinux trust chain so makepkg --syncdeps can verify signed
           # packages from core/extra during dependency resolution.
