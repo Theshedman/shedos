@@ -13,7 +13,7 @@
 # Why one shared version across all six packages: `pacman -Qi shedos-meta`
 # then tells a user exactly which release cohort their system is at, and the
 # published repo serves a coherent set. Individual packages rarely move
-# independently in practice (the payload is small and the team is small).
+# independently in practice.
 
 set -euo pipefail
 

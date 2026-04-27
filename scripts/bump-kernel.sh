@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Update packaging/shedos-kernel/{PKGBUILD,config.x86_64} from upstream
 # Arch linux-zen at a given tag. The kernel-version-watcher workflow
-# fires this against `--latest`; humans usually pass an explicit pkgver.
+# fires this against `--latest`.
 #
 # Usage:
 #   scripts/bump-kernel.sh --latest          # query Arch's current pkgver
