@@ -60,13 +60,16 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Restore ccache
-        # ccache survives across runs, keyed on the kernel pkgver so a
-        # version bump doesn't try to reuse stale objects. Restore-keys
-        # falls back to any prior cache for partial reuse.
+        # ccache survives across runs, keyed on the kernel PKGBUILD +
+        # config so an upstream-zen bump or a config edit invalidates the
+        # cache (real source change), but a CI re-run on the same sources
+        # warm-hits and trims ~2 h off the build. Restore-keys falls back
+        # to any prior cache for partial reuse. Same key shape as
+        # build-iso.yml — both workflows populate / consume one cache.
         uses: actions/cache@v4
         with:
           path: /home/builder/.ccache
-          key: ccache-${{ runner.os }}-${{ hashFiles('packaging/shedos-kernel/PKGBUILD') }}
+          key: ccache-${{ runner.os }}-${{ hashFiles('packaging/shedos-kernel/PKGBUILD', 'packaging/shedos-kernel/config.x86_64') }}
           restore-keys: |
             ccache-${{ runner.os }}-
 
@@ -175,6 +178,41 @@ jobs:
           path: archiso/shedos-repo
           key: aur-${{ runner.os }}-${{ hashFiles('packages/aur.txt') }}
 
+      - name: Restore shedos-kernel package cache
+        # Whole-package cache keyed on the kernel PKGBUILD + config. When
+        # upstream linux-zen pkgver hasn't bumped (scripts/bump-kernel.sh
+        # rewrites the PKGBUILD on bumps) and the config is unchanged,
+        # the last successful run's shedos-kernel-*.pkg.tar.zst is
+        # restored here. The pre-flight in scripts/build-shedos-packages.sh
+        # sees the file already in archiso/shedos-repo/ and skips makepkg
+        # entirely (~30 s cache copy vs ~40 min ccache rebuild).
+        id: kernel-pkg-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/shedos-kernel-pkg-cache
+          key: shedos-kernel-pkg-${{ runner.os }}-${{ hashFiles('packaging/shedos-kernel/PKGBUILD', 'packaging/shedos-kernel/config.x86_64') }}
+
+      - name: Stage cached shedos-kernel package (or clear stale)
+        # AUR-cache restore above may carry a stale kernel from a prior
+        # run on different kernel sources (its key is aur.txt-only,
+        # orthogonal to the kernel state). The dedicated kernel-pkg-cache
+        # is the authoritative gate:
+        #   * hit  → wipe AUR-restored kernel, lay down the cached one
+        #   * miss → wipe AUR-restored kernel so the script's pre-flight
+        #            file-exists check fails and triggers a real rebuild
+        # Either way archiso/shedos-repo's kernel state matches the
+        # current PKGBUILD.
+        run: |
+          mkdir -p archiso/shedos-repo
+          rm -f archiso/shedos-repo/shedos-kernel-*.pkg.tar.zst
+          if [[ "${{ steps.kernel-pkg-cache.outputs.cache-hit }}" == "true" ]]; then
+              cp -v /tmp/shedos-kernel-pkg-cache/*.pkg.tar.zst archiso/shedos-repo/
+              chown -R builder:builder archiso/shedos-repo
+              echo "Cached kernel staged; build-shedos-packages.sh pre-flight will skip rebuild."
+          else
+              echo "Kernel cache missed; build-shedos-packages.sh will rebuild from source."
+          fi
+
       - name: Build shedos-* packages
         # Delegates to the same script the ISO build uses so the logic stays
         # in one place. It:
@@ -187,6 +225,30 @@ jobs:
         # After this runs, archiso/shedos-repo/ holds every package we want
         # published (shedos-* + OSS AUR + unsigned proprietary AUR).
         run: scripts/build-shedos-packages.sh
+
+      - name: Stage shedos-kernel package for cache save
+        # If we just rebuilt the kernel (cache miss), mirror the resulting
+        # pkg.tar.zst into the dedicated cache path so the save step below
+        # pushes it to GHA cache. No-op on hit (same files staged in
+        # archiso/shedos-repo would be copied to themselves).
+        if: always() && steps.kernel-pkg-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p /tmp/shedos-kernel-pkg-cache
+          cp -v archiso/shedos-repo/shedos-kernel-*.pkg.tar.zst \
+              /tmp/shedos-kernel-pkg-cache/ 2>/dev/null || true
+          ls -la /tmp/shedos-kernel-pkg-cache/
+
+      - name: Save shedos-kernel package cache
+        # Persist the freshly-built kernel for the next run. Only saves on
+        # cache miss — a hit means the cache already has these files.
+        # `if: always()` so a downstream failure (signing, publish) doesn't
+        # discard the kernel build we just spent ~40 min on (or longer
+        # cold).
+        if: always() && steps.kernel-pkg-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/shedos-kernel-pkg-cache
+          key: shedos-kernel-pkg-${{ runner.os }}-${{ hashFiles('packaging/shedos-kernel/PKGBUILD', 'packaging/shedos-kernel/config.x86_64') }}
 
       - name: Sign + stage packages for publication
         # Walk archiso/shedos-repo/, sign each .pkg.tar.zst with the ShedOS

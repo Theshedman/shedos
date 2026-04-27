@@ -174,6 +174,35 @@ for dir in "${PKG_DIRS[@]}"; do
     echo ""
     echo "---- makepkg $pkgname ----"
 
+    # Cache pre-flight for shedos-kernel. If the exact pkgver-pkgrel pair
+    # of .pkg.tar.zst files (kernel + headers, since shedos-kernel is a
+    # split package) is already present in $REPO_DIR — restored either by
+    # the dedicated GHA `shedos-kernel-pkg-cache` (.github/workflows/
+    # build-{packages,iso}.yml) or by a prior run on a developer box —
+    # skip the multi-hour kernel rebuild entirely.
+    #
+    # Cache hit semantics: pkgver+pkgrel match the current PKGBUILD, which
+    # is rewritten by scripts/bump-kernel.sh whenever upstream linux-zen
+    # publishes a new release. So a cache hit means "upstream pkgver
+    # unchanged AND we already built it once" — exactly the user's intent
+    # of "don't rebuild if upstream hasn't moved AND the artifact exists".
+    if [[ $pkgname == shedos-kernel ]]; then
+        kpkgver=$(awk -F= '/^pkgver=/ {print $2; exit}' "$dir/PKGBUILD")
+        kpkgrel=$(awk -F= '/^pkgrel=/ {print $2; exit}' "$dir/PKGBUILD")
+        karch=x86_64
+        kpkg="$REPO_DIR/${pkgname}-${kpkgver}-${kpkgrel}-${karch}.pkg.tar.zst"
+        kpkg_hdr="$REPO_DIR/${pkgname}-headers-${kpkgver}-${kpkgrel}-${karch}.pkg.tar.zst"
+        if [[ -f $kpkg && -f $kpkg_hdr ]]; then
+            echo "✓ $pkgname $kpkgver-$kpkgrel cached; skipping kernel rebuild"
+            echo "    $(basename "$kpkg")"
+            echo "    $(basename "$kpkg_hdr")"
+            _refresh_repo_db
+            BUILT=$((BUILT + 1))
+            continue
+        fi
+        echo "  $pkgname $kpkgver-$kpkgrel not cached; full rebuild ahead"
+    fi
+
     # Fresh copy each run — makepkg's --cleanbuild only clears src/pkg, not
     # stray artifacts we might have left behind.
     rm -rf "$work"
