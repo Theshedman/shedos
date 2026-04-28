@@ -78,4 +78,12 @@ package() {
 
     install -Dm755 tree/usr/bin/toggle-hyprsunset.sh \
         "$pkgdir/usr/bin/toggle-hyprsunset.sh"
+
+    # "Terminal" alias for kitty so users searching the launcher for
+    # "term" / "terminal" find it. The elephant-desktopapplications
+    # provider is configured with only_search_title=true, so it matches
+    # by Name only — Categories=TerminalEmulator alone isn't enough. We
+    # ship a parallel .desktop with Name=Terminal pointing at kitty.
+    install -Dm644 tree/usr/share/applications/terminal.desktop \
+        "$pkgdir/usr/share/applications/terminal.desktop"
 }
