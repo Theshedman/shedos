@@ -82,15 +82,8 @@ check-root:
 	fi
 
 check-deps:
-	@# `check-deps` covers the **iso build path only**. Tools that are
-	@# only needed by other targets (bump-kernel.sh → python; installer
-	@# tests → python+pytest; lint → ruff/mypy; `make test` → qemu;
-	@# AUR upkeep → yay) live as warnings and let those targets fail
-	@# with their own error if the tool is missing. Why: this target
-	@# runs at the start of `make iso` in CI, where adding a
-	@# transitively-pulled tool like python to the required set means
-	@# every CI environment that doesn't happen to drag it in via
-	@# --syncdeps gets a 5-minute fail instead of a working ISO build.
+	@# Hard-required for `make iso`. Tools used only by other targets
+	@# (python, ruff/mypy, qemu, yay) are warnings.
 	@echo -e "$(GREEN)Checking dependencies...$(NC)"
 	@command -v mkarchiso >/dev/null 2>&1 || { echo -e "$(RED)Error: archiso is not installed. Run: pacman -S archiso$(NC)"; exit 1; }
 	@command -v repo-add >/dev/null 2>&1 || { echo -e "$(RED)Error: repo-add is not installed. Run: pacman -S pacman$(NC)"; exit 1; }
@@ -119,31 +112,16 @@ shedos-packages:
 	@echo -e "$(GREEN)ShedOS packages built into $(REPO_DIR)$(NC)"
 
 download-packages: check-root generate-packages
-	@# generate-packages is a hard prereq: archiso/packages.x86_64 is the
-	@# AUTO-GENERATED flat list of every package the ISO ships, derived from
-	@# packages/official/*.txt + packages/aur.txt (with aur-norepublish.txt
-	@# excluded). prepare/verify-cache.sh reads this file ~3h into the build,
-	@# so any drift between sources and the committed file blows up the
-	@# pipeline ages after the offending commit. Always regenerate first;
-	@# the committed copy exists for grep/diff convenience, not as a build
-	@# input that's allowed to rot.
+	@# generate-packages first: never trust the committed packages.x86_64.
 	@echo -e "$(GREEN)Pre-downloading all packages...$(NC)"
 	@echo -e "$(YELLOW)This avoids network issues during ISO build$(NC)"
 	@./scripts/download-packages.sh
 	@echo -e "$(GREEN)Packages downloaded and cached$(NC)"
 
 prepare: check-root check-deps generate-packages
-	@# generate-packages prereq: see download-packages note. archiso/
-	@# packages.x86_64 is generated from packages/*.txt; never trust the
-	@# committed copy at build time — regenerate so verify-cache.sh below
-	@# checks against fresh truth.
 	@echo -e "$(GREEN)Preparing build environment...$(NC)"
-	@# Pre-flight: every shedos-* PKGBUILD depend must be in some
-	@# source list (or the base allowlist / virtual-provider table).
-	@# 0.2 s here saves a 50-min pacstrap stall later.
 	@echo -e "$(GREEN)Verifying shedos-* PKGBUILD deps are covered by source lists...$(NC)"
 	@./scripts/verify-shedos-deps.sh
-	@# Verify package cache BEFORE starting build
 	@echo -e "$(GREEN)Verifying package cache completeness...$(NC)"
 	@./scripts/verify-cache.sh || { \
 		echo -e "$(RED)Cache verification failed!$(NC)"; \
@@ -292,15 +270,7 @@ clean-all: check-root
 	@rm -rf db-cache
 	@echo -e "$(GREEN)Full clean complete (packages and frozen databases removed)$(NC)"
 
-# `make test` and `make test-bios` resolve the ISO to boot in this order:
-#   1. ISO=path/to/file.iso        — explicit override on the command line
-#   2. $(OUTPUT_DIR)/$(ISO_NAME)   — the ISO matching the current $(VERSION),
-#                                    i.e. what `sudo make iso` *would* produce
-#   3. newest $(OUTPUT_DIR)/shedos-*.iso — any ISO you've built locally,
-#                                    even if its CalVer no longer matches
-#                                    the current VERSION
-# (3) is what makes the dev loop work after a `git pull` that bumps
-# VERSION: your previously-built ISO still gets tested.
+# test / test-bios pick: ISO=… > out/<current-VERSION>.iso > newest out/*.iso.
 ISO ?=
 
 test:

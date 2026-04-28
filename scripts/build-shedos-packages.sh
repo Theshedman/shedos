@@ -218,21 +218,10 @@ for dir in "${PKG_DIRS[@]}"; do
     # the next `pacman -Sy` then 404s because the prod repo doesn't exist
     # yet inside CI). --nodeps sidesteps the whole problem.
     #
-    # Two exceptions actually compile code and need their build-time
-    # dependencies installed:
-    #   shedos-kernel       — full Linux kernel compile; gcc / bison /
-    #                         flex / pahole / openssl / bc / kmod /
-    #                         libelf / perl / etc.
-    #   shedos-screensaver  — Rust workspace including cpal → alsa-sys,
-    #                         which fails its build script if alsa-lib's
-    #                         pkg-config file isn't present at compile
-    #                         time. Both makedepends and depends are
-    #                         pulled in.
-    # Both keep --syncdeps so makepkg pulls the deps via pacman before
-    # the build kicks off. Every other shedos-* package is a pure
-    # cp -a tree/… payload with no compile step, so --nodeps is safe
-    # and avoids running the runtime deps' .install scriptlets in the
-    # build container.
+    # shedos-kernel + shedos-screensaver actually compile code and need
+    # their makedepends + depends pulled in. Everything else is pure
+    # cp -a payload — --nodeps avoids running runtime install scriptlets
+    # (e.g. shedos-system's pacman.conf rewrite) inside the build chroot.
     case "$pkgname" in
         shedos-kernel|shedos-screensaver)
             mk_flags=(--syncdeps --noconfirm --force --cleanbuild)
@@ -242,13 +231,9 @@ for dir in "${PKG_DIRS[@]}"; do
             ;;
     esac
 
-    # Kernel-only: import upstream signing keys for the source-tarball
-    # signature checks. validpgpkeys=() in the PKGBUILD only WHITELISTS
-    # trust — it doesn't fetch the keys. On a fresh CI runner (no cached
-    # ~/.gnupg) the source verification fails with "unknown public key …"
-    # and aborts. Parse the fingerprints out of the PKGBUILD itself so
-    # this auto-tracks bump-kernel.sh's auto-syncs and never falls out
-    # of step with upstream key rotations.
+    # validpgpkeys=() only whitelists trust; it doesn't fetch keys, so
+    # on a fresh CI runner the kernel source-sig check fails. Pull fp
+    # list from the PKGBUILD itself to track bump-kernel.sh updates.
     if [[ $pkgname == shedos-kernel ]]; then
         mapfile -t kfps < <(awk '
             /^validpgpkeys=\(/ { seen=1; next }
@@ -295,10 +280,7 @@ for dir in "${PKG_DIRS[@]}"; do
     BUILT=$((BUILT + 1))
 done
 
-# Strip -debug splits from the local repo before mkarchiso runs. Mirror
-# of the corresponding step in .github/workflows/build-iso.yml so local
-# `make iso` produces the same trimmed payload as CI. -debug packages
-# ship debug symbols that the live/installed system never uses.
+# Strip -debug splits before mkarchiso (mirrors CI build-iso.yml).
 echo ""
 echo "Stripping -debug packages from $REPO_DIR/ ..."
 shopt -s nullglob

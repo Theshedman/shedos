@@ -34,19 +34,9 @@ jobs:
       - name: Install build dependencies
         run: |
           pacman -Syu --noconfirm
-          # scdoc renders shedos-system's man/*.scd sources to groff at
-          # build time; without it the prepare() step fails. Pulled in
-          # directly because the inner makepkg uses --nodeps (see
-          # scripts/build-shedos-packages.sh).
-          # ccache fronts gcc/g++ during the shedos-kernel build (the only
-          # package here that actually compiles). Wired into makepkg via
-          # /etc/makepkg.conf below; cuts the kernel from ~2h45m cold to
-          # ~5 min on warm cache. Same pattern as build-packages.yml.
-          # python: render-meta-depends.sh shells to it indirectly
-          # via shedos-* PKGBUILDs; `make check-deps` warns if missing
-          # but several `make` targets do hard-require it. Belt-and-
-          # braces: install explicitly so we don't depend on rust /
-          # llvm / similar transitive pull-ins to bring it in.
+          # scdoc: shedos-system man pages. ccache: shedos-kernel build
+          # (warm cache cuts kernel from ~2h45m → ~5min). python: needed
+          # by `make` targets that the iso path may invoke.
           pacman -S --needed --noconfirm archiso base-devel git sudo rclone rsync grub scdoc ccache python
           # archlinux:latest ships an empty pacman keyring. Initialize +
           # populate the archlinux trust chain so makepkg --syncdeps (invoked
@@ -214,10 +204,6 @@ jobs:
           key: shedos-kernel-pkg-${{ runner.os }}-${{ hashFiles('packaging/shedos-kernel/PKGBUILD', 'packaging/shedos-kernel/config.x86_64') }}
 
       - name: Strip debug packages from shedos-repo
-        # Cleanup pass before mksquashfs: -debug variants ship debug
-        # symbols that no end user needs at runtime, and they bloat both
-        # archiso/shedos-repo/ on the ISO and pacman resolution. Re-index
-        # the repo db so pacman doesn't trip on a now-missing debug split.
         run: |
           rm -f archiso/shedos-repo/*-debug-*.pkg.tar.zst archiso/shedos-repo/*-debug-*.pkg.tar.zst.sig
           cd archiso/shedos-repo
@@ -295,12 +281,7 @@ jobs:
               rclone purge "r2:$R2_BUCKET/iso/$legacy" || true
           done
 
-          # Inventory current ISOs (filenames only, top-level of /iso/).
-          # Version-aware sort: plain `sort` is lexicographic and treats
-          # "rc10" < "rc8" (because '1' < '8' in ASCII), which made the
-          # sweep delete the freshly-uploaded rc10 while keeping rc8 —
-          # 404s on the public download URL until the next RC. `sort -V`
-          # parses the integer suffix and orders rc8 < rc9 < rc10 correctly.
+          # `sort -V` so rc8 < rc9 < rc10 — plain sort is lexicographic.
           mapfile -t all_isos < <(
               rclone lsf "r2:$R2_BUCKET/iso/" --files-only \
                   --include 'shedos-*-x86_64.iso' | sort -V
