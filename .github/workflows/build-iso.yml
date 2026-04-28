@@ -25,12 +25,37 @@ jobs:
     container:
       image: archlinux:latest
       options: --privileged
+      # Mount the host root so we can free disk space before pacstrap.
+      # ubuntu-latest ships ~30 GB of preinstalled toolchains we don't
+      # need (dotnet, android-sdk, ghc, hostedtoolcache, …); pacstrap
+      # filled the workspace partition before we trimmed them.
+      volumes:
+        - /:/host
 
     env:
       R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
       R2_BUCKET: shedos-repo
 
     steps:
+      - name: Free host disk space
+        # Strip preinstalled toolchains we don't use so pacstrap has room.
+        # Without this the workspace partition fills around package
+        # ~390 of 433 (when shedos-meta + linux + linux-headers are unpacked).
+        run: |
+          df -h /__w || true
+          rm -rf \
+              /host/usr/share/dotnet \
+              /host/usr/local/lib/android \
+              /host/opt/ghc \
+              /host/opt/hostedtoolcache \
+              /host/usr/local/share/boost \
+              /host/usr/local/share/powershell \
+              /host/usr/share/swift \
+              /host/opt/microsoft \
+              /host/usr/lib/jvm \
+              2>/dev/null || true
+          df -h /__w || true
+
       - name: Install build dependencies
         run: |
           pacman -Syu --noconfirm

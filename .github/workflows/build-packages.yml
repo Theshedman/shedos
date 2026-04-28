@@ -31,12 +31,38 @@ jobs:
     container:
       image: archlinux:latest
       options: --privileged
+      # Mount the host root so we can free disk space before makepkg
+      # pulls down kernel sources + builds. ubuntu-latest ships ~30 GB
+      # of preinstalled toolchains (dotnet, android-sdk, ghc, …) we
+      # don't need; trim them up front to keep the workspace from
+      # filling on a cold cache.
+      volumes:
+        - /:/host
 
     env:
       R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
       R2_BUCKET: shedos-repo
 
     steps:
+      - name: Free host disk space
+        # Strip preinstalled toolchains we don't use so makepkg has room
+        # to extract kernel sources + build a fresh shedos-kernel on a
+        # cold cache. Cheap when the cache hits (no-op).
+        run: |
+          df -h /__w || true
+          rm -rf \
+              /host/usr/share/dotnet \
+              /host/usr/local/lib/android \
+              /host/opt/ghc \
+              /host/opt/hostedtoolcache \
+              /host/usr/local/share/boost \
+              /host/usr/local/share/powershell \
+              /host/usr/share/swift \
+              /host/opt/microsoft \
+              /host/usr/lib/jvm \
+              2>/dev/null || true
+          df -h /__w || true
+
       - name: Install build dependencies
         run: |
           pacman -Syu --noconfirm
