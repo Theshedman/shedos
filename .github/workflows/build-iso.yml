@@ -296,9 +296,14 @@ jobs:
           done
 
           # Inventory current ISOs (filenames only, top-level of /iso/).
+          # Version-aware sort: plain `sort` is lexicographic and treats
+          # "rc10" < "rc8" (because '1' < '8' in ASCII), which made the
+          # sweep delete the freshly-uploaded rc10 while keeping rc8 —
+          # 404s on the public download URL until the next RC. `sort -V`
+          # parses the integer suffix and orders rc8 < rc9 < rc10 correctly.
           mapfile -t all_isos < <(
               rclone lsf "r2:$R2_BUCKET/iso/" --files-only \
-                  --include 'shedos-*-x86_64.iso' | sort
+                  --include 'shedos-*-x86_64.iso' | sort -V
           )
 
           stables=() rcs=()
@@ -327,7 +332,7 @@ jobs:
           _sweep "$KEEP_RCS"     "${rcs[@]}"
 
           echo "--- /iso/ after sweep ---"
-          rclone lsf "r2:$R2_BUCKET/iso/" --files-only | sort
+          rclone lsf "r2:$R2_BUCKET/iso/" --files-only | sort -V
 
       - name: Generate release notes
         # Group commits since the previous tag by Conventional Commit type so
