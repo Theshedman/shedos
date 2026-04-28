@@ -63,10 +63,10 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          # Full history so `git describe` can find the previous tag when
-          # generating release notes. Default fetch-depth:1 would hide every
-          # earlier tag and the notes step would fall back to "initial commit".
+          # fetch-tags + full depth so the release-notes step can find the
+          # previous tag. On a tag push, fetch-tags defaults to false.
           fetch-depth: 0
+          fetch-tags: true
 
       - name: Verify VERSION matches tag
         # Tags follow v<CalVer>[-rcN]. The VERSION file drives Calamares
