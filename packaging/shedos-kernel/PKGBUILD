@@ -144,6 +144,12 @@ _package() {
     # (initramfs-shedos-kernel.img etc.).
     echo "$pkgbase" | install -Dm644 /dev/stdin "$modulesdir/pkgbase"
 
+    # mkinitcpio preset with both default and fallback images. Without
+    # this, mkinitcpio's pacman hook auto-generates a default-only preset
+    # and Limine's "Fallback" menu entry has no initramfs to load.
+    install -Dm644 "$startdir/$pkgbase.preset" \
+        "$pkgdir/etc/mkinitcpio.d/$pkgbase.preset"
+
     echo "Installing modules..."
     ZSTD_CLEVEL=19 make INSTALL_MOD_PATH="$pkgdir/usr" INSTALL_MOD_STRIP=1 \
         DEPMOD=/doesnt/exist modules_install
