@@ -325,7 +325,7 @@ jobs:
           # and skips the probe. Without it copyto to the bucket root 403s.
           RCLONE_S3_NO_CHECK_BUCKET: "true"
         run: |
-          # Channel routing (Phase 6B):
+          # Channel routing:
           #   * push to main           → /x86_64/ + /x86_64-testing/ (same content)
           #   * stable tag (v<date>)   → /x86_64/ + /x86_64-testing/ (parity)
           #   * RC tag (v<date>-rcN)   → /x86_64-testing/ only (testing is "ahead")
