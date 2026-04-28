@@ -13,8 +13,8 @@
 #      rest of ShedOS.
 
 pkgname=shedos-nvim
-pkgver=2026.04.27
-pkgrel=2
+pkgver=2026.04.28
+pkgrel=1
 pkgdesc='ShedOS default Neovim configuration (LazyVim-based)'
 arch=('any')
 url='https://github.com/theshedman/shedos'
