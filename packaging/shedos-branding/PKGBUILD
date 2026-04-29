@@ -7,7 +7,7 @@
 
 pkgname=shedos-branding
 pkgver=2026.04.28
-pkgrel=2
+pkgrel=3
 pkgdesc='ShedOS visual identity: Plymouth theme, wallpapers, ASCII logo'
 arch=('any')
 url='https://github.com/theshedman/shedos'

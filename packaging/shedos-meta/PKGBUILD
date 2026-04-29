@@ -10,7 +10,7 @@
 
 pkgname=shedos-meta
 pkgver=2026.04.28
-pkgrel=2
+pkgrel=3
 pkgdesc='ShedOS meta-package — installs the full default ShedOS environment'
 arch=('any')
 url='https://github.com/theshedman/shedos'
