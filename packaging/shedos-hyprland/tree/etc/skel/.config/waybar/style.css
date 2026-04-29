@@ -92,6 +92,22 @@ window#waybar>box {
     padding: 0 15px;
 }
 
+#custom-updates {
+    color: @text;
+    font-weight: bold;
+    padding: 0 10px;
+}
+
+#custom-updates.has-updates {
+    color: @peach;
+}
+
+#custom-updates.no-updates {
+    padding: 0;
+    margin: 0;
+    background: transparent;
+}
+
 #tray {
     padding: 0 10px;
 }
