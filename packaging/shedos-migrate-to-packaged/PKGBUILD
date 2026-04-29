@@ -13,7 +13,7 @@
 
 pkgname=shedos-migrate-to-packaged
 pkgver=2026.04.28
-pkgrel=4
+pkgrel=5
 pkgdesc='One-shot retrofit: bootstrap a pre-packaging ShedOS install onto the packaged model'
 arch=('any')
 url='https://github.com/theshedman/shedos'
