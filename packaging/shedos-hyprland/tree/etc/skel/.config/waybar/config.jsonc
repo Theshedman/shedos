@@ -9,6 +9,7 @@
     ],
     "modules-center": [
         "clock",
+        "custom/updates",
         "custom/screenrecording-indicator"
     ],
     "modules-right": [
@@ -20,7 +21,6 @@
         "custom/health",
         "custom/doctor",
         "custom/conflicts",
-        "custom/updates",
         "battery",
         "custom/power"
     ],
