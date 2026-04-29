@@ -10,8 +10,8 @@
 # `shedman config --sync` compares against for its 3-way merge.
 
 pkgname=shedos-hyprland
-pkgver=2026.04.28
-pkgrel=6
+pkgver=2026.04.29
+pkgrel=1
 pkgdesc='ShedOS Hyprland desktop profile (dotfiles + DE helpers)'
 arch=('any')
 url='https://github.com/theshedman/shedos'
