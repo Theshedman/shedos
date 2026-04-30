@@ -218,12 +218,13 @@ for dir in "${PKG_DIRS[@]}"; do
     # the next `pacman -Sy` then 404s because the prod repo doesn't exist
     # yet inside CI). --nodeps sidesteps the whole problem.
     #
-    # shedos-kernel + shedos-screensaver actually compile code and need
-    # their makedepends + depends pulled in. Everything else is pure
-    # cp -a payload — --nodeps avoids running runtime install scriptlets
-    # (e.g. shedos-system's pacman.conf rewrite) inside the build chroot.
+    # shedos-kernel + shedos-screensaver + shedos-greeter actually compile
+    # code and need their makedepends + depends pulled in. Everything else
+    # is pure cp -a payload — --nodeps avoids running runtime install
+    # scriptlets (e.g. shedos-system's pacman.conf rewrite) inside the
+    # build chroot.
     case "$pkgname" in
-        shedos-kernel|shedos-screensaver)
+        shedos-kernel|shedos-screensaver|shedos-greeter)
             mk_flags=(--syncdeps --noconfirm --force --cleanbuild)
             ;;
         *)
