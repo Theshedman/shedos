@@ -59,3 +59,12 @@ autocmd("VimResized", {
     vim.cmd("tabdo wincmd =")
   end,
 })
+
+-- Wire custom feature modules (JPA Buddy++, OpenAPI tooling).
+-- pcall'd so a single broken module never blocks startup.
+for _, mod in ipairs({ "config.features.jpa", "config.features.openapi" }) do
+  local ok, feature = pcall(require, mod)
+  if ok and type(feature) == "table" and feature.setup then
+    pcall(feature.setup)
+  end
+end

@@ -2,7 +2,7 @@ return {
   -- Assembly treesitter parser
   { "nvim-treesitter/nvim-treesitter", opts = { ensure_installed = { "asm" } } },
 
-  -- asm-lsp config + keymaps
+  -- asm-lsp config + keymaps (async via Snacks.terminal)
   {
     "neovim/nvim-lspconfig",
     optional = true,
@@ -15,36 +15,37 @@ return {
           vim.keymap.set("n", keys, fn, { buffer = buffer, desc = desc })
         end
 
-        local file = vim.api.nvim_buf_get_name(buffer)
-        local base = vim.fn.fnamemodify(file, ":t:r")
-        local dir = vim.fn.fnamemodify(file, ":h")
-        local ext = vim.fn.fnamemodify(file, ":e")
+        -- Returns (assemble_cmd, link_cmd, run_cmd, dir) for the *current* buffer.
+        -- Resolved per-invocation so it tracks the active buffer.
+        local current = function()
+          local file = vim.api.nvim_buf_get_name(0)
+          local base = vim.fn.fnamemodify(file, ":t:r")
+          local dir = vim.fn.fnamemodify(file, ":h")
+          local ext = vim.fn.fnamemodify(file, ":e")
+          local file_esc = vim.fn.shellescape(file)
+          local out_obj = vim.fn.shellescape(dir .. "/" .. base .. ".o")
+          local out_bin = vim.fn.shellescape(dir .. "/" .. base)
+          local assemble = (ext == "asm" or ext == "nasm")
+              and string.format("nasm -f elf64 -o %s %s", out_obj, file_esc)
+              or string.format("as -o %s %s", out_obj, file_esc)
+          local link = string.format("ld -o %s %s", out_bin, out_obj)
+          local run = out_bin
+          return assemble, link, run, dir
+        end
 
-        -- Assemble current file
         map("<leader>ja", function()
-          if ext == "asm" or ext == "nasm" then
-            vim.cmd("!" .. string.format("nasm -f elf64 -o %s/%s.o %s", dir, base, file))
-          else
-            vim.cmd("!" .. string.format("as -o %s/%s.o %s", dir, base, file))
-          end
+          local assemble, _, _, dir = current()
+          Snacks.terminal(assemble, { cwd = dir })
         end, "ASM: Assemble")
 
-        -- Link object file
         map("<leader>jl", function()
-          vim.cmd("!" .. string.format("ld -o %s/%s %s/%s.o", dir, base, dir, base))
+          local _, link, _, dir = current()
+          Snacks.terminal(link, { cwd = dir })
         end, "ASM: Link")
 
-        -- Assemble + Link + Run
         map("<leader>jr", function()
-          local asm_cmd
-          if ext == "asm" or ext == "nasm" then
-            asm_cmd = string.format("nasm -f elf64 -o %s/%s.o %s", dir, base, file)
-          else
-            asm_cmd = string.format("as -o %s/%s.o %s", dir, base, file)
-          end
-          local link_cmd = string.format("ld -o %s/%s %s/%s.o", dir, base, dir, base)
-          local run_cmd = string.format("%s/%s", dir, base)
-          vim.cmd("!" .. asm_cmd .. " && " .. link_cmd .. " && " .. run_cmd)
+          local assemble, link, run, dir = current()
+          Snacks.terminal(assemble .. " && " .. link .. " && " .. run, { cwd = dir })
         end, "ASM: Assemble + Link + Run")
       end)
     end,

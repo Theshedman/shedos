@@ -1,15 +1,32 @@
 return {
-  -- Surface cmake-tools.nvim commands under <leader>j
+  -- Surface cmake-tools.nvim commands under <leader>j, scoped to cmake/c/cpp buffers
   {
     "Civitasv/cmake-tools.nvim",
     optional = true,
-    keys = {
-      { "<leader>jc", "<cmd>CMakeGenerate<cr>", desc = "CMake: Configure (generate)" },
-      { "<leader>jb", "<cmd>CMakeBuild<cr>", desc = "CMake: Build" },
-      { "<leader>jr", "<cmd>CMakeRun<cr>", desc = "CMake: Run" },
-      { "<leader>jd", "<cmd>CMakeDebug<cr>", desc = "CMake: Debug" },
-      { "<leader>js", "<cmd>CMakeSelectBuildType<cr>", desc = "CMake: Select build type" },
-      { "<leader>jt", "<cmd>CMakeSelectBuildTarget<cr>", desc = "CMake: Select build target" },
+    cmd = {
+      "CMakeGenerate",
+      "CMakeBuild",
+      "CMakeRun",
+      "CMakeDebug",
+      "CMakeSelectBuildType",
+      "CMakeSelectBuildTarget",
     },
+    init = function()
+      vim.api.nvim_create_autocmd("FileType", {
+        group = vim.api.nvim_create_augroup("cmake_keymaps", { clear = true }),
+        pattern = { "cmake", "c", "cpp" },
+        callback = function(args)
+          local map = function(lhs, rhs, desc)
+            vim.keymap.set("n", lhs, rhs, { buffer = args.buf, desc = desc })
+          end
+          map("<leader>jc", "<cmd>CMakeGenerate<cr>", "CMake: Configure (generate)")
+          map("<leader>jb", "<cmd>CMakeBuild<cr>", "CMake: Build")
+          map("<leader>jr", "<cmd>CMakeRun<cr>", "CMake: Run")
+          map("<leader>jd", "<cmd>CMakeDebug<cr>", "CMake: Debug")
+          map("<leader>js", "<cmd>CMakeSelectBuildType<cr>", "CMake: Select build type")
+          map("<leader>jt", "<cmd>CMakeSelectBuildTarget<cr>", "CMake: Select build target")
+        end,
+      })
+    end,
   },
 }

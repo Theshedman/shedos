@@ -4,10 +4,7 @@ return {
     "mason-org/mason.nvim",
     optional = true,
     opts = function(_, opts)
-      opts.ensure_installed = opts.ensure_installed or {}
-      vim.list_extend(opts.ensure_installed, {
-        "spectral-language-server",
-      })
+      -- spectral-language-server is ensured in lua/plugins/mason-tools.lua
 
       -- Inject OpenAPI features via LspAttach
       vim.api.nvim_create_autocmd("LspAttach", {

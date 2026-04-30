@@ -9,6 +9,7 @@ return {
         { "<leader>g", group = "git" },
         { "<leader>o", group = "openapi" },
         { "<leader>j", group = "lang actions" },
+        { "<leader>jp", group = "jpa", icon = "" },
       },
     },
   },

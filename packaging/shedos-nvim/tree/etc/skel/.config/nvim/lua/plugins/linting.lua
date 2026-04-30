@@ -26,7 +26,7 @@ return {
         typescriptreact = { "eslint_d" },
         kotlin = { "ktlint" },
         markdown = { "markdownlint" },
-        python = { "ruff", "flake8" },
+        python = { "ruff" },
         sql = { "sqlfluff" },
         terraform = { "tflint" },
         yaml = { "yamllint" },
@@ -70,17 +70,6 @@ return {
           "--formatter", "json",
           "--stdin-filename", "%filepath",
           "--config", vim.fn.expand("~/.config/nvim/.stylelintrc.json"),
-        }
-      end
-
-      local flake8 = lint.linters.flake8
-      if flake8 then
-        flake8.args = {
-          "--format=%(path)s:%(row)d:%(col)d:%(code)s:%(text)s",
-          "--no-show-source",
-          "--stdin-display-name", "%(filepath)s",
-          "--config=" .. vim.fn.expand("~/.config/nvim/.flake8"),
-          "-",
         }
       end
 

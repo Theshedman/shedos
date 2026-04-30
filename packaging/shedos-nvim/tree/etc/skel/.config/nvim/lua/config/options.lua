@@ -46,7 +46,6 @@ opt.completeopt = "menu,menuone,noselect"
 opt.shortmess:append("c")
 
 -- Files
-opt.fileencoding = "utf-8"
 opt.backup = false
 opt.writebackup = false
 opt.swapfile = false

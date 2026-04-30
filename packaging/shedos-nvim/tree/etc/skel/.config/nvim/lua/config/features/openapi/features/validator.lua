@@ -137,7 +137,7 @@ function M.create_default_ruleset(project_root)
     return
   end
 
-  local ruleset_content = [[
+  local ruleset_content = [==[
 extends: [[spectral:oas, all]]
 
 rules:
@@ -176,7 +176,7 @@ rules:
   path-keys-no-trailing-slash: error
   path-not-include-query: error
   path-params-defined: error
-]]
+]==]
 
   local file = io.open(ruleset_path, "w")
   if file then
