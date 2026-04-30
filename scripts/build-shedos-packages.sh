@@ -223,8 +223,18 @@ for dir in "${PKG_DIRS[@]}"; do
     # is pure cp -a payload — --nodeps avoids running runtime install
     # scriptlets (e.g. shedos-system's pacman.conf rewrite) inside the
     # build chroot.
+    #
+    # shedos-greeter is a single-crate Rust package: its actual Rust
+    # sources live at packaging/shedos-greeter/src/ which collides with
+    # makepkg's $srcdir convention. --cleanbuild would rm -rf $srcdir
+    # before build() runs and delete our sources. The outer
+    # `rm -rf $work && cp -a $dir $work` above already gives a fresh
+    # per-run copy, so dropping --cleanbuild for this one package is safe.
     case "$pkgname" in
-        shedos-kernel|shedos-screensaver|shedos-greeter)
+        shedos-greeter)
+            mk_flags=(--syncdeps --noconfirm --force)
+            ;;
+        shedos-kernel|shedos-screensaver)
             mk_flags=(--syncdeps --noconfirm --force --cleanbuild)
             ;;
         *)
