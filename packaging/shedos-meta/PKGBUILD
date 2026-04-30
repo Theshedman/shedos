@@ -336,6 +336,7 @@ depends=(
     'unzip'
     'upower'
     'usbutils'
+    'uwsm'
     'valgrind'
     'vim'
     'virtualbox-guest-utils'
