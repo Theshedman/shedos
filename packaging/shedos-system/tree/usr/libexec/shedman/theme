@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+# shedman theme — manage ShedOS theme (wallpaper, palette, fonts).
+#
+# Edits /etc/shedos/system.toml's [theme] section and re-renders
+# /etc/shedos/themes/current/ via /usr/lib/shedos/theme_renderer.py
+# so the change propagates to hyprland, hyprlock, waybar, walker,
+# the greeter, and GTK apps.
+
+set -euo pipefail
+
+SYSTEM_TOML=/etc/shedos/system.toml
+PALETTES_DIR=/etc/shedos/themes/palettes
+RENDERER=/usr/lib/shedos/theme_renderer.py
+
+usage() {
+    cat <<'EOF'
+Usage: shedman theme <command> [args]
+
+Commands:
+  list                    List available palettes.
+  get                     Show the current [theme] values.
+  set <key> <value>       Set [theme].<key>. Valid keys:
+                              wallpaper   absolute path to PNG/JPG
+                              palette     name (see `shedman theme list`)
+                              font_ui     e.g. "Inter 11"
+                              font_mono   e.g. "JetBrainsMono Nerd Font"
+                          Auto-runs `shedman theme apply` on success.
+  apply                   Re-render /etc/shedos/themes/current/ from the
+                          current [theme] section in system.toml.
+
+After `set` / `apply`, run `hyprctl reload` (or Super+SHIFT+R) to pick up
+new wallpaper + waybar/walker palette. The greeter picks up changes on
+next login.
+EOF
+}
+
+list_palettes() {
+    local p
+    for p in "$PALETTES_DIR"/*.toml; do
+        [[ -f $p ]] || continue
+        basename "$p" .toml
+    done
+}
+
+show_current() {
+    python3 - <<'PYEOF'
+from pathlib import Path
+import sys
+try:
+    import tomlkit
+except ImportError:
+    print("python-tomlkit not installed", file=sys.stderr)
+    sys.exit(1)
+path = Path("/etc/shedos/system.toml")
+if not path.is_file():
+    print(f"{path} not found", file=sys.stderr)
+    sys.exit(1)
+doc = tomlkit.parse(path.read_text())
+theme = doc.get("theme", {}) or {}
+for k in ("wallpaper", "palette", "font_ui", "font_mono"):
+    print(f"{k} = {theme.get(k, '<unset>')}")
+PYEOF
+}
+
+run_renderer() {
+    sudo python3 "$RENDERER"
+}
+
+write_value() {
+    local key=$1 value=$2
+    sudo python3 - "$key" "$value" <<'PYEOF'
+import sys
+from pathlib import Path
+import tomlkit
+key, value = sys.argv[1], sys.argv[2]
+path = Path("/etc/shedos/system.toml")
+doc = tomlkit.parse(path.read_text())
+theme = doc.setdefault("theme", tomlkit.table())
+theme[key] = value
+path.write_text(tomlkit.dumps(doc))
+print(f"set [theme].{key} = {value}")
+PYEOF
+}
+
+cmd=${1:-}
+case "$cmd" in
+    list)
+        list_palettes
+        ;;
+    get)
+        show_current
+        ;;
+    set)
+        key=${2:-}
+        value=${3:-}
+        if [[ -z $key || -z $value ]]; then
+            echo "shedman theme set: missing <key> or <value>" >&2
+            usage
+            exit 2
+        fi
+        case "$key" in
+            wallpaper|palette|font_ui|font_mono) ;;
+            *)
+                echo "shedman theme set: unknown key '$key' (valid: wallpaper, palette, font_ui, font_mono)" >&2
+                exit 2
+                ;;
+        esac
+        if [[ $key == palette ]]; then
+            if [[ ! -f "$PALETTES_DIR/$value.toml" ]]; then
+                echo "shedman theme set: palette '$value' not found" >&2
+                echo "Available:" >&2
+                list_palettes | sed 's/^/  /' >&2
+                exit 2
+            fi
+        fi
+        if [[ $key == wallpaper ]]; then
+            if [[ ! -f "$value" ]]; then
+                echo "shedman theme set: wallpaper '$value' not a regular file" >&2
+                exit 2
+            fi
+        fi
+        write_value "$key" "$value"
+        run_renderer
+        ;;
+    apply)
+        run_renderer
+        ;;
+    ""|help|-h|--help)
+        usage
+        ;;
+    *)
+        echo "shedman theme: unknown command '$cmd'" >&2
+        usage
+        exit 2
+        ;;
+esac
