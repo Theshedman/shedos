@@ -9,7 +9,7 @@ Native Arch packages that make up a ShedOS installation. Published to
 | `shedos-system` | Root-owned system payload: unified `shedman` CLI + subcommands under `/usr/libexec/shedman/` (with legacy `shedos-*` shims at `/usr/bin/` for back-compat), systemd units, `/etc` drop-ins. Appends the `[shedos]` pacman repo block to `/etc/pacman.conf` on install (idempotent marker block). |
 | `shedos-hyprland` | Hyprland desktop profile: `/etc/skel/.config/{hypr,waybar,walker,kitty,mako,rofi,fastfetch,mise}/` + zsh dotfiles, plus pristine mirror under `/usr/share/shedos/hyprland/defaults/` for `shedman config --sync`. |
 | `shedos-nvim` | Default Neovim config (same dual-install pattern). Separate package so its `always-conflict` sync policy doesn't pollute the generic tool. |
-| `shedos-branding` | Plymouth theme, wallpapers, SDDM theme, `/etc/shedos-ascii.txt`, `/etc/os-release`. |
+| `shedos-branding` | Plymouth theme, wallpapers, `/etc/shedos-ascii.txt`, `/etc/os-release`. |
 | `shedos-meta` | Zero-file metapackage. `depends=` pulls in every `shedos-*` package plus every Arch / AUR package a default install needs. |
 | `shedos-migrate-to-packaged` | One-shot migration helper for users on pre-packaged ShedOS installs. |
 
