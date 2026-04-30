@@ -20,6 +20,10 @@ archiso/pacman.conf
 # .pkg.tar.zst is the built artifact (CI rebuilds from PKGBUILD on every tag).
 packaging/*/pkg/
 packaging/*/src/
+# Exception: shedos-greeter is a single-crate Rust package whose actual
+# Rust sources live at packaging/shedos-greeter/src/. Without this
+# !-rule the makepkg-byproduct rule above would silently un-track them.
+!packaging/shedos-greeter/src/
 packaging/*/*.pkg.tar.zst
 packaging/*/*.pkg.tar.zst.sig
 
