@@ -14,7 +14,6 @@ url='https://github.com/theshedman/shedos'
 license=('GPL-3.0-or-later')
 depends=(
     'plymouth'
-    'catppuccin-sddm-theme-mocha'
 )
 backup=(
     'etc/shedos-ascii.txt'
