@@ -1,27 +1,11 @@
 /*
- * shedOS walker theme — Catppuccin Mocha.
- * Designed to match SDDM, Hyprland borders, kitty and bat. Mauve is the
- * shared accent; surface colors anchor the chrome. Spacing is tighter
- * than the upstream default and selected items get a thin mauve rail.
+ * shedOS walker theme. Palette is imported from the theme reconciler
+ * so `shedman theme set palette …` keeps walker in sync with hyprland,
+ * waybar, hyprlock, the greeter, and GTK. Spacing is tighter than the
+ * upstream default and selected items get a thin accent rail.
  */
 
-@define-color base       #1e1e2e;
-@define-color mantle     #181825;
-@define-color crust      #11111b;
-@define-color surface0   #313244;
-@define-color surface1   #45475a;
-@define-color surface2   #585b70;
-@define-color overlay0   #6c7086;
-@define-color overlay1   #7f849c;
-@define-color text       #cdd6f4;
-@define-color subtext0   #a6adc8;
-@define-color subtext1   #bac2de;
-@define-color mauve      #cba6f7;
-@define-color blue       #89b4fa;
-@define-color lavender   #b4befe;
-@define-color rosewater  #f5e0dc;
-@define-color red        #f38ba8;
-@define-color peach      #fab387;
+@import url("file:///etc/shedos/themes/current/palette.css");
 
 * {
   all: unset;
