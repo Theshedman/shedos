@@ -288,6 +288,7 @@ depends=(
     's3cmd'
     'sd'
     'seahorse'
+    'seatd'
     'sed'
     'shellcheck'
     'shfmt'
