@@ -138,7 +138,7 @@ shedos/
 │   ├── aur.txt           # AUR packages
 │   └── aur-norepublish.txt  # Proprietary AUR (optdepends only)
 ├── installer/            # Calamares modules + branding
-├── branding/             # Logos, wallpapers, SDDM/Plymouth assets
+├── branding/             # Logos, wallpapers, Plymouth assets
 ├── scripts/              # build, test, version-bump, package-list gen
 ├── docs/                 # User + maintainer docs
 ├── .github/workflows/    # build-packages.yml, build-iso.yml

@@ -82,7 +82,7 @@ PACMAN_CONF_MARKER="# >>> shedos-build-local-repo (temporary) >>>"
 PUBLIC_REPO_DIR="/srv/shedos-build-repo"
 
 # makepkg --syncdeps invokes `pacman -S` against /etc/pacman.conf. Several
-# ShedOS-native packages (e.g. shedos-branding → catppuccin-sddm-theme-mocha)
+# ShedOS-native packages (e.g. shedos-meta → catppuccin-gtk-theme-mocha)
 # depend on packages that only exist in our build-local repo. Register that
 # repo in /etc/pacman.conf for the duration of the build and restore the
 # original on exit. Idempotent: on re-entry we strip any prior block first.

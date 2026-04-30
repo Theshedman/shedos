@@ -1,9 +1,8 @@
 # Maintainer: ShedOS <https://github.com/theshedman/shedos>
 #
-# Visual identity: Plymouth boot splash, wallpapers, /etc/shedos-ascii.txt
-# (used by fastfetch). SDDM theme is not self-hosted for v1 — we depend on
-# the community AUR catppuccin-sddm-theme-mocha package that shedos-system's
-# /etc/sddm.conf.d/theme.conf points to.
+# Visual identity: Plymouth boot splash, wallpapers (incl. dusk.png shared
+# by both desktop and the greetd greeter), /etc/shedos-ascii.txt (used by
+# fastfetch).
 
 pkgname=shedos-branding
 pkgver=2026.04.30
@@ -14,7 +13,6 @@ url='https://github.com/theshedman/shedos'
 license=('GPL-3.0-or-later')
 depends=(
     'plymouth'
-    'catppuccin-sddm-theme-mocha'
 )
 backup=(
     'etc/shedos-ascii.txt'
