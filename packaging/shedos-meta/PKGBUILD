@@ -10,7 +10,7 @@
 
 pkgname=shedos-meta
 pkgver=2026.05.01
-pkgrel=5
+pkgrel=6
 pkgdesc='ShedOS meta-package — installs the full default ShedOS environment'
 arch=('any')
 url='https://github.com/theshedman/shedos'
@@ -21,7 +21,6 @@ depends=(
     'shedos-hyprland'
     'shedos-nvim'
     'shedos-branding'
-    'shedos-greeter'
     'shedos-kernel'
     'shedos-kernel-headers'
     'shedos-screensaver'
@@ -59,6 +58,7 @@ depends=(
     'clang'
     'cliphist'
     'cmake'
+    'code'
     'cppcheck'
     'cpupower'
     'cryptsetup'
@@ -290,6 +290,7 @@ depends=(
     'seahorse'
     'seatd'
     'sed'
+    'shedos-greeter'
     'shellcheck'
     'shfmt'
     'silicon'
