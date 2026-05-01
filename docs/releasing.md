@@ -96,20 +96,38 @@ git tag -s "v$today-rc1" -m "ShedOS v$today rc1"
 git push origin "v$today-rc1"
 ```
 
-`build-iso.yml` sees `-rc` in the tag name and marks the GitHub Release
-as a prerelease + slots the ISO into the RC retention bucket (1 kept)
-rather than the stable bucket (2 kept).
+`build-iso.yml` sees `-rc` in the tag name and:
 
-If the RC holds up, promote by cutting the plain stable tag after the
-soak:
+- Marks the GitHub Release as a prerelease and slots the ISO into the
+  RC retention bucket (1 kept) rather than the stable bucket (2 kept).
+- Renders the live ISO's `pacman.conf` to pacstrap from
+  `[shedos-testing] = repo.shedos.org/test/x86_64` (the always-fresh
+  channel that the RC's packages were just published to). So the RC
+  ISO actually installs and exercises the RC packages under bake.
+
+If the RC holds up, promote by cutting the plain stable tag:
 
 ```sh
 git tag -s "v$today" -m "ShedOS v$today"
 git push origin "v$today"
 ```
 
-No VERSION file churn between RC and stable — same underlying packages,
-just a re-spin of the ISO under the stable name.
+The stable tag triggers two things in parallel:
+
+1. `build-packages.yml` skips makepkg entirely and runs
+   `rclone copy r2:shedos-repo/test/x86_64/ r2:shedos-repo/stable/x86_64/`.
+   The packages on `/stable/` are now byte-identical to what `/test/`
+   has been serving during RC bake.
+2. `build-iso.yml` builds a stable ISO whose live `pacman.conf` points
+   at `[shedos] = repo.shedos.org/stable/x86_64`. So users installing
+   from the stable ISO pull from the same channel they'll subsequently
+   `pacman -Syu` from.
+
+No VERSION file churn between RC and stable — `bump-version.sh` is
+hash-aware (since v2026.05.02) and only bumps packages whose content
+actually changed since the manifest in
+`packaging/.last-release-hashes.toml`. A no-source-change stable cut
+publishes nothing new; the rclone promote is the only artifact move.
 
 ---
 

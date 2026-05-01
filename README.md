@@ -101,20 +101,30 @@ sudo make iso SHEDOS_ISO_TAG=2026.04.21-rc2
 
 ShedOS uses **CalVer** (`YYYY.MM.DD`) with optional `-rcN` suffix:
 
-- `v2026.04.21-rc1`, `v2026.04.21-rc2`, … — release candidates of one cycle.
-- `v2026.04.21` — stable cut of that cycle.
-- `v2026.04.28-rc1` — next cycle, new date.
+- `v2026.05.02-rc1`, `v2026.05.02-rc2`, … — release candidates of one cycle.
+- `v2026.05.02` — stable cut of that cycle.
 
-**`VERSION`** is the single source of truth for every `shedos-*` PKGBUILD.
-Bump it with `scripts/bump-version.sh [--today | <version>]` — the script
-also rewrites every `pkgver=` under `packaging/`. Tag pushes fire
-`.github/workflows/build-iso.yml`; `main` pushes fire
-`.github/workflows/build-packages.yml` which publishes the signed repo.
+Two channels at `repo.shedos.org`:
 
-The CI guardrail in `build-iso.yml` fails fast if the tag and `VERSION`
-disagree, so a forgotten bump can't silently ship a mismatched ISO.
+- **`/test/x86_64/`** — every push to `main` and every RC tag publishes
+  here. Live ISOs (RC + dev) pacstrap from this channel at install time.
+- **`/stable/x86_64/`** — frozen until promoted. Pushing a stable tag
+  (`v<CalVer>` without `-rcN`) triggers `rclone copy /test/ → /stable/`
+  in CI — no rebuild. Stable users `pacman -Syu` from here.
 
-For the full pipeline (R2 bucket layout, signing, retention sweep) see
+`bump-version.sh` is hash-aware (since v2026.05.02): only packages
+whose content drifted since the manifest in
+`packaging/.last-release-hashes.toml` get pkgver/pkgrel bumped. CI
+caches per-package builds keyed on content hash, so unchanged
+packages skip makepkg entirely.
+
+The install model is **online pacstrap** at Calamares run time. The
+live ISO is a lean ~1.5 GB Arch+Calamares environment; the full shedOS
+arrives via `shedos-meta` from `/test/` (RC ISOs) or `/stable/`
+(stable ISOs) during install.
+
+For the full pipeline (R2 bucket layout, signing, retention sweep,
+build incrementality) see
 [`docs/repo-architecture.md`](docs/repo-architecture.md).
 
 ## 🧪 Testing

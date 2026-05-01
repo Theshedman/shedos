@@ -17,7 +17,7 @@ and garbage-collected. If you're a user trying to upgrade, see
        │ repo-add --sign                    │ uploads flat to R2 /iso/
        │ rclone sync                        │ retention sweep
        ▼                                    ▼
-  r2:shedos-repo/x86_64/               r2:shedos-repo/iso/
+  r2:shedos-repo/{stable,test}/x86_64/ r2:shedos-repo/iso/
   (signed pacman repo)                 (release artifacts)
        │                                    │
        └──────────── fronted by ────────────┘
@@ -44,7 +44,7 @@ inside the free tier at current scale.
 
 ```
 r2:shedos-repo/
-├── x86_64/                       # Stable signed pacman repo
+├── stable/x86_64/                # Stable channel (path-segmented)
 │   ├── shedos.db                 # uploaded as two identical objects (R2 has no symlinks)
 │   ├── shedos.db.tar.gz
 │   ├── shedos.db.tar.gz.sig
@@ -54,35 +54,47 @@ r2:shedos-repo/
 │   ├── shedos-<pkg>-<ver>-<rel>-<arch>.pkg.tar.zst
 │   └── shedos-<pkg>-<ver>-<rel>-<arch>.pkg.tar.zst.sig
 │
-├── x86_64-testing/               # Canary channel (Phase 6B)
+├── test/x86_64/                  # Test channel (always-fresh)
 │   ├── shedos.db
-│   └── …                         # same layout as /x86_64/
+│   └── …                         # same layout as /stable/x86_64/
 │
 ├── iso/                          # Release artifacts (flat, one file per release)
-│   ├── shedos-2026.04.21-rc1-x86_64.iso
-│   ├── shedos-2026.04.21-rc1-x86_64.iso.sha256
-│   ├── shedos-2026.04.21-rc2-x86_64.iso
-│   └── shedos-2026.04.21-rc2-x86_64.iso.sha256
+│   ├── shedos-2026.05.02-rc1-x86_64.iso
+│   ├── shedos-2026.05.02-rc1-x86_64.iso.sha256
+│   ├── shedos-2026.05.02-x86_64.iso
+│   └── shedos-2026.05.02-x86_64.iso.sha256
 │
 └── shedos.gpg                    # Bootstrap pubkey for the migration script
 ```
 
-**`/x86_64/` vs `/x86_64-testing/`** (Phase 6B). The two prefixes
-serve different audiences:
+**Channel routing** (changed in v2026.05.02):
 
-- **`/x86_64/`** — stable channel. Receives every push to `main` and
-  every stable tag (`v<date>`). Long-tail retention; no automated
-  sweep beyond what `repo-add` does.
-- **`/x86_64-testing/`** — canary channel. Receives **the same
-  content as `/x86_64/`** plus RC tag pushes (`v<date>-rcN`).
-  Retention sweep keeps the latest 5 versions per package; older
-  builds are purged after each publish.
+- **`/test/x86_64/`** — always-fresh. Every push to `main` and every
+  RC tag publishes here. Retention sweep keeps the latest 5 versions
+  per package. Live ISOs (RC and non-tagged builds) pacstrap from this
+  channel at install time.
+- **`/stable/x86_64/`** — frozen until promoted. A stable tag
+  (`v<CalVer>`, no `-rcN`) triggers `rclone copy /test/x86_64/` →
+  `/stable/x86_64/` — **no rebuild**, no version churn. Stable users
+  pull `pacman -Syu` from here. Long-tail retention (rclone copy, not
+  sync, so older versions stay for downgrade).
+- Stable-tagged ISOs render their live `pacman.conf` against
+  `/stable/x86_64/` so installs from a stable ISO pull from the same
+  channel they'll subsequently update from.
 
-Users opt into the testing channel by adding a
-`[pacman.repos.shedos-testing]` stanza to `/etc/shedos/system.toml`
-and running `shedman apply` (or by uncommenting the
-`[shedos-testing]` block that the install scriptlet writes into
-`/etc/pacman.conf`). See `docs/upgrading.md` for the user-facing
+The two-channel split with tag-driven promotion lets RC packages bake
+on `/test/` for as long as needed before any user on `/stable/` sees
+them. Promotion is a metadata copy; the same byte-identical packages
+serve both channels post-promotion.
+
+**Cloudflare redirect** (managed in CF dashboard): legacy paths
+`/x86_64/*` → `/stable/x86_64/*` and `/x86_64-testing/*` →
+`/test/x86_64/*`. Permanent — keeps rc1–rc6 installs working after
+the path-segmented migration.
+
+Users opt into the testing channel by uncommenting the
+`[shedos-testing]` block that `shedos-system`'s install scriptlet
+wrote into `/etc/pacman.conf`. See `docs/upgrading.md` for the
 walkthrough.
 
 **Why `/iso/` is flat.** An earlier layout nested by tag
@@ -207,7 +219,7 @@ dry-runs on `main` still work.
   3. Collect `.pkg.tar.zst` + `.sig` into `dist/x86_64/`.
   4. `repo-add --sign` produces `shedos.db.tar.gz`, `shedos.files.tar.gz`, and their sigs.
   5. Duplicate `.db.tar.gz` → `.db` (R2 no symlinks; same for `.files`).
-  6. `rclone sync dist/x86_64/ r2:shedos-repo/x86_64/`.
+  6. `rclone sync dist/x86_64/ r2:shedos-repo/test/x86_64/` (push or RC tag). Stable tag instead does `rclone copy /test/x86_64/ /stable/x86_64/` — promotion only, no republish.
 - **AUR cache**: shared cache key with `build-iso.yml` so the ISO
   workflow's 35-min AUR prebuild warms this workflow's cache too (and
   vice versa).
@@ -254,8 +266,8 @@ Why these numbers:
   previous one is superseded.
 
 Installed users don't care about old ISOs (they upgrade via
-`pacman -Syu` from `/x86_64/`, not by reinstalling). Keeping fewer is
-free bucket-space savings.
+`pacman -Syu` from `/stable/x86_64/`, not by reinstalling). Keeping
+fewer is free bucket-space savings.
 
 The sweep also purges the legacy nested `iso/v*/` layout if any
 directories still exist (one-time migration). Safe to re-run.
@@ -285,30 +297,52 @@ plugin convention — see [plugins.md](plugins.md) for the
 
 ## Changing what a default install ships
 
-`archiso/packages.x86_64` is **generated**, not hand-edited. The real
-source is:
+Since v2026.05.02 the install model is **pacstrap-from-network** at
+Calamares run time. Two outputs to update accordingly:
 
-- `packages/official/*.txt` — Arch repo packages, grouped by category.
-- `packages/aur.txt` — AUR packages (republishable + proprietary).
-- `packages/aur-norepublish.txt` — subset of `aur.txt` we can't legally
-  rebundle (vscode, chrome, slack, …). Stays as optdepends on
-  `shedos-meta`; excluded from `packages.x86_64`.
+- **`archiso/packages.x86_64`** — the LEAN live-ISO list (~116
+  packages: base + Calamares deps + 5 extras). Generated by
+  `scripts/generate-package-list.sh` from `packages/official/{base,
+  installer}.txt` + a hardcoded extras tuple in the script. Don't add
+  consumer-facing packages here; this list is the installer
+  environment, not the installed system.
+- **`packaging/shedos-meta/PKGBUILD`** — the full installed system,
+  via `depends=()`. Auto-generated by `scripts/render-meta-depends.sh`
+  from every `packages/official/*.txt` + republishable
+  `packages/aur.txt`. Calamares pacstraps `shedos-meta` into /target
+  to install everything.
 
-After editing any of those:
+To add a package to the default install:
 
 ```bash
-scripts/generate-package-list.sh  # rewrites archiso/packages.x86_64
+# 1. Add the line to the right packages/official/<category>.txt
+#    (or packages/aur.txt for AUR + add to aur-norepublish.txt if EULA-restricted).
+# 2. Regenerate shedos-meta.
 scripts/render-meta-depends.sh    # rewrites packaging/shedos-meta/PKGBUILD
+# 3. If — and only if — the new package is ALSO needed in the live
+#    installer environment, also update generate-package-list.sh's
+#    hardcoded list.
 ```
 
-Both generators read the same three files. Keep them in sync by always
-re-running both.
+Why `packages.x86_64` is flat: pacman's virtual-dep provider pick is
+alphabetical under `--noconfirm`. Every chosen provider has to be at
+the root of the resolution graph or pacstrap collides.
 
-Why `packages.x86_64` is flat: see the header comment on
-`generate-package-list.sh`. TL;DR — pacman's virtual-dep provider pick
-is alphabetical under `--noconfirm`, so every chosen provider has to
-live at the root of the resolution graph (explicit in
-`packages.x86_64`) or we get unresolvable conflicts during pacstrap.
+## Build incrementality
+
+`scripts/compute-pkg-hash.sh <pkg>` emits a canonical SHA-256 of
+`packaging/<pkg>/`'s content. `scripts/bump-version.sh` reads
+`packaging/.last-release-hashes.toml`, recomputes hashes, and bumps
+pkgrel only for packages whose hash drifted. Unchanged packages stay
+at their previous version. CI's `build-shedos-packages.sh` does the
+same skip check at build time: if `pkgname-pkgver-pkgrel.pkg.tar.zst`
+is already present in the restored cache, makepkg is skipped.
+
+Both `build-packages.yml` and `build-iso.yml` cache
+`/tmp/shedos-pkg-cache/` keyed on `github.sha` with a `restore-keys`
+fallback to the most recent prior cache. So a tag-pushed ISO build
+inherits the package set last published by the most recent
+push-to-main, only rebuilding what genuinely changed.
 
 ## Debugging
 

@@ -313,6 +313,26 @@ a single native Rust binary (no runtime scripting deps).
 
 ---
 
+## Phase 9 — Lean ISO + online install + build incrementality · **In flight (v2026.05.02)**
+
+Three bundled architectural changes shipped together:
+
+| # | Deliverable | Status |
+|---|---|---|
+| 9.1 | **Lean live ISO + pacstrap install.** `archiso/packages.x86_64` trimmed from ~452 to ~116 packages (base + Calamares deps + 5 extras). `unpackfs` and `copykernel` Calamares modules removed; replaced by `shedos_pacstrap` custom Python module that pacstraps `shedos-meta` from `repo.shedos.org` to /target at install time. Live ISO becomes a minimal Arch + Calamares environment; the full shedOS arrives via network during install. Calamares `welcome` requires internet. | ✅ Implemented |
+| 9.2 | **Calamares optional-apps screen + `shedman install` rewrite.** Built-in `packagechooser_apps` view shows Chrome / Postman / Claude Code / JetBrains Toolbox (all default-checked). Custom `shedos_optional_apps` job module installs picked apps via yay-in-chroot post-pacstrap. `code` (open-source from `extra`) ships by default — moved out of the picker. Old yad-based first-boot apps wizard deleted; `shedman install <pkg>` rewritten as a per-package source-detect CLI (pacman first, AUR fallback). | ✅ Implemented |
+| 9.3 | **Build incrementality + test→stable promotion.** R2 layout migrated to path-segmented prefixes (`/stable/x86_64`, `/test/x86_64`); Cloudflare redirect rules cover legacy URLs. `scripts/compute-pkg-hash.sh` emits canonical content hashes; `bump-version.sh` reads `packaging/.last-release-hashes.toml` and only bumps changed packages. CI per-package cache (`build-{packages,iso}.yml`) restores prior builds via `restore-keys`; `build-shedos-packages.sh` skips packages whose pkgver-pkgrel matches an existing artifact. Stable tag (no `-rcN`) triggers `rclone copy /test/ → /stable/` — promotion only, no rebuild. Live ISO `pacman.conf` is rendered with `@CHANNEL@` substitution at ISO build time so RC ISOs install from `/test/` and stable ISOs install from `/stable/`. | ✅ Implemented |
+| 9.4 | **uwsm session integration with screensaver-through-lock.** Greeter starts the session via `uwsm start hyprland.desktop` for systemd graphical-session.target binding. `uwsm finalize` in autostart.conf signals compositor readiness so greetd doesn't loop on session start. New `shedman lock` wrapper bookends the screensaver around hyprlock so transparent-hyprlock (with screensaver as live underlay) never leaks the desktop. | ✅ Implemented |
+
+### 9's deferred
+
+- **Cloudflare Worker code in repo** — user manages redirect rules from the CF dashboard. The `infra/cloudflare-worker/` scaffolding I drafted was rolled back per user direction. Adding it back is a one-commit task if dashboard rules ever become unwieldy.
+- **Audio support in Calamares** — pacstrap delivers a quiet system; the user picks audio source post-boot. Pre-selecting microphone/desktop monitor in the installer would require a Calamares step + reactive defaults; not in scope for v2026.05.02.
+- **`shedman install --search` post-install indexing** — current implementation runs `pacman -Ss` + `yay -Ss` live. Pre-built local catalog index would be faster but adds a refresh job; defer until volume justifies it.
+- **GHA cache eviction tuning** — current setup uses `key: github.sha + restore-keys: prefix-`. If cache space pressure ever materializes, cache key shape may need to shorten (e.g., key off manifest hash instead of sha) to dedupe.
+
+---
+
 ## Conventions
 
 - A phase is "shipped" when every `B#N` in it is on `main`, documented in

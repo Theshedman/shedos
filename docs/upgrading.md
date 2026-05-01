@@ -2,7 +2,27 @@
 
 ShedOS is a **rolling release**. Once you install from an ISO, you never
 need to reinstall to move to a newer release — `pacman -Syu` pulls signed
-updates directly from `https://repo.shedos.org`.
+updates directly from `https://repo.shedos.org/stable/x86_64/`.
+
+## v2026.05.02 — notable changes for upgraders
+
+- **Repo URL is path-segmented** (`/stable/x86_64`, `/test/x86_64`)
+  instead of suffix-style (`/x86_64`, `/x86_64-testing`). Existing rc1–
+  rc6 installs continue working via Cloudflare redirect; on next
+  `shedos-system` upgrade your `/etc/pacman.conf` marker block is
+  rewritten to the canonical URL automatically.
+- **Live ISO and install model changed.** Fresh installs from
+  v2026.05.02+ ISOs are network-required and go through Calamares'
+  pacstrap step. Existing installed systems are unaffected.
+- **`shedman install` is now a CLI** (`shedman install <pkg>`,
+  auto-detects pacman vs AUR). The previous yad-based proprietary-apps
+  wizard is gone — its job moved into Calamares' optional-apps screen
+  at install time.
+- **Install-time apps picker** lets you check Chrome / Postman /
+  Claude Code / JetBrains Toolbox during a fresh install. Skipped or
+  declined? `shedman install <pkg>` post-boot installs the same way.
+  `code` (open-source VS Code from `extra`) ships by default — no
+  picker entry needed.
 
 This doc walks through the upgrade experience: how you're notified,
 what happens when you accept an update, and how the system protects your
