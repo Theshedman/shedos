@@ -404,22 +404,20 @@ jobs:
           RCLONE_S3_NO_CHECK_BUCKET: "true"
         run: |
           # Channel routing:
-          #   * push to main           → /stable/x86_64/ + /test/x86_64/ (same content)
-          #   * stable tag (v<date>)   → /stable/x86_64/ + /test/x86_64/ (parity)
-          #   * RC tag (v<date>-rcN)   → /test/x86_64/ only (test is "ahead")
-          #
-          # The test channel is "stable cuts + RC iterations"; stable is
-          # "stable cuts only". Promotion is automatic on stable tag (same
-          # package set lands in both prefixes).
-          publish_stable=true
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]] && [[ "${GITHUB_REF_NAME}" == *-rc* ]]; then
-              publish_stable=false
-              echo "RC tag detected (${GITHUB_REF_NAME}); publishing to test channel only."
+          #   * push to main           → /test/x86_64/ (from this run's dist/)
+          #   * RC tag (v<date>-rcN)   → /test/x86_64/ (same as push)
+          #   * stable tag (v<date>)   → /stable/x86_64/ via rclone copy from
+          #                              /test/x86_64/, NO rebuild. dist/ is
+          #                              ignored. Uses rclone copy (not sync)
+          #                              so /stable/ retains older versions
+          #                              for downgrade.
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]] && [[ "$GITHUB_REF_NAME" != *-rc* ]]; then
+              echo "Stable tag $GITHUB_REF_NAME: promoting /test/x86_64/ → /stable/x86_64/"
+              rclone copy "r2:$R2_BUCKET/test/x86_64/" "r2:$R2_BUCKET/stable/x86_64/" --progress
+          else
+              echo "Push or RC tag: publishing dist/x86_64/ → /test/x86_64/"
+              rclone sync dist/x86_64/ "r2:$R2_BUCKET/test/x86_64/" --progress
           fi
-          if $publish_stable; then
-              rclone sync dist/x86_64/ "r2:$R2_BUCKET/stable/x86_64/" --progress
-          fi
-          rclone sync dist/x86_64/ "r2:$R2_BUCKET/test/x86_64/" --progress
           # Ship the bootstrap pubkey at the bucket root so the migration
           # script can fetch it without the keyring installed.
           rclone copyto packaging/shedos-keyring/tree/shedos.gpg \
