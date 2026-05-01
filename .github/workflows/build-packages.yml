@@ -369,6 +369,11 @@ jobs:
         # Restore the prior build's signed repo DB if the cache hit. The
         # next step short-circuits when /tmp/built-pkgs.txt is empty
         # (nothing rebuilt) and a cached DB is present.
+        #
+        # Pacman fetches `<repo>.db` (and `<repo>.files`), NOT the
+        # `.tar.gz` form, so we materialize those names alongside the
+        # archive copies. R2 stores files content-addressed so a `cp`
+        # from .tar.gz is what actually ends up at the published URL.
         run: |
           install -d -o builder -g builder dist/x86_64
           for f in shedos.db.tar.gz shedos.db.tar.gz.sig \
@@ -377,6 +382,12 @@ jobs:
                   cp -v /tmp/shedos-pkg-cache/$f dist/x86_64/
               fi
           done
+          if [[ -f dist/x86_64/shedos.db.tar.gz ]]; then
+              cp -v dist/x86_64/shedos.db.tar.gz    dist/x86_64/shedos.db
+          fi
+          if [[ -f dist/x86_64/shedos.files.tar.gz ]]; then
+              cp -v dist/x86_64/shedos.files.tar.gz dist/x86_64/shedos.files
+          fi
 
       - name: Build repo DB
         run: |
