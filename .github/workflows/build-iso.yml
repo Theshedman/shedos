@@ -215,6 +215,29 @@ jobs:
               echo "Kernel cache missed; build-shedos-packages.sh will rebuild from source."
           fi
 
+      - name: Restore shedos-pkgs cache
+        # Per-build incremental cache for non-kernel shedos-* packages.
+        # Shares the cache prefix with build-packages.yml so a tag-pushed
+        # ISO build hits whatever the most recent push-to-main saved.
+        id: shedos-pkgs-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/shedos-pkg-cache
+          key: shedos-pkgs-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            shedos-pkgs-${{ runner.os }}-
+
+      - name: Stage cached shedos packages into shedos-repo
+        run: |
+          if [[ -d /tmp/shedos-pkg-cache ]]; then
+              mkdir -p archiso/shedos-repo
+              cp -v /tmp/shedos-pkg-cache/*.pkg.tar.zst archiso/shedos-repo/ 2>/dev/null || true
+              cp -v /tmp/shedos-pkg-cache/*.pkg.tar.zst.sig archiso/shedos-repo/ 2>/dev/null || true
+              echo "Staged cached shedos packages from /tmp/shedos-pkg-cache."
+          else
+              echo "shedos-pkgs cache empty; build-shedos-packages.sh will build from source."
+          fi
+
       - name: Build ShedOS native packages
         # Populates archiso/shedos-repo with shedos-meta + deps so pacstrap
         # can resolve them from the build-local repo. Also refreshes
@@ -242,6 +265,30 @@ jobs:
         with:
           path: /tmp/shedos-kernel-pkg-cache
           key: shedos-kernel-pkg-${{ runner.os }}-${{ hashFiles('packaging/shedos-kernel/PKGBUILD', 'packaging/shedos-kernel/config.x86_64') }}
+
+      - name: Stage shedos packages for cache save
+        # Mirror non-kernel shedos-*.pkg.tar.zst into the cache path so
+        # the next run's pre-flight can skip unchanged packages. Kernel
+        # files belong to the dedicated kernel cache; skip them here.
+        if: always()
+        run: |
+          mkdir -p /tmp/shedos-pkg-cache
+          shopt -s nullglob
+          for f in archiso/shedos-repo/shedos-*.pkg.tar.zst; do
+              case "$(basename "$f")" in
+                  shedos-kernel-*) continue ;;
+              esac
+              cp -v "$f" /tmp/shedos-pkg-cache/
+              [[ -f "${f}.sig" ]] && cp -v "${f}.sig" /tmp/shedos-pkg-cache/
+          done
+          ls -la /tmp/shedos-pkg-cache/ | head -20
+
+      - name: Save shedos-pkgs cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/shedos-pkg-cache
+          key: shedos-pkgs-${{ runner.os }}-${{ github.sha }}
 
       - name: Strip debug packages from shedos-repo
         run: |
