@@ -145,11 +145,11 @@ _refresh_repo_db() {
         return 0
     fi
 
-    # repo-add UPDATES existing entries by default — no need to delete the
-    # DB first. Running without --quiet so failures produce a visible stack.
+    # `-p` (prevent-downgrade) makes the highest version always win, even
+    # when the glob expands in lex order (where pkgrel "10" sorts before "7").
     (
         cd "$REPO_DIR"
-        repo-add shedos-repo.db.tar.gz ./*.pkg.tar.zst
+        repo-add -p shedos-repo.db.tar.gz ./*.pkg.tar.zst
     )
 
     # Guard against repo-add silently exiting 0 without producing a DB.
@@ -165,6 +165,27 @@ _refresh_repo_db() {
         pacman -Sy --noconfirm
     fi
 }
+_refresh_repo_db
+
+# Strip stale .pkg.tar.zst left over from prior cache states (the
+# shedos-pkgs cache accumulates files across builds; without this
+# pass, REPO_DIR can hold every shedos-system pkgrel ever cached).
+# Keep only the version named by each package's current PKGBUILD.
+for dir in "$PACKAGING_DIR"/shedos-*/; do
+    pkgname=$(basename "$dir")
+    [[ -f "$dir/PKGBUILD" ]] || continue
+    [[ "$pkgname" == "shedos-kernel" ]] && continue   # dedicated kernel cache
+    pkgver=$(awk -F= '/^pkgver=/ {print $2; exit}' "$dir/PKGBUILD")
+    pkgrel=$(awk -F= '/^pkgrel=/ {print $2; exit}' "$dir/PKGBUILD")
+    shopt -s nullglob
+    for stale in "$REPO_DIR/${pkgname}"-*.pkg.tar.zst; do
+        base=$(basename "$stale")
+        [[ "$base" == "${pkgname}-${pkgver}-${pkgrel}-"*.pkg.tar.zst ]] && continue
+        echo "  removing stale: $base"
+        rm -f "$stale" "${stale}.sig"
+    done
+    shopt -u nullglob
+done
 _refresh_repo_db
 
 BUILT_PKGS=()

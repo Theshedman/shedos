@@ -398,11 +398,25 @@ jobs:
         # Mirror non-kernel shedos-*.pkg.tar.zst (and their .sig files)
         # plus the repo DB into the cache path so the next no-op run can
         # skip makepkg AND gpg --sign AND repo-add. Kernel files belong
-        # to the dedicated kernel cache.
+        # to the dedicated kernel cache. Prune stale versions first so
+        # the cache doesn't accumulate every old pkgrel ever built.
         if: always()
         run: |
           mkdir -p /tmp/shedos-pkg-cache
           shopt -s nullglob
+          for dir in packaging/shedos-*/; do
+              pkgname=$(basename "$dir")
+              [[ -f "$dir/PKGBUILD" ]] || continue
+              [[ "$pkgname" == "shedos-kernel" ]] && continue
+              pkgver=$(awk -F= '/^pkgver=/ {print $2; exit}' "$dir/PKGBUILD")
+              pkgrel=$(awk -F= '/^pkgrel=/ {print $2; exit}' "$dir/PKGBUILD")
+              for stale in /tmp/shedos-pkg-cache/${pkgname}-*.pkg.tar.zst; do
+                  base=$(basename "$stale")
+                  [[ "$base" == "${pkgname}-${pkgver}-${pkgrel}-"*.pkg.tar.zst ]] && continue
+                  echo "  cache prune: $base"
+                  rm -f "$stale" "${stale}.sig"
+              done
+          done
           for f in archiso/shedos-repo/shedos-*.pkg.tar.zst; do
               case "$(basename "$f")" in
                   shedos-kernel-*) continue ;;
