@@ -61,7 +61,6 @@ for pkgbuild in "$root"/packaging/shedos-*/PKGBUILD; do
     fi
 
     h=$("$here"/compute-pkg-hash.sh "$pkg")
-    new_hash[$pkg]=$h
 
     current_ver=$(awk -F= '/^pkgver=/ {print $2; exit}' "$pkgbuild")
     current_rel=$(awk -F= '/^pkgrel=/ {print $2; exit}' "$pkgbuild")
@@ -69,6 +68,7 @@ for pkgbuild in "$root"/packaging/shedos-*/PKGBUILD; do
 
     if [[ -n $prev && $prev == "$h" ]]; then
         echo "  $pkg: unchanged ($current_ver-$current_rel)"
+        new_hash[$pkg]=$h
         unchanged=$((unchanged + 1))
         continue
     fi
@@ -84,6 +84,10 @@ for pkgbuild in "$root"/packaging/shedos-*/PKGBUILD; do
             "$pkgbuild"
         echo "  $pkg: $current_ver-$current_rel → $new_version-1"
     fi
+    # Recompute hash AFTER the bump so the manifest reflects the
+    # post-bump state. Otherwise the next run sees the stored pre-bump
+    # hash as "changed" (because pkgrel is in the hash) and bumps again.
+    new_hash[$pkg]=$("$here"/compute-pkg-hash.sh "$pkg")
     changed=$((changed + 1))
 done
 
