@@ -167,7 +167,7 @@ _refresh_repo_db() {
 }
 _refresh_repo_db
 
-BUILT=0
+BUILT_PKGS=()
 for dir in "${PKG_DIRS[@]}"; do
     pkgname=$(basename "$dir")
     work="$BUILD_ROOT/$pkgname"
@@ -190,7 +190,6 @@ for dir in "${PKG_DIRS[@]}"; do
         echo "✓ $pkgname $pkgver-$pkgrel cached; skipping rebuild"
         printf '    %s\n' "${cached[@]##*/}"
         _refresh_repo_db
-        BUILT=$((BUILT + 1))
         continue
     fi
 
@@ -279,7 +278,7 @@ for dir in "${PKG_DIRS[@]}"; do
     find "$work" -maxdepth 1 -name "*.pkg.tar.zst" -exec cp -v {} "$REPO_DIR/" \;
     _refresh_repo_db
 
-    BUILT=$((BUILT + 1))
+    BUILT_PKGS+=("$pkgname")
 done
 
 # Strip -debug splits before mkarchiso (mirrors CI build-iso.yml).
@@ -300,7 +299,17 @@ echo ""
 echo "Final shedos-repo database state:"
 ls -lh "$REPO_DIR"/shedos-repo.*
 
+# Persist the freshly-built package list so downstream CI steps know
+# which packages need re-signing + repo-add. Cached packages are
+# excluded; the file is empty on a no-op build.
+if (( ${#BUILT_PKGS[@]} > 0 )); then
+    printf '%s\n' "${BUILT_PKGS[@]}" > /tmp/built-pkgs.txt
+else
+    : > /tmp/built-pkgs.txt
+fi
+
 echo ""
 echo "=========================================="
-echo "Built $BUILT ShedOS package(s) into $REPO_DIR"
+echo "Built ${#BUILT_PKGS[@]} ShedOS package(s) into $REPO_DIR"
+echo "Manifest: /tmp/built-pkgs.txt (${#BUILT_PKGS[@]} entries)"
 echo "=========================================="
