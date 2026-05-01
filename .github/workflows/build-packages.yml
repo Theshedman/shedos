@@ -304,10 +304,64 @@ jobs:
           path: /tmp/shedos-kernel-pkg-cache
           key: shedos-kernel-pkg-${{ runner.os }}-${{ hashFiles('packaging/shedos-kernel/PKGBUILD', 'packaging/shedos-kernel/config.x86_64') }}
 
+      - name: Sign + stage packages for publication
+        # Walk archiso/shedos-repo/, sign each .pkg.tar.zst with the ShedOS
+        # key, and move to dist/x86_64/ — UNLESS the package is listed in
+        # packages/aur-norepublish.txt (proprietary EULAs forbid third-party
+        # redistribution under our signature; users get those via yay /
+        # shedos-welcome).
+        run: |
+          install -d -o builder -g builder dist/x86_64
+          # build-shedos-packages.sh emits packages as root-owned (via cp);
+          # chown so gpg running as builder can read.
+          chown -R builder:builder archiso/shedos-repo
+
+          mapfile -t norepublish < <(
+              grep -hEv '^\s*(#|$)' packages/aur-norepublish.txt
+          )
+
+          staged=0 reused=0 skipped=0
+          for pkg in archiso/shedos-repo/*.pkg.tar.zst; do
+              [[ -f $pkg ]] || continue
+              base=$(basename "$pkg")
+              pkgname=${base%-*-*-*.pkg.tar.zst}
+              skip=0
+              for n in "${norepublish[@]}"; do
+                  if [[ $pkgname == "$n" ]]; then skip=1; break; fi
+              done
+              if [[ $skip -eq 1 ]]; then
+                  echo "skip  $pkgname (norepublish)"
+                  skipped=$((skipped+1))
+                  continue
+              fi
+              # Reuse cache-restored signature if present. GPG signatures
+              # don't expire, so a cached sig is just as valid as a fresh
+              # one — and rclone sync skips the re-upload because bytes
+              # don't change. Saves ~50 GPG calls + ~50 R2 PUTs per no-op
+              # build. On key rotation, manually purge the GHA cache.
+              if [[ -f "${pkg}.sig" ]]; then
+                  echo "reuse $pkgname (cached signature)"
+                  cp "$pkg" "${pkg}.sig" dist/x86_64/
+                  reused=$((reused+1))
+                  continue
+              fi
+              echo "sign  $pkgname"
+              sudo -u builder gpg --batch --detach-sign --no-armor \
+                  --local-user "$GPG_FP" \
+                  --output "$pkg.sig" "$pkg"
+              # cp (not mv) — keep the package in archiso/shedos-repo/ so it
+              # remains in the cache snapshot for the next run.
+              cp "$pkg" "$pkg.sig" dist/x86_64/
+              staged=$((staged+1))
+          done
+          echo "staged $staged freshly signed; $reused cache-restored sigs; $skipped proprietary"
+          ls -la dist/x86_64/ | head -30
+
       - name: Stage shedos packages for cache save
-        # Mirror non-kernel shedos-*.pkg.tar.zst into the cache path so
-        # the next run's pre-flight can skip unchanged packages. Kernel
-        # files belong to the dedicated kernel cache; skip them here.
+        # Mirror non-kernel shedos-*.pkg.tar.zst (and their .sig files
+        # produced/reused by the sign step above) into the cache path so
+        # the next run can skip both makepkg AND gpg --sign for unchanged
+        # packages. Kernel files belong to the dedicated kernel cache.
         if: always()
         run: |
           mkdir -p /tmp/shedos-pkg-cache
@@ -327,48 +381,6 @@ jobs:
         with:
           path: /tmp/shedos-pkg-cache
           key: shedos-pkgs-${{ runner.os }}-${{ github.sha }}
-
-      - name: Sign + stage packages for publication
-        # Walk archiso/shedos-repo/, sign each .pkg.tar.zst with the ShedOS
-        # key, and move to dist/x86_64/ — UNLESS the package is listed in
-        # packages/aur-norepublish.txt (proprietary EULAs forbid third-party
-        # redistribution under our signature; users get those via yay /
-        # shedos-welcome).
-        run: |
-          install -d -o builder -g builder dist/x86_64
-          # build-shedos-packages.sh emits packages as root-owned (via cp);
-          # chown so gpg running as builder can read.
-          chown -R builder:builder archiso/shedos-repo
-
-          mapfile -t norepublish < <(
-              grep -hEv '^\s*(#|$)' packages/aur-norepublish.txt
-          )
-
-          staged=0 skipped=0
-          for pkg in archiso/shedos-repo/*.pkg.tar.zst; do
-              [[ -f $pkg ]] || continue
-              base=$(basename "$pkg")
-              pkgname=${base%-*-*-*.pkg.tar.zst}
-              skip=0
-              for n in "${norepublish[@]}"; do
-                  if [[ $pkgname == "$n" ]]; then skip=1; break; fi
-              done
-              if [[ $skip -eq 1 ]]; then
-                  echo "skip  $pkgname (norepublish)"
-                  skipped=$((skipped+1))
-                  continue
-              fi
-              echo "sign  $pkgname"
-              sudo -u builder gpg --batch --detach-sign --no-armor \
-                  --local-user "$GPG_FP" \
-                  --output "$pkg.sig" "$pkg"
-              # cp (not mv) — keep the package in archiso/shedos-repo/ so it
-              # remains in the cache snapshot for the next run.
-              cp "$pkg" "$pkg.sig" dist/x86_64/
-              staged=$((staged+1))
-          done
-          echo "staged $staged packages; skipped $skipped proprietary"
-          ls -la dist/x86_64/ | head -30
 
       - name: Build repo DB
         run: |
