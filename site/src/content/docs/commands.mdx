@@ -146,9 +146,8 @@ and pings the waybar pill + mako if drift appears.
 
 | Command | Does |
 |---|---|
-| `shedman install` | Interactive proprietary-apps installer (VS Code, Chrome, Slack, …). |
-| `shedman install -f` / `--force` | Bypass "already installed" guards. |
-| `shedman install -n` / `--dry-run` | Print what would run, change nothing. |
+| `shedman install <pkg>` | Install one or more packages. Source auto-detected: pacman first (official + `[shedos]`), then yay/AUR. |
+| `shedman install -s <query>` | Search across pacman repos and AUR. |
 | `shedman welcome` | First-boot welcome flow (git identity, Calamares follow-up). |
 | `shedman migrate --detect` | Print `packaged` or `legacy` based on current state. |
 | `shedman migrate -n` / `--dry-run` | Print the retrofit plan (default). |
@@ -195,10 +194,12 @@ invocations for ad-hoc AUR work:
 | `yay -Ps` | Print AUR/pacman stats. |
 
 <CalloutBox kind="info">
-Proprietary AUR packages (VS Code, Chrome, Slack, Obsidian, Postman)
-are listed in `shedos-meta`'s `optdepends=()` but never installed by
-default — `shedman install` is the curated path, `yay -S <pkg>` the
-manual one.
+Proprietary AUR packages (Chrome, Postman, Claude Code, JetBrains
+Toolbox) are listed in `shedos-meta`'s `optdepends=()` and aren't
+installed by default. Calamares' optional-apps screen offers them at
+install time; post-boot, `shedman install <pkg>` installs from any
+source (pacman or AUR) with one command. `code` (open-source VS Code
+from `extra`) ships by default — no picker entry needed.
 </CalloutBox>
 
 ## Flag combining
