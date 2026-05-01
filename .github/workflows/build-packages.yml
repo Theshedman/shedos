@@ -385,8 +385,14 @@ jobs:
           if [[ -f dist/x86_64/shedos.db.tar.gz ]]; then
               cp -v dist/x86_64/shedos.db.tar.gz    dist/x86_64/shedos.db
           fi
+          if [[ -f dist/x86_64/shedos.db.tar.gz.sig ]]; then
+              cp -v dist/x86_64/shedos.db.tar.gz.sig    dist/x86_64/shedos.db.sig
+          fi
           if [[ -f dist/x86_64/shedos.files.tar.gz ]]; then
               cp -v dist/x86_64/shedos.files.tar.gz dist/x86_64/shedos.files
+          fi
+          if [[ -f dist/x86_64/shedos.files.tar.gz.sig ]]; then
+              cp -v dist/x86_64/shedos.files.tar.gz.sig dist/x86_64/shedos.files.sig
           fi
 
       - name: Build repo DB
