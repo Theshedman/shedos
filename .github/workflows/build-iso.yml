@@ -113,6 +113,21 @@ jobs:
           fi
           echo "VERSION matches tag: $actual"
 
+      - name: Render live-ISO pacman.conf channel
+        # Stable tag (v<CalVer>, no -rcN) → /stable/. Anything else
+        # (RC tag, branch push, workflow_dispatch) → /test/. The live
+        # ISO's airootfs/etc/pacman.conf gets baked into the squashfs
+        # by mkarchiso, so the substitution must happen BEFORE that.
+        run: |
+          channel="test"
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]] && [[ "$GITHUB_REF_NAME" != *-rc* ]]; then
+              channel="stable"
+          fi
+          echo "Rendering airootfs pacman.conf with channel=$channel"
+          sed "s|@CHANNEL@|$channel|g" \
+              archiso/airootfs/etc/pacman.conf.in \
+              > archiso/airootfs/etc/pacman.conf
+
       - name: Restore ccache
         # Object-level compilation cache for the shedos-kernel build.
         # Keyed on the kernel PKGBUILD + config so a real source change

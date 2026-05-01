@@ -14,6 +14,8 @@ archiso/shedos-repo/shedos-repo.db*
 archiso/shedos-repo/shedos-repo.files*
 # Rendered from archiso/pacman.conf.in at build time
 archiso/pacman.conf
+# Rendered from archiso/airootfs/etc/pacman.conf.in at build time (channel substitution)
+archiso/airootfs/etc/pacman.conf
 
 # makepkg byproducts under packaging/<pkg>/ — pkg/ is the staging dir it
 # installs into during package(); src/ holds extracted sources; the
