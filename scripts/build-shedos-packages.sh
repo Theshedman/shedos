@@ -174,33 +174,24 @@ for dir in "${PKG_DIRS[@]}"; do
     echo ""
     echo "---- makepkg $pkgname ----"
 
-    # Cache pre-flight for shedos-kernel. If the exact pkgver-pkgrel pair
-    # of .pkg.tar.zst files (kernel + headers, since shedos-kernel is a
-    # split package) is already present in $REPO_DIR — restored either by
-    # the dedicated GHA `shedos-kernel-pkg-cache` (.github/workflows/
-    # build-{packages,iso}.yml) or by a prior run on a developer box —
-    # skip the multi-hour kernel rebuild entirely.
-    #
-    # Cache hit semantics: pkgver+pkgrel match the current PKGBUILD, which
-    # is rewritten by scripts/bump-kernel.sh whenever upstream linux-zen
-    # publishes a new release. So a cache hit means "upstream pkgver
-    # unchanged AND we already built it once" — exactly the user's intent
-    # of "don't rebuild if upstream hasn't moved AND the artifact exists".
+    # Cache pre-flight: skip if pkgver-pkgrel.pkg.tar.zst already in REPO_DIR.
+    pkgver=$(awk -F= '/^pkgver=/ {print $2; exit}' "$dir/PKGBUILD")
+    pkgrel=$(awk -F= '/^pkgrel=/ {print $2; exit}' "$dir/PKGBUILD")
+    cached=()
+    for a in x86_64 any; do
+        f="$REPO_DIR/${pkgname}-${pkgver}-${pkgrel}-${a}.pkg.tar.zst"
+        [[ -f $f ]] && cached+=("$f")
+    done
     if [[ $pkgname == shedos-kernel ]]; then
-        kpkgver=$(awk -F= '/^pkgver=/ {print $2; exit}' "$dir/PKGBUILD")
-        kpkgrel=$(awk -F= '/^pkgrel=/ {print $2; exit}' "$dir/PKGBUILD")
-        karch=x86_64
-        kpkg="$REPO_DIR/${pkgname}-${kpkgver}-${kpkgrel}-${karch}.pkg.tar.zst"
-        kpkg_hdr="$REPO_DIR/${pkgname}-headers-${kpkgver}-${kpkgrel}-${karch}.pkg.tar.zst"
-        if [[ -f $kpkg && -f $kpkg_hdr ]]; then
-            echo "✓ $pkgname $kpkgver-$kpkgrel cached; skipping kernel rebuild"
-            echo "    $(basename "$kpkg")"
-            echo "    $(basename "$kpkg_hdr")"
-            _refresh_repo_db
-            BUILT=$((BUILT + 1))
-            continue
-        fi
-        echo "  $pkgname $kpkgver-$kpkgrel not cached; full rebuild ahead"
+        h="$REPO_DIR/${pkgname}-headers-${pkgver}-${pkgrel}-x86_64.pkg.tar.zst"
+        [[ -f $h ]] && cached+=("$h") || cached=()
+    fi
+    if (( ${#cached[@]} > 0 )); then
+        echo "✓ $pkgname $pkgver-$pkgrel cached; skipping rebuild"
+        printf '    %s\n' "${cached[@]##*/}"
+        _refresh_repo_db
+        BUILT=$((BUILT + 1))
+        continue
     fi
 
     # Fresh copy each run — makepkg's --cleanbuild only clears src/pkg, not
