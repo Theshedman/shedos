@@ -228,11 +228,15 @@ jobs:
             shedos-pkgs-${{ runner.os }}-
 
       - name: Stage cached shedos packages into shedos-repo
+        # Skip .sig files: they were signed by SHEDOS_REPO_SIGNING_KEY in
+        # build-packages.yml but the iso runner doesn't import that key
+        # into its keyring, so pacstrap's keyring lookup would fail offline.
+        # archiso pacstrap only needs the .pkg.tar.zst — sigs are for the
+        # published repo (build-packages.yml's job), not the ISO build.
         run: |
           if [[ -d /tmp/shedos-pkg-cache ]]; then
               mkdir -p archiso/shedos-repo
               cp -v /tmp/shedos-pkg-cache/*.pkg.tar.zst archiso/shedos-repo/ 2>/dev/null || true
-              cp -v /tmp/shedos-pkg-cache/*.pkg.tar.zst.sig archiso/shedos-repo/ 2>/dev/null || true
               echo "Staged cached shedos packages from /tmp/shedos-pkg-cache."
           else
               echo "shedos-pkgs cache empty; build-shedos-packages.sh will build from source."
