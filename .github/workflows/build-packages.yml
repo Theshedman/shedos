@@ -113,6 +113,14 @@ jobs:
           EOF
           chown builder:builder /home/builder/.makepkg.conf
 
+      - name: Resolve shedos-meta Arch closure
+        # Regenerates packages/.meta-closure.txt against the runner's
+        # fresh pacman db so shedos-meta's depends has every transitive
+        # Arch dep explicit, even if upstream added/dropped packages
+        # since the closure file was last committed. Runs as root —
+        # pacman -Sy needs it.
+        run: bash scripts/resolve-meta-closure.sh
+
       - name: Refresh shedos-meta depends
         run: |
           chown -R builder:builder .

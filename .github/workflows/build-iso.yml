@@ -238,6 +238,13 @@ jobs:
               echo "shedos-pkgs cache empty; build-shedos-packages.sh will build from source."
           fi
 
+      - name: Resolve shedos-meta Arch closure
+        # Regenerates packages/.meta-closure.txt against the runner's
+        # fresh pacman db so render-meta-depends.sh (called by `make
+        # shedos-packages` below) sees the current closure. Runs as
+        # root — pacman -Sy needs it.
+        run: bash scripts/resolve-meta-closure.sh
+
       - name: Build ShedOS native packages
         # Populates archiso/shedos-repo with shedos-meta + deps so pacstrap
         # can resolve them from the build-local repo. Also refreshes
