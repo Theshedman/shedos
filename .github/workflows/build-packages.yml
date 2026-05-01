@@ -357,33 +357,26 @@ jobs:
           echo "staged $staged freshly signed; $reused cache-restored sigs; $skipped proprietary"
           ls -la dist/x86_64/ | head -30
 
-      - name: Stage shedos packages for cache save
-        # Mirror non-kernel shedos-*.pkg.tar.zst (and their .sig files
-        # produced/reused by the sign step above) into the cache path so
-        # the next run can skip both makepkg AND gpg --sign for unchanged
-        # packages. Kernel files belong to the dedicated kernel cache.
-        if: always()
+      - name: Stage cached repo DB into dist/x86_64/
+        # Restore the prior build's signed repo DB if the cache hit. The
+        # next step short-circuits when /tmp/built-pkgs.txt is empty
+        # (nothing rebuilt) and a cached DB is present.
         run: |
-          mkdir -p /tmp/shedos-pkg-cache
-          shopt -s nullglob
-          for f in archiso/shedos-repo/shedos-*.pkg.tar.zst; do
-              case "$(basename "$f")" in
-                  shedos-kernel-*) continue ;;
-              esac
-              cp -v "$f" /tmp/shedos-pkg-cache/
-              [[ -f "${f}.sig" ]] && cp -v "${f}.sig" /tmp/shedos-pkg-cache/
+          install -d -o builder -g builder dist/x86_64
+          for f in shedos.db.tar.gz shedos.db.tar.gz.sig \
+                   shedos.files.tar.gz shedos.files.tar.gz.sig; do
+              if [[ -f /tmp/shedos-pkg-cache/$f ]]; then
+                  cp -v /tmp/shedos-pkg-cache/$f dist/x86_64/
+              fi
           done
-          ls -la /tmp/shedos-pkg-cache/ | head -20
-
-      - name: Save shedos-pkgs cache
-        if: always()
-        uses: actions/cache/save@v4
-        with:
-          path: /tmp/shedos-pkg-cache
-          key: shedos-pkgs-${{ runner.os }}-${{ github.sha }}
 
       - name: Build repo DB
         run: |
+          if [[ ! -s /tmp/built-pkgs.txt ]] && [[ -f dist/x86_64/shedos.db.tar.gz ]]; then
+              echo "No packages rebuilt — reusing cached repo DB"
+              ls -la dist/x86_64/shedos.db.tar.gz dist/x86_64/shedos.files.tar.gz
+              exit 0
+          fi
           cd dist/x86_64
           sudo -u builder repo-add --sign --key "$GPG_FP" \
               shedos.db.tar.gz *.pkg.tar.zst
@@ -400,6 +393,35 @@ jobs:
           cp shedos.db.tar.gz.sig shedos.db.sig
           cp shedos.files.tar.gz shedos.files
           cp shedos.files.tar.gz.sig shedos.files.sig
+
+      - name: Stage shedos packages for cache save
+        # Mirror non-kernel shedos-*.pkg.tar.zst (and their .sig files)
+        # plus the repo DB into the cache path so the next no-op run can
+        # skip makepkg AND gpg --sign AND repo-add. Kernel files belong
+        # to the dedicated kernel cache.
+        if: always()
+        run: |
+          mkdir -p /tmp/shedos-pkg-cache
+          shopt -s nullglob
+          for f in archiso/shedos-repo/shedos-*.pkg.tar.zst; do
+              case "$(basename "$f")" in
+                  shedos-kernel-*) continue ;;
+              esac
+              cp -v "$f" /tmp/shedos-pkg-cache/
+              [[ -f "${f}.sig" ]] && cp -v "${f}.sig" /tmp/shedos-pkg-cache/
+          done
+          for f in dist/x86_64/shedos.db.tar.gz dist/x86_64/shedos.db.tar.gz.sig \
+                   dist/x86_64/shedos.files.tar.gz dist/x86_64/shedos.files.tar.gz.sig; do
+              [[ -f $f ]] && cp -v "$f" /tmp/shedos-pkg-cache/
+          done
+          ls -la /tmp/shedos-pkg-cache/ | head -20
+
+      - name: Save shedos-pkgs cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/shedos-pkg-cache
+          key: shedos-pkgs-${{ runner.os }}-${{ github.sha }}
 
       - name: Publish to R2
         env:
