@@ -1,25 +1,15 @@
 #!/usr/bin/env bash
-# bump-version.sh — propagate VERSION into every shedos-* PKGBUILD.
-#
-# ShedOS uses CalVer (YYYY.MM.DD[.N]). The VERSION file at the repo root is
-# the single source of truth. Each release cycle:
-#
-#   1. Edit VERSION (e.g. echo '2026.04.21' > VERSION) — or pass `--today`.
-#   2. Run scripts/bump-version.sh. It rewrites pkgver= in every
-#      packaging/shedos-*/PKGBUILD and resets pkgrel=1. Re-runs without a
-#      VERSION change bump pkgrel instead (rebuild of same source).
-#   3. Commit. Push. Tag `v<VERSION>[-rcN]` to fire build-iso.yml.
-#
-# Why one shared version across all six packages: `pacman -Qi shedos-meta`
-# then tells a user exactly which release cohort their system is at, and the
-# published repo serves a coherent set. Individual packages rarely move
-# independently in practice.
+# Bump pkgver/pkgrel for shedos-* packages whose content hash changed
+# since the last release. Hashes via compute-pkg-hash.sh; manifest at
+# packaging/.last-release-hashes.toml. Unchanged packages stay at
+# their previous version. shedos-kernel is skipped (tracks linux-zen).
 
 set -euo pipefail
 
 here=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 root=$(cd -- "$here/.." && pwd)
 version_file=$root/VERSION
+manifest=$root/packaging/.last-release-hashes.toml
 
 if [[ ${1:-} == --today ]]; then
     new_version=$(date +%Y.%m.%d)
@@ -31,25 +21,37 @@ elif [[ $# -gt 0 && ${1:-} != -* ]]; then
     echo "VERSION → $new_version (from argv)"
 else
     new_version=$(cat "$version_file")
-    echo "VERSION = $new_version (unchanged; re-run to rev pkgrel only)"
+    echo "VERSION = $new_version (unchanged)"
 fi
 
-# Validate CalVer shape. Accept YYYY.MM.DD or YYYY.MM.DD.N. Reject anything
-# else loudly so typos don't silently ship.
 if ! [[ $new_version =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}(\.[0-9]+)?$ ]]; then
     echo "FATAL: VERSION '$new_version' is not CalVer (YYYY.MM.DD[.N])" >&2
     exit 1
 fi
 
-# Packages that track upstream pkgver instead of ShedOS CalVer.
-# Their version comes from a dedicated bumper (e.g. scripts/bump-kernel.sh
-# for shedos-kernel pulls upstream linux-zen). Skip them here.
 declare -A skip_pkgs=(
     [shedos-kernel]=1
 )
 
+declare -A last_hash=()
+if [[ -f $manifest ]]; then
+    while IFS= read -r line; do
+        [[ -z $line || ${line:0:1} == '#' ]] && continue
+        k=${line%%=*}
+        k=${k// /}
+        [[ -z $k ]] && continue
+        v=${line#*=}
+        v=${v// /}
+        v=${v//\"/}
+        last_hash[$k]=$v
+    done < "$manifest"
+fi
+
+declare -A new_hash=()
 changed=0
+unchanged=0
 skipped=0
+
 for pkgbuild in "$root"/packaging/shedos-*/PKGBUILD; do
     pkg=$(basename "$(dirname "$pkgbuild")")
     if [[ -n ${skip_pkgs[$pkg]:-} ]]; then
@@ -57,12 +59,21 @@ for pkgbuild in "$root"/packaging/shedos-*/PKGBUILD; do
         skipped=$((skipped + 1))
         continue
     fi
+
+    h=$("$here"/compute-pkg-hash.sh "$pkg")
+    new_hash[$pkg]=$h
+
     current_ver=$(awk -F= '/^pkgver=/ {print $2; exit}' "$pkgbuild")
     current_rel=$(awk -F= '/^pkgrel=/ {print $2; exit}' "$pkgbuild")
+    prev=${last_hash[$pkg]:-}
+
+    if [[ -n $prev && $prev == "$h" ]]; then
+        echo "  $pkg: unchanged ($current_ver-$current_rel)"
+        unchanged=$((unchanged + 1))
+        continue
+    fi
 
     if [[ $current_ver == "$new_version" ]]; then
-        # Same pkgver → bump pkgrel. Used when we republish without a content
-        # change (rare; e.g. signing-key rotation).
         new_rel=$((current_rel + 1))
         sed -i "s/^pkgrel=.*/pkgrel=$new_rel/" "$pkgbuild"
         echo "  $pkg: pkgrel $current_rel → $new_rel"
@@ -76,7 +87,21 @@ for pkgbuild in "$root"/packaging/shedos-*/PKGBUILD; do
     changed=$((changed + 1))
 done
 
-echo "Updated $changed PKGBUILDs (skipped $skipped)."
+{
+    cat <<'EOF'
+# Auto-managed by scripts/bump-version.sh. Each entry records the
+# content hash of packaging/<pkgname>/ as of the most recent release.
+# Compared against current hashes on every run to decide what to bump.
+
+EOF
+    for pkg in $(printf '%s\n' "${!new_hash[@]}" | LC_ALL=C sort); do
+        printf '%s = "%s"\n' "$pkg" "${new_hash[$pkg]}"
+    done
+} > "$manifest"
+
+echo
+echo "Updated $changed PKGBUILD(s); unchanged $unchanged; skipped $skipped."
+echo "Manifest: $manifest"
 echo
 echo "Next:"
 echo "  git diff packaging/ VERSION"
