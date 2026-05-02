@@ -2,9 +2,9 @@ name: build-iso
 
 # Builds the ShedOS ISO on tag push (v*). The ISO itself (multi-GB) is
 # published to R2 at https://repo.shedos.org/iso/ — GitHub Releases caps
-# individual files at 2 GiB and our ISO is ~7.6 GiB, so only the SHA256SUMS
-# + download-link release notes land on GitHub. Depends on the packages
-# workflow having already published to R2.
+# individual files at 2 GiB and our ISO is ~3.6-3.9 GB, so only the
+# SHA256SUMS + download-link release notes land on GitHub. Depends on
+# the packages workflow having already published to R2.
 
 on:
   push:
@@ -318,6 +318,37 @@ jobs:
         with:
           path: /tmp/shedos-pkg-cache
           key: shedos-pkgs-${{ runner.os }}-${{ github.sha }}
+
+      - name: Restore target-bundle cache
+        id: bundle-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: out/bundle.sfs
+          key: bundle-${{ runner.os }}-${{ hashFiles('packaging/shedos-meta/PKGBUILD', 'packages/official/**', 'packages/aur.txt', 'packages/bundle-skip.txt', 'packages/bundle-pin.txt', 'scripts/build-target-bundle.sh', 'scripts/resolve-meta-closure.sh') }}
+          restore-keys: |
+            bundle-${{ runner.os }}-
+
+      - name: Build target-bundle
+        run: |
+          mkdir -p out
+          make target-bundle
+          ls -la out/bundle.sfs out/bundle-manifest.txt
+
+      - name: Save target-bundle cache
+        if: always() && steps.bundle-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: out/bundle.sfs
+          key: bundle-${{ runner.os }}-${{ hashFiles('packaging/shedos-meta/PKGBUILD', 'packages/official/**', 'packages/aur.txt', 'packages/bundle-skip.txt', 'packages/bundle-pin.txt', 'scripts/build-target-bundle.sh', 'scripts/resolve-meta-closure.sh') }}
+
+      - name: Upload bundle manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-manifest-${{ github.ref_name }}
+          path: out/bundle-manifest.txt
+          if-no-files-found: warn
+          retention-days: 30
 
       - name: Strip debug packages from shedos-repo
         run: |
