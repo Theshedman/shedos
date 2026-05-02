@@ -152,7 +152,8 @@ mapfile -t bundle_list < <(printf '%s\n' "${!bundle_set[@]}" | LC_ALL=C sort -u)
 scratch=$(mktemp -d -p /tmp shedos-bundle.XXXXXX)
 trap 'rm -rf "$tmpdir" "$scratch"' EXIT
 
-pacstrap -K -C "$tmpdir/pacman.conf" "$scratch" "${bundle_list[@]}"
+ignore=jack2,iptables-legacy,booster,dracut,jdk21-openjdk,jdk25-openjdk,qt6-multimedia-gstreamer,pipewire-media-session,gnu-free-fonts,ttf-bitstream-vera,ttf-croscore,ttf-droid,ttf-ibm-plex,ttf-input,ttf-input-nerd,ttf-roboto
+pacstrap -K -C "$tmpdir/pacman.conf" "$scratch" "${bundle_list[@]}" "--ignore=$ignore"
 
 mksquashfs "$scratch" "$out_dir/bundle.sfs" \
     -comp xz -Xbcj x86 -b 1M \
