@@ -5,6 +5,14 @@
 # runner-agnostic; the exclusion list filters makepkg byproducts and
 # the artifact files themselves (which would self-feedback into the
 # hash on a successive build).
+#
+# Cargo.lock IS hashed (for Rust packages: shedos-greeter,
+# shedos-screensaver). It pins transitive dep versions and is the
+# source of truth for reproducible Rust builds, so a `cargo update`
+# legitimately means "the build inputs have changed → bump pkgrel".
+# If you're trying to update Rust deps, run `cargo update` in the
+# package dir, then `make bump` to record the new state — don't
+# treat the resulting pkgrel bump as spurious.
 
 set -euo pipefail
 

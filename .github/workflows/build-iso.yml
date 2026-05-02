@@ -93,6 +93,9 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      - name: Validate release-hashes manifest
+        run: bash scripts/bump-version.sh --check
+
       - name: Verify VERSION matches tag
         # Tags follow v<CalVer>[-rcN]. The VERSION file drives Calamares
         # branding (Makefile lines 212-215 use $(VERSION), not the tag-aware

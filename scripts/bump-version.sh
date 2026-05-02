@@ -1,8 +1,20 @@
 #!/usr/bin/env bash
 # Bump pkgver/pkgrel for shedos-* packages whose content hash changed
 # since the last release. Hashes via compute-pkg-hash.sh; manifest at
-# packaging/.last-release-hashes.toml. Unchanged packages stay at
-# their previous version. shedos-kernel is skipped (tracks linux-zen).
+# packaging/.last-release-hashes.toml.
+#
+# Modes:
+#   bump-version.sh              Bump VERSION (or use --today / argv) and
+#                                bump pkgrel for changed shedos-* packages.
+#   bump-version.sh --check      Validate manifest matches the working tree.
+#                                Writes nothing; exits non-zero on drift.
+#                                CI uses this to refuse pushes with a stale
+#                                manifest.
+#
+# Special handling for shedos-kernel: pkgver/pkgrel are owned by
+# bump-kernel.sh (which tracks upstream linux-zen). bump-version.sh
+# refreshes its manifest hash so drift detection still covers it, but
+# never edits its PKGBUILD.
 
 set -euo pipefail
 
@@ -11,28 +23,85 @@ root=$(cd -- "$here/.." && pwd)
 version_file=$root/VERSION
 manifest=$root/packaging/.last-release-hashes.toml
 
-if [[ ${1:-} == --today ]]; then
-    new_version=$(date +%Y.%m.%d)
-    echo "$new_version" > "$version_file"
-    echo "VERSION → $new_version (from --today)"
-elif [[ $# -gt 0 && ${1:-} != -* ]]; then
-    new_version=$1
-    echo "$new_version" > "$version_file"
-    echo "VERSION → $new_version (from argv)"
-else
-    new_version=$(cat "$version_file")
-    echo "VERSION = $new_version (unchanged)"
+mode=bump
+explicit_version=
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --check)
+            mode=check
+            ;;
+        --today)
+            explicit_version=$(date +%Y.%m.%d)
+            ;;
+        -h|--help)
+            sed -n '2,16p' "$0"
+            exit 0
+            ;;
+        -*)
+            echo "unknown flag: $1" >&2
+            exit 2
+            ;;
+        *)
+            explicit_version=$1
+            ;;
+    esac
+    shift
+done
+
+# Resolve VERSION (only meaningful in bump mode).
+if [[ $mode == bump ]]; then
+    if [[ -n $explicit_version ]]; then
+        echo "$explicit_version" > "$version_file"
+        new_version=$explicit_version
+        echo "VERSION → $new_version"
+    else
+        new_version=$(cat "$version_file")
+        echo "VERSION = $new_version (unchanged)"
+    fi
+    if ! [[ $new_version =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}(\.[0-9]+)?$ ]]; then
+        echo "FATAL: VERSION '$new_version' is not CalVer (YYYY.MM.DD[.N])" >&2
+        exit 1
+    fi
 fi
 
-if ! [[ $new_version =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}(\.[0-9]+)?$ ]]; then
-    echo "FATAL: VERSION '$new_version' is not CalVer (YYYY.MM.DD[.N])" >&2
-    exit 1
-fi
-
-declare -A skip_pkgs=(
+# Packages whose pkgver/pkgrel are owned by another tool. Their hash is
+# still recorded in the manifest so drift detection covers them.
+declare -A skip_bump=(
     [shedos-kernel]=1
 )
 
+# Robust PKGBUILD field reader.
+#   - Handles `field=value`, `field='value'`, `field="value"`,
+#     with optional trailing `# comment`.
+#   - Refuses dynamic values (`$(...)`, backticks, ${...}) — bump-version
+#     can't safely round-trip those, so failing loud beats silently
+#     mangling them with sed.
+_read_pkgbuild_field() {
+    local pkgbuild=$1 field=$2
+    local raw
+    raw=$(awk -v f="$field" '
+        $0 ~ "^"f"=" {
+            sub("^"f"=", "")
+            sub("[ \t]*#.*$", "")
+            sub("^[\047\"]", "")
+            sub("[\047\"]$", "")
+            print
+            exit
+        }
+    ' "$pkgbuild")
+    if [[ -z $raw ]]; then
+        echo "FATAL: $pkgbuild has no $field= line" >&2
+        return 1
+    fi
+    if [[ $raw == *'$('* || $raw == *'`'* || $raw == *'${'* ]]; then
+        echo "FATAL: $pkgbuild has dynamic $field=$raw; static value required" >&2
+        return 1
+    fi
+    printf '%s' "$raw"
+}
+
+# Read the existing manifest.
 declare -A last_hash=()
 if [[ -f $manifest ]]; then
     while IFS= read -r line; do
@@ -48,28 +117,45 @@ if [[ -f $manifest ]]; then
 fi
 
 declare -A new_hash=()
+declare -A drifted=()
 changed=0
 unchanged=0
 skipped=0
 
 for pkgbuild in "$root"/packaging/shedos-*/PKGBUILD; do
     pkg=$(basename "$(dirname "$pkgbuild")")
-    if [[ -n ${skip_pkgs[$pkg]:-} ]]; then
-        echo "  $pkg: skipped (tracks upstream pkgver)"
+    h=$("$here/compute-pkg-hash.sh" "$pkg")
+    prev=${last_hash[$pkg]:-}
+
+    if [[ -n ${skip_bump[$pkg]:-} ]]; then
+        new_hash[$pkg]=$h
+        if [[ -z $prev ]]; then
+            echo "  $pkg: tracked (first manifest entry)"
+            drifted[$pkg]=new
+        elif [[ $prev != "$h" ]]; then
+            echo "  $pkg: tracked (content changed; refreshing manifest only)"
+            drifted[$pkg]=upstream
+        else
+            echo "  $pkg: tracked (unchanged)"
+        fi
         skipped=$((skipped + 1))
         continue
     fi
 
-    h=$("$here"/compute-pkg-hash.sh "$pkg")
-
-    current_ver=$(awk -F= '/^pkgver=/ {print $2; exit}' "$pkgbuild")
-    current_rel=$(awk -F= '/^pkgrel=/ {print $2; exit}' "$pkgbuild")
-    prev=${last_hash[$pkg]:-}
+    current_ver=$(_read_pkgbuild_field "$pkgbuild" pkgver)
+    current_rel=$(_read_pkgbuild_field "$pkgbuild" pkgrel)
 
     if [[ -n $prev && $prev == "$h" ]]; then
         echo "  $pkg: unchanged ($current_ver-$current_rel)"
         new_hash[$pkg]=$h
         unchanged=$((unchanged + 1))
+        continue
+    fi
+
+    drifted[$pkg]=content
+
+    if [[ $mode == check ]]; then
+        echo "  $pkg: drifted (content $h differs from manifest ${prev:-none})"
         continue
     fi
 
@@ -87,9 +173,24 @@ for pkgbuild in "$root"/packaging/shedos-*/PKGBUILD; do
     # Recompute hash AFTER the bump so the manifest reflects the
     # post-bump state. Otherwise the next run sees the stored pre-bump
     # hash as "changed" (because pkgrel is in the hash) and bumps again.
-    new_hash[$pkg]=$("$here"/compute-pkg-hash.sh "$pkg")
+    new_hash[$pkg]=$("$here/compute-pkg-hash.sh" "$pkg")
     changed=$((changed + 1))
 done
+
+if [[ $mode == check ]]; then
+    if (( ${#drifted[@]} > 0 )); then
+        echo
+        echo "FATAL: ${#drifted[@]} package(s) drifted from manifest:" >&2
+        for pkg in $(printf '%s\n' "${!drifted[@]}" | LC_ALL=C sort); do
+            printf '  - %s (%s)\n' "$pkg" "${drifted[$pkg]}" >&2
+        done
+        echo
+        echo "Run \`make bump\` (or \`make bump-today\`) and commit the result." >&2
+        exit 1
+    fi
+    echo "Manifest matches working tree."
+    exit 0
+fi
 
 {
     cat <<'EOF'

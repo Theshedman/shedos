@@ -23,6 +23,11 @@ concurrency:
   group: repo-publish
   cancel-in-progress: false
 
+# contents: write so the auto-bump step (main pushes only) can commit
+# the refreshed PKGBUILD pkgrel + manifest back to main.
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -85,6 +90,45 @@ jobs:
           chmod 440 /etc/sudoers.d/wheel
 
       - uses: actions/checkout@v4
+        with:
+          # Need the full token so the auto-bump step can push back to
+          # main; the default GITHUB_TOKEN works because permissions
+          # block above grants contents:write.
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # fetch-depth: 0 so we have full history for the push.
+          fetch-depth: 0
+
+      - name: Auto-bump release-hashes (main + manual)
+        # On main pushes (and workflow_dispatch from main), run
+        # `make bump` and commit the result back. This means a
+        # contributor can edit packaging/ files without remembering to
+        # run bump-version locally — CI handles it. The [skip ci]
+        # marker prevents the push from re-triggering this workflow.
+        if: github.ref == 'refs/heads/main'
+        env:
+          GIT_AUTHOR_NAME: shedos-ci[bot]
+          GIT_AUTHOR_EMAIL: shedos-ci[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: shedos-ci[bot]
+          GIT_COMMITTER_EMAIL: shedos-ci[bot]@users.noreply.github.com
+        run: |
+          git config user.name  "$GIT_AUTHOR_NAME"
+          git config user.email "$GIT_AUTHOR_EMAIL"
+          bash scripts/bump-version.sh
+          if git diff --quiet -- packaging/ VERSION; then
+              echo "Manifest in sync; no bump needed."
+              exit 0
+          fi
+          git add packaging/ VERSION
+          git commit -m "chore(release): auto-bump pkgrel for changed packages [skip ci]"
+          git push origin HEAD:main
+
+      - name: Validate release-hashes manifest (tag pushes)
+        # Tag pushes must point at a commit whose manifest already
+        # matches its PKGBUILDs — CI doesn't rewrite tagged commits.
+        # If --check fails here, push to main first to trigger the
+        # auto-bump, then re-tag the resulting auto-bump commit.
+        if: startsWith(github.ref, 'refs/tags/')
+        run: bash scripts/bump-version.sh --check
 
       - name: Restore ccache
         # ccache survives across runs, keyed on the kernel PKGBUILD +
@@ -397,11 +441,24 @@ jobs:
 
       - name: Build repo DB
         run: |
-          if [[ ! -s /tmp/built-pkgs.txt ]] && [[ -f dist/x86_64/shedos.db.tar.gz ]]; then
-              echo "No packages rebuilt — reusing cached repo DB"
+          # Skip repo-add only when nothing was rebuilt AND the cached
+          # DB's package count matches what's on disk. The disk-vs-DB
+          # equality is what catches deletions: built-pkgs.txt is
+          # empty but the cached DB still names files no longer in dist/.
+          disk_count=$(ls -1 dist/x86_64/*.pkg.tar.zst 2>/dev/null | wc -l)
+          db_count=0
+          if [[ -f dist/x86_64/shedos.db.tar.gz ]]; then
+              db_count=$(bsdtar -tf dist/x86_64/shedos.db.tar.gz 2>/dev/null \
+                         | awk -F/ '$2 == "desc" {print $1}' | sort -u | wc -l)
+          fi
+          if [[ ! -s /tmp/built-pkgs.txt ]] \
+             && [[ -f dist/x86_64/shedos.db.tar.gz ]] \
+             && [[ "$disk_count" -eq "$db_count" ]]; then
+              echo "No packages rebuilt and DB ($db_count) matches disk ($disk_count) — reusing cached repo DB"
               ls -la dist/x86_64/shedos.db.tar.gz dist/x86_64/shedos.files.tar.gz
               exit 0
           fi
+          echo "Rebuilding repo DB: built=$([[ -s /tmp/built-pkgs.txt ]] && wc -l </tmp/built-pkgs.txt || echo 0), disk=$disk_count, db=$db_count"
           cd dist/x86_64
           # Wipe the cached db artifacts so repo-add rebuilds fresh.
           # Without this, repo-add only adds entries — it never removes
@@ -426,15 +483,29 @@ jobs:
           cp shedos.files.tar.gz.sig shedos.files.sig
 
       - name: Stage shedos packages for cache save
-        # Mirror non-kernel shedos-*.pkg.tar.zst (and their .sig files)
-        # plus the repo DB into the cache path so the next no-op run can
-        # skip makepkg AND gpg --sign AND repo-add. Kernel files belong
-        # to the dedicated kernel cache. Prune stale versions first so
-        # the cache doesn't accumulate every old pkgrel ever built.
+        # Mirror non-kernel shedos-*.pkg.tar.zst + their .sig files +
+        # the repo DB into the cache path so a no-op run can skip
+        # makepkg, gpg --sign, and repo-add entirely. Kernel files
+        # live in their own dedicated cache. Two prunes happen first:
+        # phantoms (no packaging/<pkgname>/) and stale pkgver/pkgrels.
         if: always()
         run: |
           mkdir -p /tmp/shedos-pkg-cache
           shopt -s nullglob
+          declare -A keep_shedos=()
+          for dir in packaging/shedos-*/; do
+              [[ -f "$dir/PKGBUILD" ]] || continue
+              keep_shedos[$(basename "$dir")]=1
+          done
+          [[ -n ${keep_shedos[shedos-kernel]:-} ]] && keep_shedos[shedos-kernel-headers]=1
+          for f in /tmp/shedos-pkg-cache/shedos-*.pkg.tar.zst; do
+              base=$(basename "$f")
+              pkgname=${base%-*-*-*.pkg.tar.zst}
+              if [[ -z ${keep_shedos[$pkgname]:-} ]]; then
+                  echo "  cache prune phantom: $base"
+                  rm -f "$f" "${f}.sig"
+              fi
+          done
           for dir in packaging/shedos-*/; do
               pkgname=$(basename "$dir")
               [[ -f "$dir/PKGBUILD" ]] || continue
@@ -444,7 +515,7 @@ jobs:
               for stale in /tmp/shedos-pkg-cache/${pkgname}-*.pkg.tar.zst; do
                   base=$(basename "$stale")
                   [[ "$base" == "${pkgname}-${pkgver}-${pkgrel}-"*.pkg.tar.zst ]] && continue
-                  echo "  cache prune: $base"
+                  echo "  cache prune stale-version: $base"
                   rm -f "$stale" "${stale}.sig"
               done
           done

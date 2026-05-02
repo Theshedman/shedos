@@ -24,7 +24,7 @@ YELLOW := \033[0;33m
 RED := \033[0;31m
 NC := \033[0m
 
-.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages test-review-configs test-sync-configs test-check-health test-tui-logs test-tui-history test-apply test-apply-checkpoint test-doctor test-shedman test-status test-completions test-migrate test-man test-screenrecord test-kernel test-installer test-config test-rollback test-update test-install test-welcome test-screensaver test-screensaver-rust lint-rust
+.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages regen bump bump-today bump-check release test-review-configs test-sync-configs test-check-health test-tui-logs test-tui-history test-apply test-apply-checkpoint test-doctor test-shedman test-status test-completions test-migrate test-man test-screenrecord test-kernel test-installer test-config test-rollback test-update test-install test-welcome test-screensaver test-screensaver-rust lint-rust
 
 all: iso
 
@@ -34,6 +34,11 @@ help:
 	@echo "Usage: sudo make [target]"
 	@echo ""
 	@echo "Targets:"
+	@echo "  regen              Regen closure + archiso/packages.x86_64 + shedos-meta PKGBUILD"
+	@echo "  bump               Hash-aware pkgver/pkgrel bump (uses current VERSION)"
+	@echo "  bump-today         Set VERSION to today's date and run bump"
+	@echo "  bump-check         Validate manifest matches working tree; CI gate"
+	@echo "  release TAG=v...   Bump + commit + push main + tag, race-free"
 	@echo "  download-packages  Download packages & freeze package state (DETERMINISTIC)"
 	@echo "  iso                Build the ShedOS ISO image (fully offline, uses frozen packages)"
 	@echo "  clean              Remove build artifacts (preserves packages & frozen databases)"
@@ -101,6 +106,80 @@ generate-packages:
 	@./scripts/generate-package-list.sh
 	@echo -e "$(GREEN)Package list generated: archiso/packages.x86_64$(NC)"
 
+regen: check-root
+	@echo -e "$(GREEN)Regenerating closure → archiso/packages.x86_64 → shedos-meta PKGBUILD...$(NC)"
+	@./scripts/resolve-meta-closure.sh
+	@./scripts/generate-package-list.sh
+	@./scripts/render-meta-depends.sh
+	@echo -e "$(GREEN)Regen complete. Review with: git diff packages/ archiso/packages.x86_64 packaging/shedos-meta/$(NC)"
+
+bump:
+	@./scripts/bump-version.sh
+
+bump-today:
+	@./scripts/bump-version.sh --today
+
+bump-check:
+	@./scripts/bump-version.sh --check
+
+# Cut a release tag from current main HEAD. Bumps locally first so the
+# tagged commit has a clean manifest, then pushes main + tag together.
+# Sidesteps the race where CI's auto-bump could land between an
+# unbumped main push and a tag push, leaving the tag on a stale commit.
+#
+# Usage:
+#   make release TAG=v2026.05.02-rc11    # release candidate
+#   make release TAG=v2026.05.02         # stable
+release:
+	@if [ -z "$(TAG)" ]; then \
+		echo -e "$(RED)Usage: make release TAG=v<CalVer>[-rcN]$(NC)" >&2; exit 1; \
+	fi
+	@case "$(TAG)" in \
+		v[0-9][0-9][0-9][0-9].[0-9][0-9].[0-9][0-9]|v[0-9][0-9][0-9][0-9].[0-9][0-9].[0-9][0-9]-rc[0-9]*) ;; \
+		*) echo -e "$(RED)TAG '$(TAG)' is not v<CalVer>[-rcN]$(NC)" >&2; exit 1 ;; \
+	esac
+	@expected_ver="$$(echo $(TAG) | sed -E 's/^v//; s/-rc[0-9]+$$//')"; \
+	actual_ver="$$(cat VERSION)"; \
+	if [ "$$expected_ver" != "$$actual_ver" ]; then \
+		echo -e "$(RED)Tag $(TAG) implies VERSION=$$expected_ver but VERSION file has $$actual_ver$(NC)" >&2; \
+		echo -e "$(YELLOW)Run \`make bump-today\` (or edit VERSION manually) before releasing.$(NC)" >&2; \
+		exit 1; \
+	fi
+	@branch="$$(git rev-parse --abbrev-ref HEAD)"; \
+	if [ "$$branch" != "main" ]; then \
+		echo -e "$(RED)Must be on main (currently on $$branch)$(NC)" >&2; exit 1; \
+	fi
+	@if ! git diff --quiet HEAD; then \
+		echo -e "$(RED)Working tree has uncommitted changes; commit or stash first$(NC)" >&2; \
+		git status --short >&2; exit 1; \
+	fi
+	@if git rev-parse --verify --quiet "refs/tags/$(TAG)" >/dev/null; then \
+		echo -e "$(RED)Tag $(TAG) already exists locally; delete it first if retagging$(NC)" >&2; exit 1; \
+	fi
+	@if git ls-remote --tags origin "refs/tags/$(TAG)" 2>/dev/null | grep -q "refs/tags/$(TAG)$$"; then \
+		echo -e "$(RED)Tag $(TAG) already exists on origin$(NC)" >&2; exit 1; \
+	fi
+	@echo -e "$(GREEN)→ Pulling latest main...$(NC)"
+	@git pull --ff-only origin main
+	@echo -e "$(GREEN)→ Bumping locally (idempotent)...$(NC)"
+	@./scripts/bump-version.sh
+	@if ! git diff --quiet -- packaging/ VERSION; then \
+		git add packaging/ VERSION; \
+		git commit -m "release: $(TAG)"; \
+		echo -e "$(GREEN)→ Committed local bump for $(TAG)$(NC)"; \
+	else \
+		echo -e "$(GREEN)→ Manifest already in sync; no bump commit needed$(NC)"; \
+	fi
+	@echo -e "$(GREEN)→ Tagging $(TAG) at HEAD ($$( git rev-parse --short HEAD ))...$(NC)"
+	@git tag "$(TAG)"
+	@echo -e "$(GREEN)→ Atomic push (main + tag in one transaction)...$(NC)"
+	@if ! git push --atomic origin main "refs/tags/$(TAG)"; then \
+		echo -e "$(RED)Atomic push failed; rolling back local tag$(NC)" >&2; \
+		git tag -d "$(TAG)" >/dev/null 2>&1; \
+		exit 1; \
+	fi
+	@echo -e "$(GREEN)Released $(TAG). CI will build and publish.$(NC)"
+
 build-aur:
 	@echo -e "$(GREEN)Building AUR packages...$(NC)"
 	@./scripts/build-aur-packages.sh
@@ -161,9 +240,19 @@ prepare: check-root check-deps generate-packages
 		echo -e "$(RED)ERROR: Missing template: $(PROFILE_DIR)/pacman.conf.in$(NC)"; \
 		exit 1; \
 	fi
-	@sed "s|@SHEDOS_REPO@|$(shell pwd)/$(PROFILE_DIR)/shedos-repo|g" \
+	@sed "s|@SHEDOS_REPO@|$(abspath $(PROFILE_DIR)/shedos-repo)|g" \
 		$(PROFILE_DIR)/pacman.conf.in > $(BUILD_DIR)/pacman.conf
 	@rm -f $(BUILD_DIR)/pacman.conf.in
+	@# Live-ISO pacman.conf channel substitution. CI overrides the
+	@# default per-tag (stable vs test); local builds always go test.
+	@if [ ! -f "$(BUILD_DIR)/airootfs/etc/pacman.conf.in" ]; then \
+		echo -e "$(RED)ERROR: missing $(BUILD_DIR)/airootfs/etc/pacman.conf.in$(NC)"; \
+		exit 1; \
+	fi
+	@sed "s|@CHANNEL@|test|g" \
+		$(BUILD_DIR)/airootfs/etc/pacman.conf.in \
+		> $(BUILD_DIR)/airootfs/etc/pacman.conf
+	@rm -f $(BUILD_DIR)/airootfs/etc/pacman.conf.in
 	@# Stamp ISO_VER into profiledef.sh so iso_version in the built ISO's
 	@# filename matches whatever CI (or a local build) picked via the
 	@# SHEDOS_ISO_TAG env / VERSION fallback above.
@@ -189,9 +278,9 @@ prepare: check-root check-deps generate-packages
 	@cp scripts/pacman-offline-download.sh $(BUILD_DIR)/scripts/
 	@chmod +x $(BUILD_DIR)/scripts/pacman-offline-download.sh
 	@# Configure pacman: use ONLY our controlled pkg-cache (not system cache which may have wrong builds)
-	@sed -i '/^\\[options\\]/a CacheDir = $(shell pwd)/$(BUILD_DIR)/pkg-cache/' $(BUILD_DIR)/pacman.conf
+	@sed -i '/^\\[options\\]/a CacheDir = $(abspath $(BUILD_DIR))/pkg-cache/' $(BUILD_DIR)/pacman.conf
 	@# Use smart wrapper: allows DB downloads, blocks package downloads (uses cache)
-	@sed -i 's|^XferCommand.*|XferCommand = $(shell pwd)/$(BUILD_DIR)/scripts/pacman-offline-download.sh %o %u|' $(BUILD_DIR)/pacman.conf
+	@sed -i 's|^XferCommand.*|XferCommand = $(abspath $(BUILD_DIR))/scripts/pacman-offline-download.sh %o %u|' $(BUILD_DIR)/pacman.conf
 	@mkdir -p $(BUILD_DIR)/airootfs/opt/shedos-installer
 	@cp -r installer/shedos_installer $(BUILD_DIR)/airootfs/opt/shedos-installer/
 	@cp -r packages $(BUILD_DIR)/airootfs/opt/shedos-installer/
