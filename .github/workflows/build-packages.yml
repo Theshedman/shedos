@@ -403,6 +403,12 @@ jobs:
               exit 0
           fi
           cd dist/x86_64
+          # Wipe the cached db artifacts so repo-add rebuilds fresh.
+          # Without this, repo-add only adds entries — it never removes
+          # entries whose .pkg.tar.zst was cleaned up between builds,
+          # leading pacman to 404 on stale package names listed in db.
+          rm -f shedos.db shedos.db.sig shedos.db.tar.gz shedos.db.tar.gz.sig \
+                shedos.files shedos.files.sig shedos.files.tar.gz shedos.files.tar.gz.sig
           sudo -u builder repo-add --sign --key "$GPG_FP" \
               shedos.db.tar.gz *.pkg.tar.zst
           # repo-add leaves shedos.db / shedos.files as symlinks to their
