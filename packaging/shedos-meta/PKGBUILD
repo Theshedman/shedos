@@ -12,20 +12,22 @@
 
 pkgname=shedos-meta
 pkgver=2026.05.02
-pkgrel=2
+pkgrel=3
 pkgdesc='ShedOS meta-package — installs the full default ShedOS environment'
 arch=('any')
 url='https://github.com/theshedman/shedos'
 license=('GPL-3.0-or-later')
 depends=(
-    'shedos-keyring'
-    'shedos-system'
-    'shedos-hyprland'
-    'shedos-nvim'
-    'shedos-branding'
-    'shedos-kernel'
-    'shedos-kernel-headers'
-    'shedos-screensaver'
+    'shedos-keyring>=2026.05.02'
+    'shedos-system>=2026.05.02'
+    'shedos-hyprland>=2026.05.02'
+    'shedos-nvim>=2026.05.02'
+    'shedos-branding>=2026.05.02'
+    'shedos-greeter>=2026.05.02'
+    'shedos-kernel>=2026.05.02'
+    'shedos-kernel-headers>=2026.05.02'
+    'shedos-screensaver>=2026.05.02'
+    'shedos-migrate-to-packaged>=2026.05.02'
     'a52dec'
     'aalib'
     'abseil-cpp'
@@ -707,7 +709,6 @@ depends=(
     'linux-firmware-other'
     'linux-firmware-realtek'
     'linux-firmware-whence'
-    'linux-headers'
     'lld'
     'lld20'
     'lldb'
@@ -1085,6 +1086,7 @@ depends=(
     'sudo'
     'svt-av1'
     'swappy'
+    'swaybg'
     'syslinux'
     'systemd'
     'systemd-libs'
@@ -1226,7 +1228,6 @@ depends=(
     'xcur2png'
     'xdg-dbus-proxy'
     'xdg-desktop-portal'
-    'xdg-desktop-portal-gtk'
     'xdg-desktop-portal-hyprland'
     'xdg-user-dirs'
     'xdg-user-dirs-gtk'
@@ -1306,6 +1307,16 @@ optdepends=(
     'slack-desktop: proprietary AUR package; install via shedos-welcome / yay'
     'ttf-ms-fonts: proprietary AUR package; install via shedos-welcome / yay'
     'visual-studio-code-bin: proprietary AUR package; install via shedos-welcome / yay'
+)
+conflicts=(
+    'jack2'
+    'iptables-legacy'
+    'booster'
+    'dracut'
+    'jdk21-openjdk'
+    'jdk25-openjdk'
+    'qt6-multimedia-gstreamer'
+    'pipewire-media-session'
 )
 
 package() {
