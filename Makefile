@@ -171,7 +171,7 @@ release:
 		echo -e "$(GREEN)→ Manifest already in sync; no bump commit needed$(NC)"; \
 	fi
 	@echo -e "$(GREEN)→ Tagging $(TAG) at HEAD ($$( git rev-parse --short HEAD ))...$(NC)"
-	@git tag "$(TAG)"
+	@git tag -a "$(TAG)" -m "release: $(TAG)"
 	@echo -e "$(GREEN)→ Atomic push (main + tag in one transaction)...$(NC)"
 	@if ! git push --atomic origin main "refs/tags/$(TAG)"; then \
 		echo -e "$(RED)Atomic push failed; rolling back local tag$(NC)" >&2; \
