@@ -27,15 +27,18 @@ mkdir -p "$REPO_DIR"
 # current state.
 "$SCRIPT_DIR/render-meta-depends.sh"
 
-# Explicit build order (topological — later packages may depend on earlier).
-# Alphabetical would put shedos-hyprland before shedos-system, which it
-# depends on.
+# Topological order — shedos-meta last (it depends on every other
+# shedos-* package and version-pins them). Alphabetical sort would
+# break shedos-hyprland → shedos-system.
 BUILD_ORDER=(
     shedos-keyring
     shedos-system
     shedos-branding
     shedos-hyprland
     shedos-nvim
+    shedos-greeter
+    shedos-screensaver
+    shedos-migrate-to-packaged
     shedos-kernel
     shedos-meta
 )
@@ -166,6 +169,33 @@ _refresh_repo_db() {
     fi
 }
 _refresh_repo_db
+
+# Drop cached packages whose packaging/<pkgname>/ directory is gone.
+# The per-package stale-version sweep below only walks directories
+# that exist; a fully-removed package would otherwise survive in
+# REPO_DIR, get re-signed, and end up as a 404 in published shedos.db.
+declare -A keep_shedos=()
+for d in "$PACKAGING_DIR"/*/; do
+    [[ -f "$d/PKGBUILD" ]] || continue
+    keep_shedos[$(basename "$d")]=1
+done
+[[ -n ${keep_shedos[shedos-kernel]:-} ]] && keep_shedos[shedos-kernel-headers]=1
+phantom_count=0
+shopt -s nullglob
+for f in "$REPO_DIR"/shedos-*.pkg.tar.zst; do
+    base=$(basename "$f")
+    pkgname=${base%-*-*-*.pkg.tar.zst}
+    [[ "$pkgname" == *-debug ]] && continue
+    if [[ -z ${keep_shedos[$pkgname]:-} ]]; then
+        echo "  prune phantom shedos: $base"
+        rm -f "$f" "${f}.sig"
+        phantom_count=$((phantom_count + 1))
+    fi
+done
+shopt -u nullglob
+if (( phantom_count > 0 )); then
+    echo "Phantom sweep: removed $phantom_count stale shedos-* package file(s)"
+fi
 
 # Strip stale .pkg.tar.zst left over from prior cache states (the
 # shedos-pkgs cache accumulates files across builds; without this
