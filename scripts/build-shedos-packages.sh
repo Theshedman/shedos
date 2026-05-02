@@ -322,12 +322,13 @@ ls -lh "$REPO_DIR"/shedos-repo.*
 
 # Persist the freshly-built package list so downstream CI steps know
 # which packages need re-signing + repo-add. Cached packages are
-# excluded; the file is empty on a no-op build.
+# excluded; the file is left untouched (or empty) on a no-op build.
+# Append rather than overwrite — build-aur-packages.sh writes its own
+# rebuild entries to the same file, and we don't want to clobber them.
 if (( ${#BUILT_PKGS[@]} > 0 )); then
-    printf '%s\n' "${BUILT_PKGS[@]}" > /tmp/built-pkgs.txt
-else
-    : > /tmp/built-pkgs.txt
+    printf '%s\n' "${BUILT_PKGS[@]}" >> /tmp/built-pkgs.txt
 fi
+touch /tmp/built-pkgs.txt
 
 echo ""
 echo "=========================================="
