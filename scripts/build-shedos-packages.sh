@@ -111,7 +111,7 @@ if [[ $EUID -eq 0 ]]; then
 
 $PACMAN_CONF_MARKER
 [shedos-repo]
-SigLevel = Optional TrustAll
+SigLevel = Never
 Server = file://$PUBLIC_REPO_DIR
 # <<< shedos-build-local-repo (temporary) <<<
 EOF
@@ -218,6 +218,22 @@ for dir in "$PACKAGING_DIR"/shedos-*/; do
 done
 _refresh_repo_db
 
+# Pre-stage every package dir under BUILD_ROOT before any builds start.
+# shedos-screensaver's Rust source uses a sibling-relative include
+# (`include_str!("../../../../shedos-branding/tree/etc/shedos-ascii.txt")`)
+# that resolves to $BUILD_ROOT/shedos-branding/. If shedos-branding's
+# build is cache-hit and skipped, its $work dir would never get created
+# and shedos-screensaver's compile would fail with "no such file".
+# Pre-staging guarantees every package's tree is on disk under
+# BUILD_ROOT regardless of cache state.
+for dir in "${PKG_DIRS[@]}"; do
+    pkgname=$(basename "$dir")
+    work="$BUILD_ROOT/$pkgname"
+    rm -rf "$work"
+    cp -a "$dir" "$work"
+done
+[[ $EUID -eq 0 ]] && chown -R builduser:builduser "$BUILD_ROOT"
+
 BUILT_PKGS=()
 for dir in "${PKG_DIRS[@]}"; do
     pkgname=$(basename "$dir")
@@ -243,11 +259,6 @@ for dir in "${PKG_DIRS[@]}"; do
         _refresh_repo_db
         continue
     fi
-
-    # Fresh copy each run — makepkg's --cleanbuild only clears src/pkg, not
-    # stray artifacts we might have left behind.
-    rm -rf "$work"
-    cp -a "$dir" "$work"
 
     # Every shedos-* package except shedos-kernel is a pure-copy package: no
     # compile step, no makedepends, just `cp -a tree/… $pkgdir`. Runtime
