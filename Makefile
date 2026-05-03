@@ -24,7 +24,7 @@ YELLOW := \033[0;33m
 RED := \033[0;31m
 NC := \033[0m
 
-.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages target-bundle regen bump bump-today bump-check release test-review-configs test-sync-configs test-check-health test-tui-logs test-tui-history test-apply test-apply-checkpoint test-doctor test-shedman test-status test-completions test-migrate test-man test-screenrecord test-kernel test-installer test-config test-rollback test-update test-install test-welcome test-screensaver test-screensaver-rust lint-rust
+.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages install-rootfs regen bump bump-today bump-check release test-review-configs test-sync-configs test-check-health test-tui-logs test-tui-history test-apply test-apply-checkpoint test-doctor test-shedman test-status test-completions test-migrate test-man test-screenrecord test-kernel test-installer test-config test-rollback test-update test-install test-welcome test-screensaver test-screensaver-rust lint-rust
 
 all: iso
 
@@ -190,10 +190,10 @@ shedos-packages:
 	@./scripts/build-shedos-packages.sh
 	@echo -e "$(GREEN)ShedOS packages built into $(REPO_DIR)$(NC)"
 
-target-bundle: check-root
-	@echo -e "$(GREEN)Building target-rootfs bundle for unpackfs...$(NC)"
-	@./scripts/build-target-bundle.sh
-	@echo -e "$(GREEN)Bundle ready: $(OUTPUT_DIR)/bundle.sfs$(NC)"
+install-rootfs: check-root
+	@echo -e "$(GREEN)Building install rootfs squashfs...$(NC)"
+	@./scripts/build-install-rootfs.sh
+	@echo -e "$(GREEN)install.sfs ready: $(OUTPUT_DIR)/install.sfs$(NC)"
 
 download-packages: check-root generate-packages
 	@# generate-packages first: never trust the committed packages.x86_64.
@@ -339,33 +339,24 @@ prepare: check-root check-deps generate-packages
 		$(BUILD_DIR)/airootfs/usr/lib/calamares/modules/
 	@chmod +x $(BUILD_DIR)/airootfs/usr/local/bin/*
 	@chmod +x $(BUILD_DIR)/airootfs/root/customize_airootfs.sh
-	@if [ ! -f "$(OUTPUT_DIR)/bundle.sfs" ]; then \
-		echo -e "$(RED)ERROR: $(OUTPUT_DIR)/bundle.sfs missing. Run 'sudo make target-bundle' first.$(NC)"; \
-		exit 1; \
-	fi
-	@mkdir -p $(BUILD_DIR)/airootfs/shedos-payload/aur
-	@cp -v $(OUTPUT_DIR)/bundle.sfs $(BUILD_DIR)/airootfs/shedos-payload/bundle.sfs
-	@for p in google-chrome postman-bin claude-code-bin jetbrains-toolbox; do \
-		f=$$(ls $(REPO_DIR)/$$p-*.pkg.tar.zst 2>/dev/null | head -1); \
-		if [ -n "$$f" ]; then \
-			cp -v "$$f" $(BUILD_DIR)/airootfs/shedos-payload/aur/; \
-		else \
-			echo -e "$(YELLOW)WARNING: $$p not found in $(REPO_DIR)$(NC)"; \
-		fi; \
-	done
 	@echo -e "$(GREEN)Build environment ready$(NC)"
 
-iso: target-bundle prepare
+iso: install-rootfs prepare
 	@echo -e "$(GREEN)Building ShedOS $(VERSION)...$(NC)"
 	@echo -e "$(YELLOW)This may take 15-30 minutes...$(NC)"
-	mkarchiso -v -w $(WORK_DIR) -o $(OUTPUT_DIR) $(BUILD_DIR)
+	@if [ ! -f "$(OUTPUT_DIR)/install.sfs" ]; then \
+		echo -e "$(RED)ERROR: $(OUTPUT_DIR)/install.sfs missing$(NC)"; exit 1; \
+	fi
+	mkarchiso -v -w $(WORK_DIR) -o $(OUTPUT_DIR) -m airootfs $(BUILD_DIR)
+	@cp -v $(OUTPUT_DIR)/install.sfs $(WORK_DIR)/iso/shedos/x86_64/install.sfs
+	mkarchiso -v -w $(WORK_DIR) -o $(OUTPUT_DIR) -m iso $(BUILD_DIR)
 	@iso_path="$(OUTPUT_DIR)/$(ISO_NAME)"; \
 	if [ ! -f "$$iso_path" ]; then \
 		iso_path=$$(ls -1t $(OUTPUT_DIR)/shedos-*.iso | head -1); \
 	fi; \
 	iso_size=$$(stat -c %s "$$iso_path"); \
-	if [ "$$iso_size" -ge 3900000000 ]; then \
-		echo -e "$(RED)FATAL: ISO $$(numfmt --to=iec --suffix=B $$iso_size) exceeds 3.9 GB cap$(NC)"; \
+	if [ "$$iso_size" -ge 5000000000 ]; then \
+		echo -e "$(RED)FATAL: ISO $$(numfmt --to=iec --suffix=B $$iso_size) exceeds 5 GB cap$(NC)"; \
 		rm -f "$$iso_path"; \
 		exit 1; \
 	fi; \

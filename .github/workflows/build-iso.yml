@@ -319,34 +319,34 @@ jobs:
           path: /tmp/shedos-pkg-cache
           key: shedos-pkgs-${{ runner.os }}-${{ github.sha }}
 
-      - name: Restore target-bundle cache
-        id: bundle-cache
+      - name: Restore install-rootfs cache
+        id: install-rootfs-cache
         uses: actions/cache/restore@v4
         with:
-          path: out/bundle.sfs
-          key: bundle-${{ runner.os }}-${{ hashFiles('packaging/shedos-meta/PKGBUILD', 'packages/official/**', 'packages/aur.txt', 'packages/bundle-skip.txt', 'packages/bundle-pin.txt', 'scripts/build-target-bundle.sh', 'scripts/resolve-meta-closure.sh') }}
+          path: out/install.sfs
+          key: install-rootfs-${{ runner.os }}-${{ hashFiles('packaging/shedos-meta/PKGBUILD', 'packages/official/**', 'packages/aur.txt', 'packages/aur-norepublish.txt', 'scripts/build-install-rootfs.sh', 'scripts/resolve-meta-closure.sh') }}
           restore-keys: |
-            bundle-${{ runner.os }}-
+            install-rootfs-${{ runner.os }}-
 
-      - name: Build target-bundle
+      - name: Build install-rootfs
         run: |
           mkdir -p out
-          make target-bundle
-          ls -la out/bundle.sfs out/bundle-manifest.txt
+          make install-rootfs
+          ls -la out/install.sfs out/install-manifest.txt
 
-      - name: Save target-bundle cache
-        if: always() && steps.bundle-cache.outputs.cache-hit != 'true'
+      - name: Save install-rootfs cache
+        if: always() && steps.install-rootfs-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: out/bundle.sfs
-          key: bundle-${{ runner.os }}-${{ hashFiles('packaging/shedos-meta/PKGBUILD', 'packages/official/**', 'packages/aur.txt', 'packages/bundle-skip.txt', 'packages/bundle-pin.txt', 'scripts/build-target-bundle.sh', 'scripts/resolve-meta-closure.sh') }}
+          path: out/install.sfs
+          key: install-rootfs-${{ runner.os }}-${{ hashFiles('packaging/shedos-meta/PKGBUILD', 'packages/official/**', 'packages/aur.txt', 'packages/aur-norepublish.txt', 'scripts/build-install-rootfs.sh', 'scripts/resolve-meta-closure.sh') }}
 
-      - name: Upload bundle manifest
+      - name: Upload install-rootfs manifest
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: bundle-manifest-${{ github.ref_name }}
-          path: out/bundle-manifest.txt
+          name: install-manifest-${{ github.ref_name }}
+          path: out/install-manifest.txt
           if-no-files-found: warn
           retention-days: 30
 
