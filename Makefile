@@ -24,7 +24,7 @@ YELLOW := \033[0;33m
 RED := \033[0;31m
 NC := \033[0m
 
-.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages install-rootfs regen bump bump-today bump-check release test-review-configs test-sync-configs test-check-health test-tui-logs test-tui-history test-apply test-apply-checkpoint test-doctor test-shedman test-status test-completions test-migrate test-man test-screenrecord test-kernel test-installer test-config test-rollback test-update test-install test-welcome test-screensaver test-screensaver-rust lint-rust
+.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages regen bump bump-today bump-check release test-review-configs test-sync-configs test-check-health test-tui-logs test-tui-history test-apply test-apply-checkpoint test-doctor test-shedman test-status test-completions test-migrate test-man test-screenrecord test-kernel test-installer test-config test-rollback test-update test-install test-welcome test-screensaver test-screensaver-rust lint-rust
 
 all: iso
 
@@ -190,11 +190,6 @@ shedos-packages:
 	@./scripts/build-shedos-packages.sh
 	@echo -e "$(GREEN)ShedOS packages built into $(REPO_DIR)$(NC)"
 
-install-rootfs: check-root
-	@echo -e "$(GREEN)Building install rootfs squashfs...$(NC)"
-	@./scripts/build-install-rootfs.sh
-	@echo -e "$(GREEN)install.sfs ready: $(OUTPUT_DIR)/install.sfs$(NC)"
-
 download-packages: check-root generate-packages
 	@# generate-packages first: never trust the committed packages.x86_64.
 	@echo -e "$(GREEN)Pre-downloading all packages...$(NC)"
@@ -276,7 +271,20 @@ prepare: check-root check-deps generate-packages
 	@rsync -a --info=progress2 \
 		--exclude-from='$(BUILD_DIR)/aur_excludes.txt' \
 		/var/cache/pacman/pkg/*.pkg.tar.zst $(BUILD_DIR)/pkg-cache/ 2>/dev/null || true
-	@echo -e "$(GREEN)Cached packages copied (AUR packages excluded)$(NC)"
+	@# Stale-package guard: keep only .pkg.tar.zst whose pkgname appears
+	@# in archiso/packages.x86_64. Removed-from-packages/* entries with
+	@# old cached binaries cannot leak into pacstrap.
+	@awk '!/^#/ && NF {print $$1}' archiso/packages.x86_64 \
+		| sort -u > $(BUILD_DIR)/_keep_pkgs.txt
+	@cd $(BUILD_DIR)/pkg-cache && \
+	for f in *.pkg.tar.zst; do \
+		[ -f "$$f" ] || continue; \
+		base=$$(basename "$$f"); \
+		pkgname=$${base%-*-*-*.pkg.tar.zst}; \
+		grep -Fxq "$$pkgname" $(BUILD_DIR)/_keep_pkgs.txt || rm -f "$$f"; \
+	done
+	@rm -f $(BUILD_DIR)/_keep_pkgs.txt
+	@echo -e "$(GREEN)Cached packages copied (AUR packages excluded; stale entries pruned)$(NC)"
 	@echo -e "$(GREEN)Configuring pacman for offline build...$(NC)"
 	@# Copy smart download wrapper
 	@mkdir -p $(BUILD_DIR)/scripts
@@ -341,22 +349,17 @@ prepare: check-root check-deps generate-packages
 	@chmod +x $(BUILD_DIR)/airootfs/root/customize_airootfs.sh
 	@echo -e "$(GREEN)Build environment ready$(NC)"
 
-iso: install-rootfs prepare
+iso: prepare
 	@echo -e "$(GREEN)Building ShedOS $(VERSION)...$(NC)"
 	@echo -e "$(YELLOW)This may take 15-30 minutes...$(NC)"
-	@if [ ! -f "$(OUTPUT_DIR)/install.sfs" ]; then \
-		echo -e "$(RED)ERROR: $(OUTPUT_DIR)/install.sfs missing$(NC)"; exit 1; \
-	fi
-	mkarchiso -v -w $(WORK_DIR) -o $(OUTPUT_DIR) -m airootfs $(BUILD_DIR)
-	@cp -v $(OUTPUT_DIR)/install.sfs $(WORK_DIR)/iso/shedos/x86_64/install.sfs
-	mkarchiso -v -w $(WORK_DIR) -o $(OUTPUT_DIR) -m iso $(BUILD_DIR)
+	mkarchiso -v -w $(WORK_DIR) -o $(OUTPUT_DIR) $(BUILD_DIR)
 	@iso_path="$(OUTPUT_DIR)/$(ISO_NAME)"; \
 	if [ ! -f "$$iso_path" ]; then \
 		iso_path=$$(ls -1t $(OUTPUT_DIR)/shedos-*.iso | head -1); \
 	fi; \
 	iso_size=$$(stat -c %s "$$iso_path"); \
-	if [ "$$iso_size" -ge 5000000000 ]; then \
-		echo -e "$(RED)FATAL: ISO $$(numfmt --to=iec --suffix=B $$iso_size) exceeds 5 GB cap$(NC)"; \
+	if [ "$$iso_size" -ge 6000000000 ]; then \
+		echo -e "$(RED)FATAL: ISO $$(numfmt --to=iec --suffix=B $$iso_size) exceeds 6 GB cap$(NC)"; \
 		rm -f "$$iso_path"; \
 		exit 1; \
 	fi; \

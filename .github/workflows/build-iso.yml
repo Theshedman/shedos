@@ -319,37 +319,6 @@ jobs:
           path: /tmp/shedos-pkg-cache
           key: shedos-pkgs-${{ runner.os }}-${{ github.sha }}
 
-      - name: Restore install-rootfs cache
-        id: install-rootfs-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: out/install.sfs
-          key: install-rootfs-${{ runner.os }}-${{ hashFiles('packaging/shedos-meta/PKGBUILD', 'packages/official/**', 'packages/aur.txt', 'packages/aur-norepublish.txt', 'scripts/build-install-rootfs.sh', 'scripts/resolve-meta-closure.sh') }}
-          restore-keys: |
-            install-rootfs-${{ runner.os }}-
-
-      - name: Build install-rootfs
-        run: |
-          mkdir -p out
-          make install-rootfs
-          ls -la out/install.sfs out/install-manifest.txt
-
-      - name: Save install-rootfs cache
-        if: always() && steps.install-rootfs-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: out/install.sfs
-          key: install-rootfs-${{ runner.os }}-${{ hashFiles('packaging/shedos-meta/PKGBUILD', 'packages/official/**', 'packages/aur.txt', 'packages/aur-norepublish.txt', 'scripts/build-install-rootfs.sh', 'scripts/resolve-meta-closure.sh') }}
-
-      - name: Upload install-rootfs manifest
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: install-manifest-${{ github.ref_name }}
-          path: out/install-manifest.txt
-          if-no-files-found: warn
-          retention-days: 30
-
       - name: Strip debug packages from shedos-repo
         run: |
           rm -f archiso/shedos-repo/*-debug-*.pkg.tar.zst archiso/shedos-repo/*-debug-*.pkg.tar.zst.sig
