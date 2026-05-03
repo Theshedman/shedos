@@ -12,7 +12,7 @@
 
 pkgname=shedos-meta
 pkgver=2026.05.02
-pkgrel=4
+pkgrel=5
 pkgdesc='ShedOS meta-package — installs the full default ShedOS environment'
 arch=('any')
 url='https://github.com/theshedman/shedos'
@@ -700,7 +700,6 @@ depends=(
     'licenses'
     'lilv'
     'limine'
-    'linux'
     'linux-api-headers'
     'linux-firmware-amdgpu'
     'linux-firmware-atheros'
@@ -1155,7 +1154,6 @@ depends=(
     'vid.stab'
     'vim'
     'vim-runtime'
-    'virtualbox-guest-utils'
     'vlc'
     'vlc-cli'
     'vlc-gui-qt'
@@ -1325,6 +1323,10 @@ conflicts=(
     'ttf-input'
     'ttf-input-nerd'
     'ttf-roboto'
+    'linux'
+    'linux-headers'
+    'virtualbox-guest-modules-arch'
+    'virtualbox-host-modules-arch'
 )
 
 package() {
