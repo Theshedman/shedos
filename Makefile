@@ -138,12 +138,6 @@ release:
 		v[0-9][0-9][0-9][0-9].[0-9][0-9].[0-9][0-9]|v[0-9][0-9][0-9][0-9].[0-9][0-9].[0-9][0-9]-rc[0-9]*) ;; \
 		*) echo -e "$(RED)TAG '$(TAG)' is not v<CalVer>[-rcN]$(NC)" >&2; exit 1 ;; \
 	esac
-	@expected_ver="$$(echo $(TAG) | sed -E 's/^v//; s/-rc[0-9]+$$//')"; \
-	actual_ver="$$(cat VERSION)"; \
-	if [ "$$expected_ver" != "$$actual_ver" ]; then \
-		echo -e "$(YELLOW)→ VERSION $$actual_ver → $$expected_ver (from TAG)$(NC)"; \
-		echo "$$expected_ver" > VERSION; \
-	fi
 	@branch="$$(git rev-parse --abbrev-ref HEAD)"; \
 	if [ "$$branch" != "main" ]; then \
 		echo -e "$(RED)Must be on main (currently on $$branch)$(NC)" >&2; exit 1; \
@@ -160,6 +154,12 @@ release:
 	fi
 	@echo -e "$(GREEN)→ Pulling latest main...$(NC)"
 	@git pull --ff-only origin main
+	@expected_ver="$$(echo $(TAG) | sed -E 's/^v//; s/-rc[0-9]+$$//')"; \
+	actual_ver="$$(cat VERSION)"; \
+	if [ "$$expected_ver" != "$$actual_ver" ]; then \
+		echo -e "$(YELLOW)→ VERSION $$actual_ver → $$expected_ver (from TAG)$(NC)"; \
+		echo "$$expected_ver" > VERSION; \
+	fi
 	@echo -e "$(GREEN)→ Bumping locally (idempotent)...$(NC)"
 	@./scripts/bump-version.sh "$$(cat VERSION)"
 	@if ! git diff --quiet -- packaging/ VERSION; then \
