@@ -141,9 +141,8 @@ release:
 	@expected_ver="$$(echo $(TAG) | sed -E 's/^v//; s/-rc[0-9]+$$//')"; \
 	actual_ver="$$(cat VERSION)"; \
 	if [ "$$expected_ver" != "$$actual_ver" ]; then \
-		echo -e "$(RED)Tag $(TAG) implies VERSION=$$expected_ver but VERSION file has $$actual_ver$(NC)" >&2; \
-		echo -e "$(YELLOW)Run \`make bump-today\` (or edit VERSION manually) before releasing.$(NC)" >&2; \
-		exit 1; \
+		echo -e "$(YELLOW)→ VERSION $$actual_ver → $$expected_ver (from TAG)$(NC)"; \
+		echo "$$expected_ver" > VERSION; \
 	fi
 	@branch="$$(git rev-parse --abbrev-ref HEAD)"; \
 	if [ "$$branch" != "main" ]; then \
@@ -162,7 +161,7 @@ release:
 	@echo -e "$(GREEN)→ Pulling latest main...$(NC)"
 	@git pull --ff-only origin main
 	@echo -e "$(GREEN)→ Bumping locally (idempotent)...$(NC)"
-	@./scripts/bump-version.sh
+	@./scripts/bump-version.sh "$$(cat VERSION)"
 	@if ! git diff --quiet -- packaging/ VERSION; then \
 		git add packaging/ VERSION; \
 		git commit -m "release: $(TAG)"; \
