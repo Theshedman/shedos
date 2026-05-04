@@ -1,6 +1,11 @@
 # shedos-hyprland install scriptlet
 
 _strip_live_zprofile() {
+    # Skip in the live ISO build chroot and on the running live ISO —
+    # /etc/calamares ships only on the live ISO and is excluded from the
+    # installed system via unpackfs-exclude.conf. Without this guard, the
+    # hook strips /home/shedos/.zprofile from the airootfs during pacstrap.
+    [[ -d /etc/calamares ]] && return 0
     local marker='ShedOS Live Environment - Auto-start graphical installer on tty1'
     local home zp
     while IFS=: read -r _ _ _ _ _ home _; do
