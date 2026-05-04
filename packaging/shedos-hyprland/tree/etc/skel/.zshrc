@@ -120,7 +120,6 @@ fi
 if command -v bat &> /dev/null; then
     alias cat="bat --style=plain"
     alias catp="bat"
-    export BAT_THEME="Catppuccin-mocha"
 fi
 
 # zoxide (better cd)
