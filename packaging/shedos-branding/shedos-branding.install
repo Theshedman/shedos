@@ -1,13 +1,16 @@
 # shedos-branding install scriptlet
 
 post_install() {
-    # Point Plymouth at the shedos theme. -R regenerates the initramfs so
-    # the splash shows on next boot. Tolerate failure (missing plymouth-set-
-    # default-theme, read-only fs, etc.) rather than aborting the install.
+    # Skip -R during pacstrap: shedos-branding installs before shedos-kernel,
+    # so /etc/mkinitcpio.d is empty and `mkinitcpio -P` would error. Just
+    # write the theme config — the kernel package's own postinstall runs
+    # mkinitcpio -P after dropping presets and picks the theme up then.
     if command -v plymouth-set-default-theme >/dev/null 2>&1; then
-        plymouth-set-default-theme -R shedos || \
-            echo "Plymouth theme activation failed — run manually:" \
-                 "plymouth-set-default-theme -R shedos"
+        if compgen -G '/etc/mkinitcpio.d/*.preset' >/dev/null 2>&1; then
+            plymouth-set-default-theme -R shedos || true
+        else
+            plymouth-set-default-theme shedos || true
+        fi
     fi
 }
 
