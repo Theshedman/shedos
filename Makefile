@@ -345,7 +345,6 @@ prepare: check-root check-deps generate-packages
 		installer/calamares/modules-src/ \
 		$(BUILD_DIR)/airootfs/usr/lib/calamares/modules/
 	@chmod +x $(BUILD_DIR)/airootfs/usr/local/bin/*
-	@chmod +x $(BUILD_DIR)/airootfs/root/customize_airootfs.sh
 	@echo -e "$(GREEN)Build environment ready$(NC)"
 
 iso: prepare
