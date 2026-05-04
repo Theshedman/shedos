@@ -131,7 +131,7 @@ const rcCandidates = tags.filter((t) => RC_RE.test(t));
 const stable = await resolveNewest(stableCandidates);
 let rc = await resolveNewest(rcCandidates);
 
-if (stable && rc && dateOf(rc.version) <= dateOf(stable.version)) {
+if (stable && rc && dateOf(rc.version) < dateOf(stable.version)) {
     rc = null;
 }
 
