@@ -442,6 +442,8 @@ jobs:
         # a fixed template. Output exposed as $RELEASE_NOTES (multiline env
         # var) + $PREV_TAG (for the compare link).
         run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch origin --tags --force --no-recurse-submodules 2>/dev/null || true
           prev_tag=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)
           if [[ -z $prev_tag ]]; then
               range=HEAD
