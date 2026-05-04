@@ -16,6 +16,7 @@ pkgdesc='ShedOS Hyprland desktop profile (dotfiles + DE helpers)'
 arch=('any')
 url='https://github.com/theshedman/shedos'
 license=('GPL-3.0-or-later')
+install=shedos-hyprland.install
 depends=(
     'shedos-system'
     'hyprland'

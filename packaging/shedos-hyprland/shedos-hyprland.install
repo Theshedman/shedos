@@ -1,6 +1,18 @@
 # shedos-hyprland install scriptlet
 
+_strip_live_zprofile() {
+    local marker='ShedOS Live Environment - Auto-start graphical installer on tty1'
+    local home zp
+    while IFS=: read -r _ _ _ _ _ home _; do
+        zp="$home/.zprofile"
+        [[ -f "$zp" ]] || continue
+        grep -qF "$marker" "$zp" 2>/dev/null || continue
+        install -Dm644 /etc/skel/.zprofile "$zp" 2>/dev/null || true
+    done < <(getent passwd | awk -F: '$3 >= 1000 && $3 < 65000 && $6 ~ /^\/home\//')
+}
+
 post_install() {
+    _strip_live_zprofile
     cat <<'EOF'
 
 ShedOS Hyprland profile installed.
@@ -14,7 +26,5 @@ EOF
 }
 
 post_upgrade() {
-    # Nothing system-scoped to do — the sync into $HOME is per-user and runs
-    # through `shedman config --sync` / `shedman update`.
-    :
+    _strip_live_zprofile
 }
