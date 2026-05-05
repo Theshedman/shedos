@@ -124,6 +124,7 @@ skipped=0
 
 for pkgbuild in "$root"/packaging/shedos-*/PKGBUILD; do
     pkg=$(basename "$(dirname "$pkgbuild")")
+    bash "$here/refresh-local-hashes.sh" "$pkgbuild"
     h=$("$here/compute-pkg-hash.sh" "$pkg")
     prev=${last_hash[$pkg]:-}
 
