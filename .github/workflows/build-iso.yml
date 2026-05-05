@@ -211,8 +211,11 @@ jobs:
         run: |
           mkdir -p archiso/shedos-repo
           rm -f archiso/shedos-repo/shedos-kernel-*.pkg.tar.zst
-          if [[ "${{ steps.kernel-pkg-cache.outputs.cache-hit }}" == "true" ]]; then
-              cp -v /tmp/shedos-kernel-pkg-cache/*.pkg.tar.zst archiso/shedos-repo/
+          shopt -s nullglob
+          cached=( /tmp/shedos-kernel-pkg-cache/*.pkg.tar.zst )
+          shopt -u nullglob
+          if [[ "${{ steps.kernel-pkg-cache.outputs.cache-hit }}" == "true" && ${#cached[@]} -gt 0 ]]; then
+              cp -v "${cached[@]}" archiso/shedos-repo/
               echo "Cached kernel staged; build-shedos-packages.sh pre-flight will skip rebuild."
           else
               echo "Kernel cache missed; build-shedos-packages.sh will rebuild from source."
@@ -259,22 +262,25 @@ jobs:
         run: make shedos-packages
 
       - name: Stage shedos-kernel package for cache save
-        # If we just rebuilt the kernel, mirror it into the kernel-pkg-cache
-        # path so the save step below pushes it to the GHA cache. No-op on
-        # cache hit — same files would be copied to themselves.
+        # No-op on cache hit. Sets has_files so the save step below skips
+        # persisting an empty cache (which would poison subsequent runs).
+        id: kernel-cache-stage
         if: always() && steps.kernel-pkg-cache.outputs.cache-hit != 'true'
         run: |
           mkdir -p /tmp/shedos-kernel-pkg-cache
           cp -v archiso/shedos-repo/shedos-kernel-*.pkg.tar.zst \
               /tmp/shedos-kernel-pkg-cache/ 2>/dev/null || true
           ls -la /tmp/shedos-kernel-pkg-cache/
+          shopt -s nullglob
+          files=( /tmp/shedos-kernel-pkg-cache/*.pkg.tar.zst )
+          if (( ${#files[@]} > 0 )); then
+              echo "has_files=1" >> "$GITHUB_OUTPUT"
+          else
+              echo "has_files=0" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Save shedos-kernel package cache
-        # Persist the freshly-built kernel for the next run. Only saves on
-        # cache miss — a hit means the cache already has these files. Use
-        # `if: always()` so a downstream failure (ISO build, R2 upload)
-        # doesn't discard the kernel build we just spent ~3 h on.
-        if: always() && steps.kernel-pkg-cache.outputs.cache-hit != 'true'
+        if: always() && steps.kernel-pkg-cache.outputs.cache-hit != 'true' && steps.kernel-cache-stage.outputs.has_files == '1'
         uses: actions/cache/save@v4
         with:
           path: /tmp/shedos-kernel-pkg-cache
