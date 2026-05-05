@@ -12,7 +12,7 @@
 
 pkgname=shedos-meta
 pkgver=2026.05.05
-pkgrel=2
+pkgrel=4
 pkgdesc='ShedOS meta-package — installs the full default ShedOS environment'
 arch=('any')
 url='https://github.com/theshedman/shedos'
@@ -372,6 +372,7 @@ depends=(
     'imv'
     'inetutils'
     'iniparser'
+    'inotify-tools'
     'intel-ucode'
     'inter-font'
     'inxi'
@@ -1290,7 +1291,6 @@ depends=(
     'lazydocker'
     'mise-bin'
     'oh-my-zsh-git'
-    'rtl8821au-dkms-git'
     'slack-desktop'
     'usql'
     'visual-studio-code-bin'
