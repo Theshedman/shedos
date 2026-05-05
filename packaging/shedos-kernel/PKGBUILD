@@ -74,8 +74,8 @@ sha256sums=('cde8bf6739be4a0777fedbbba5330b8188c55680c45a922a4dfa289cbec6f185'
             'SKIP'
             '7b28c779c73b0542a80d6c2dc7c049cbae6370a87953a1da24f450583ad63e45'
             'SKIP')
-b2sums_x86_64=('f638592a2db0d995268d921a77acb003e8bd888f1d2f5d6e51a95b6b53ed71565c8c96b5fbaaccdc2a542f1ea8952e605d1f95f82fc5d8dbc7e16f04e30b02c1')
-sha256sums_x86_64=('5618fb6f9e76478d9795c5dcd141353c5638bf2e90a3c673d59830183711e0cc')
+b2sums_x86_64=('18ffd0d1facccc66614dbbdc6ff7f6f58ded3483a691ad5b9ac9a6dac62b8332c3931eea4812a74152854dae457daff0256dfcacbdfc8861a0acb4dd66e6512f')
+sha256sums_x86_64=('e30ddfd3a4562afd1f383568fafe5103747d39e2981cfd8e7bd0cd2ac3ad3838')
 
 export KBUILD_BUILD_HOST=shedos
 export KBUILD_BUILD_USER=$pkgbase
