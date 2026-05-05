@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+"""shedman keybindings — list every Hyprland bind in a walker dmenu."""
+
+from __future__ import annotations
+
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+
+VAR_RE = re.compile(r"^\s*\$([A-Za-z_]\w*)\s*=\s*(.+?)\s*$")
+BIND_RE = re.compile(r"^\s*(bind[lemnro]*)\s*=\s*(.+?)\s*$")
+PLACEHOLDER = "Search keybindings"
+
+
+def _load_configs(cfg_dir: Path) -> tuple[dict[str, str], list[tuple[str, str, str]]]:
+    variables: dict[str, str] = {}
+    binds: list[tuple[str, str, str]] = []
+    for conf in sorted(cfg_dir.glob("*.conf")):
+        try:
+            text = conf.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for line in text.splitlines():
+            stripped = line.lstrip()
+            if not stripped or stripped.startswith("#"):
+                continue
+            m = VAR_RE.match(line)
+            if m:
+                variables[m.group(1)] = m.group(2)
+                continue
+            m = BIND_RE.match(line)
+            if not m:
+                continue
+            body = m.group(2)
+            parts = [p.strip() for p in body.split(",", 3)]
+            if len(parts) < 3:
+                continue
+            mods, key, dispatcher = parts[0], parts[1], parts[2]
+            args = parts[3] if len(parts) > 3 else ""
+            binds.append((f"{mods}|{key}", dispatcher, args))
+    return variables, binds
+
+
+def _expand(s: str, variables: dict[str, str]) -> str:
+    pattern = re.compile(r"\$([A-Za-z_]\w*)")
+    for _ in range(5):
+        new = pattern.sub(lambda m: variables.get(m.group(1), m.group(0)), s)
+        if new == s:
+            return s
+        s = new
+    return s
+
+
+def _format(binds: list[tuple[str, str, str]], variables: dict[str, str]) -> list[tuple[str, str, str]]:
+    rows: list[tuple[str, str, str]] = []
+    for raw_key, dispatcher, args in binds:
+        mods, key = raw_key.split("|", 1)
+        mods = _expand(mods, variables).strip()
+        key_display = f"{mods.replace(' ', '+')}+{key}" if mods else key
+        action = f"{dispatcher} {args}".strip() if args else dispatcher
+        rows.append((key_display, action, args))
+    return rows
+
+
+def main() -> int:
+    if len(sys.argv) > 1 and sys.argv[1] == "--help-summary":
+        print("show all keybindings in a walker menu")
+        return 0
+    if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help"):
+        print("Usage: shedman keybindings\nList every Hyprland bind in a searchable walker menu.")
+        return 0
+
+    cfg_dir = Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config"))) / "hypr"
+    if not cfg_dir.is_dir():
+        print(f"shedman keybindings: no hypr config at {cfg_dir}", file=sys.stderr)
+        return 1
+
+    variables, binds = _load_configs(cfg_dir)
+    if not binds:
+        print("shedman keybindings: no binds found", file=sys.stderr)
+        return 1
+
+    rows = _format(binds, variables)
+    width = max(len(r[0]) for r in rows) + 2
+    menu_lines = [f"{key:<{width}} → {action}" for key, action, _ in rows]
+
+    proc = subprocess.run(
+        ["walker", "--dmenu", "--placeholder", PLACEHOLDER],
+        input="\n".join(menu_lines),
+        capture_output=True,
+        text=True,
+    )
+    chosen = proc.stdout.strip()
+    if proc.returncode != 0 or not chosen:
+        return 0
+
+    for key, action, args in rows:
+        if chosen == f"{key:<{width}} → {action}":
+            if action.startswith("exec ") or action == "exec":
+                subprocess.run(["hyprctl", "dispatch", "exec", "--", args], check=False)
+            return 0
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

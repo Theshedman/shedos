@@ -1,0 +1,11 @@
+[Unit]
+Description=Watch ~/.config/hypr for config changes
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Path]
+PathChanged=%h/.config/hypr
+PathModified=%h/.config/hypr
+
+[Install]
+WantedBy=default.target

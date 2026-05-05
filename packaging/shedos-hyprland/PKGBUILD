@@ -35,6 +35,7 @@ depends=(
     'hyprsunset'
     'pacman-contrib'
     'yad'
+    'inotify-tools'
 )
 optdepends=(
     'impala: network TUI launched from waybar network icon'
@@ -61,12 +62,17 @@ package() {
     # `shedman power` (shutdown/reboot/logout confirm), and
     # `shedman screenrecord` (wf-recorder wrapper + waybar indicator).
     install -d "$pkgdir/usr/libexec/shedman"
-    local _libexec_shedman=(launcher power screenrecord)
+    local _libexec_shedman=(browser keybindings launcher power screenrecord)
     local _name
     for _name in "${_libexec_shedman[@]}"; do
         install -Dm755 "tree/usr/libexec/shedman/$_name" \
             "$pkgdir/usr/libexec/shedman/$_name"
     done
+
+    install -Dm644 tree/usr/lib/systemd/user/shedos-hypr-reload.path \
+        "$pkgdir/usr/lib/systemd/user/shedos-hypr-reload.path"
+    install -Dm644 tree/usr/lib/systemd/user/shedos-hypr-reload.service \
+        "$pkgdir/usr/lib/systemd/user/shedos-hypr-reload.service"
 
     # Silent back-compat shims for the old /usr/bin/shedos-* names.
     local _shims=(

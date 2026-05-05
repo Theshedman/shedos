@@ -1,0 +1,32 @@
+#!/bin/bash
+# shedman browser — launch the user's default web browser.
+
+if [[ "${1:-}" == "--help-summary" ]]; then
+    echo "launch the default web browser"
+    exit 0
+fi
+
+if [[ -n "${BROWSER:-}" ]] && command -v "$BROWSER" >/dev/null 2>&1; then
+    exec "$BROWSER" "$@"
+fi
+
+if command -v xdg-settings >/dev/null 2>&1; then
+    desktop=$(xdg-settings get default-web-browser 2>/dev/null || true)
+    if [[ -n "$desktop" ]]; then
+        if command -v gio >/dev/null 2>&1; then
+            exec gio launch "/usr/share/applications/$desktop" "$@"
+        fi
+        if command -v gtk-launch >/dev/null 2>&1; then
+            exec gtk-launch "${desktop%.desktop}" "$@"
+        fi
+    fi
+fi
+
+for browser in google-chrome-stable firefox chromium; do
+    if command -v "$browser" >/dev/null 2>&1; then
+        exec "$browser" "$@"
+    fi
+done
+
+echo "shedman browser: no browser found (install firefox, chromium, or google-chrome-stable)" >&2
+exit 1
