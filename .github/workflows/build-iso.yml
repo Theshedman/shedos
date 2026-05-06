@@ -11,6 +11,10 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
+concurrency:
+  group: iso-publish
+  cancel-in-progress: false
+
 jobs:
   iso:
     runs-on: ubuntu-latest
