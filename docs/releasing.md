@@ -154,11 +154,10 @@ tradeoff, revisit.
 
 ## What's still deferred
 
-Per [cadence-proposal.md](cadence-proposal.md), **per-package automatic
-pkgrel bumps** on pushes to `main` are out of scope for B#5. For now,
-when a change only touches one package's `tree/` and we want it to ship
-mid-week via gate 1 (not wait for Monday's pkgver bump), bump that
-package's `pkgrel` manually in the same commit:
+**Per-package automatic pkgrel bumps** on pushes to `main` are out of
+scope for now. When a change only touches one package's `tree/` and we
+want it to ship mid-week via gate 1 (not wait for Monday's pkgver
+bump), bump that package's `pkgrel` manually in the same commit:
 
 ```sh
 sed -i 's/^pkgrel=.*/pkgrel='$((OLD+1))'/' packaging/shedos-<pkg>/PKGBUILD

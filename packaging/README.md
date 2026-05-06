@@ -35,7 +35,7 @@ confuse, so:
 |---|---|---|
 | `[shedos-repo]` | `archiso/shedos-repo/` on the build host (ephemeral) | Holds AUR + shedos-* packages pre-built during ISO assembly so `mkarchiso` can resolve them via `file://`. Never shipped. |
 | `[shedos]` (stable) | `https://repo.shedos.org/stable/$arch` (signed, persistent, on R2) | The production repo. Installed systems pull `pacman -Syu` from here. Updated only on stable tag promotions. |
-| `[shedos-testing]` | `https://repo.shedos.org/test/$arch` | Always-fresh channel. Receives every push to `main` and every RC. Live ISOs pacstrap from here at install time. Stable tag promotes its contents to `[shedos]`. |
+| `[shedos-testing]` | `https://repo.shedos.org/test/$arch` | Always-fresh channel. Receives every push to `main` and every RC. Stable tag promotes its contents to `[shedos]` (no rebuild). |
 
 The ISO's `/etc/pacman.conf` has both blocks during `mkarchiso`. The
 installed system only has `[shedos]` — `shedos-system`'s `post_install`
@@ -44,42 +44,49 @@ strips it back out.
 
 ## The metapackage pipeline
 
-There are two outputs and two source-of-truth scopes:
+There are two outputs feeding the live ISO and the installed-system
+update path:
 
 ```
-packages/official/{base,installer}.txt ──► scripts/generate-package-list.sh ──► archiso/packages.x86_64
-                                           (live ISO only — ~116 packages)
+packages/official/*.txt   ──► scripts/generate-package-list.sh ──► archiso/packages.x86_64
+                                                                   (full pacstrap list for the ISO)
 
 packages/official/*.txt   ──┐
 packages/aur.txt          ──┼─► scripts/render-meta-depends.sh ─► packaging/shedos-meta/PKGBUILD
-packages/aur-norepublish  ──┘                                     (the full installed system)
+packages/aur-norepublish  ──┘                                     (closure for installed-system updates)
 shedos-* package names    ──┘
 ```
 
-`archiso/packages.x86_64` is the **lean** package set that mkarchiso
-pacstraps into the live ISO airootfs — just enough to boot the
-installer (base + Calamares deps + 5 extras: calamares, hyprland,
-kitty, shedos-branding, shedos-keyring). The installer pacstraps the
-full shedOS to /target at install time, pulling `shedos-meta` (which
-transitively deps every package in `packages/official/*.txt` +
-republishable AUR) from `[shedos-testing]` over HTTPS.
+`archiso/packages.x86_64` is the flat resolved closure that
+`mkarchiso` pacstraps into the live ISO's airootfs at build time. The
+squashfs that lands on a user's disk via Calamares' `unpackfs` step
+is that same airootfs, so this list defines what a fresh install
+ships with. Every transitive dep is named explicitly so pacman has
+no virtual-provider rolls to make.
 
-`packages.x86_64` is still **flat by design**: pacman with `--noconfirm`
-picks virtual-dep providers alphabetically, so every chosen provider
-must be at the root of the resolution graph or pacstrap collides.
+`shedos-meta` is the metapackage installed systems pull from
+`[shedos]` at update time. It depends on every shedos-* package and
+every redistributable Arch + AUR package a default install needs.
 
 Regenerate after editing `packages/*.txt`:
 
 ```bash
-scripts/generate-package-list.sh    # rewrites archiso/packages.x86_64
-scripts/render-meta-depends.sh      # rewrites packaging/shedos-meta/PKGBUILD
+sudo scripts/resolve-meta-closure.sh    # rewrites packages/.meta-closure.txt
+scripts/render-meta-depends.sh          # rewrites packaging/shedos-meta/PKGBUILD
+sudo scripts/generate-package-list.sh   # rewrites archiso/packages.x86_64
 ```
 
-**`aur-norepublish.txt`** lists AUR packages whose EULAs forbid us
-republishing binaries (proprietary: chrome, postman, slack, obsidian,
-ms-fonts). These stay as `optdepends=()` on `shedos-meta`. Calamares'
-optional-apps screen handles installing them at install time via
-`yay`-in-chroot; users can also `shedman install <pkg>` post-boot.
+`packages.x86_64` is **flat by design**: pacman with `--noconfirm`
+picks virtual-dep providers alphabetically, so every chosen provider
+must be at the root of the resolution graph or pacstrap collides.
+
+**`aur-norepublish.txt`** lists AUR packages whose vendor EULAs forbid
+republishing the `.pkg.tar.zst` signed by the ShedOS key (Chrome,
+Postman, Claude Code, JetBrains Toolbox, MS fonts). They are still
+built locally during the ISO build and bundled into the airootfs
+squashfs — legally equivalent to a user running `yay -S <pkg>`
+themselves. They show up as `optdepends=` on `shedos-meta` for
+visibility.
 
 ## Dual-install pattern (for `shedos-hyprland`, `shedos-nvim`)
 

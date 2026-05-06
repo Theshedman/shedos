@@ -1,38 +1,104 @@
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              ShedOS Architecture                                │
-└─────────────────────────────────────────────────────────────────────────────────┘
+ShedOS architecture
+===================
 
-  ┌─────────────────────┐    ┌─────────────────────┐    ┌─────────────────────┐
-  │     BUILD TIME      │    │    INSTALL TIME     │    │      RUNTIME        │
-  └─────────────────────┘    └─────────────────────┘    └─────────────────────┘
+ShedOS is a developer-focused Arch Linux distribution. This file maps
+the moving parts: how an ISO is built, how an ISO installs, and how an
+installed system stays current. For the user-facing CLI reference see
+shedos.org/docs.
 
-  ┌─────────────────────┐    ┌─────────────────────┐    ┌─────────────────────┐
-  │  packages/          │    │                     │    │  Keyboard-Centric   │
-  │  ├── development    │    │    USB Boot         │    │  Workflow           │
-  │  ├── devops         │    │        │            │    │        │            │
-  │  ├── desktop        │    │        ▼            │    │        ▼            │
-  │  └── productivity   │    │  5-min Install      │    │  Pre-configured     │
-  │         │           │    │  (No Network)       │    │  Shell & Tools      │
-  │         ▼           │    │        │            │    │        │            │
-  │  Generate Manifest  │    │        ▼            │    │        ▼            │
-  │         │           │    │  Ready to Code      │    │  Full Dev           │
-  │         ▼           │    │                     │    │  Environment        │
-  │  Download/Build     │    └─────────────────────┘    └─────────────────────┘
-  │  (Incremental)      │
-  │         │           │
-  │         ▼           │
-  │  Freeze DB State    │
-  │         │           │
-  │         ▼           │
-  │  Build ISO          │
-  └─────────────────────┘
 
-                    ════════════════════════════════════
-                              Key Principles
-                    ════════════════════════════════════
+Build pipeline
+--------------
 
-         Declarative          Reproducible         Automated
-         ───────────          ────────────         ─────────
-         Config as Code       Same input =         QEMU Testing
-         Single Source        Same output          Fast Feedback
-         of Truth
+  packaging/shedos-*/                packages/{official/*.txt,
+  PKGBUILDs (source)                 aur.txt, aur-norepublish.txt,
+       |                             installer-only.txt}
+       |                                  |
+       |  build-shedos-packages.sh        |  build-aur-packages.sh
+       |                                  |
+       v                                  v
+              archiso/shedos-repo/  (build-local pacman repo)
+                          |
+                          |  mkarchiso
+                          v
+                      out/*.iso
+
+At build time every native shedos-* package is built from its
+PKGBUILD, every AUR package listed in packages/aur.txt is cloned and
+built locally, and the resulting .pkg.tar.zst files land in
+archiso/shedos-repo/. mkarchiso then assembles the live ISO and
+pacstraps every entry in archiso/packages.x86_64 (the flat resolved
+closure of packages/official/*.txt + AUR + native packages) into the
+airootfs squashfs.
+
+Proprietary AUR apps (Chrome, Postman, Claude Code, JetBrains Toolbox,
+MS fonts) are built locally and bundled into the ISO unsigned. They
+are listed in packages/aur-norepublish.txt and never pushed to the
+public repo — only delivered with the ISO.
+
+CI runs the same flow on tag push (.github/workflows/build-iso.yml)
+and uploads the ISO to https://repo.shedos.org/iso/. Native packages
+are signed and published to https://repo.shedos.org/test/x86_64/ on
+every push to main, then promoted to /stable/x86_64/ on a stable tag
+via rclone copy (no rebuild).
+
+
+Install flow
+------------
+
+The install is fully offline. Boot the ISO, click through Calamares,
+get an installed system in 5–8 minutes. No network connection is
+required.
+
+Calamares' sequence:
+
+  show:  welcome → locale → keyboard → partition → users → summary
+  exec:  partition → mount → shedos_mirrors → unpackfs → copykernel
+         → fstab → locale → keyboard → localecfg → users → networkcfg
+         → hwclock → initcpiocfg → shedos_nvidia → initcpio
+         → shedos_limine → shedos_configs → shedos_gitconfig
+         → shedos_finalize → umount
+  show:  finished
+
+unpackfs copies the airootfs squashfs onto /target. copykernel walks
+/usr/lib/modules/*/pkgbase to find every installed kernel and writes
+vmlinuz + initramfs to /target/boot — ShedOS only ships shedos-kernel,
+so this step writes one kernel. The shedos_* modules then configure
+mkinitcpio, install Limine, deploy /etc/skel into the new user's home,
+seed the shedos-sync-configs manifest, persist any WiFi profile the
+user joined during the live session, and enable the runtime services.
+
+
+Update flow (installed system)
+------------------------------
+
+Once installed, ShedOS is a rolling release. Every commit to main
+that touches packaging/ ships through CI to
+https://repo.shedos.org/stable/x86_64/. Users pick up updates with
+`shedman update`, which:
+
+  1. lists pacman + AUR pending updates
+  2. wraps the upgrade in a snapper pre/post snapshot pair
+  3. runs `pacman -Syu` and `yay -Sua`
+  4. runs `shedman config --sync` to 3-way merge any default
+     dotfile changes into ~ (conflicts land as .shedosnew)
+
+`shedman rollback` swaps the live root subvolume with any pre-upgrade
+snapshot so a bad update is always one reboot away from being undone.
+
+
+Repo layout
+-----------
+
+  archiso/        mkarchiso profile (live ISO build)
+  packaging/     PKGBUILDs for every shedos-* package + install hooks
+  packages/      package source-of-truth lists (official/, aur.txt,
+                 aur-norepublish.txt, installer-only.txt)
+  installer/     Calamares branding + custom Python modules + the
+                 shared shedos_installer Python library
+  branding/      wallpapers, ASCII logos, /etc/issue, motd, os-release
+  scripts/       build, release, package-list, kernel-bump helpers
+  docs/          maintainer documentation
+  site/          Astro source for shedos.org
+  test/          fixture-driven test suites
+  .github/       CI workflows

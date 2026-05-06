@@ -278,22 +278,6 @@ section above (`shedman config --review`).
 
 ### April 2026
 
-- **`shedos-kernel` becomes the default boot entry on next upgrade.**
-  `shedos-kernel` (a vendored linux-zen rebuild) installs alongside
-  stock `linux` via `shedman update`. The Limine menu (`timeout: 3`)
-  shows both, and the renderer makes `shedos-kernel` the first entry
-  by default — meaning **your next reboot after upgrading boots
-  shedos-kernel, not linux.** Stock `linux` stays in the menu as a
-  one-keystroke fallback if shedos-kernel doesn't suit your hardware.
-
-  To stay on stock linux instead:
-  ```
-  sudo shedman kernel --set-default linux
-  ```
-  Reboot. To switch back: `sudo shedman kernel --set-default
-  shedos-kernel`. `shedman kernel --list` shows both kernels with
-  the configured default starred.
-
 - **Power management consolidated under `tlp`.** `tlp` and `tlp-rdw`
   now own CPU governor, disk spin-down, SATA link power, WiFi/BT
   radio idle, PCIe runtime PM, and battery charge thresholds.
@@ -431,14 +415,16 @@ not pacman-managed after first install, so your edits stick across upgrades.
 
 ## What about kernel upgrades?
 
-Kernel updates arrive via regular `pacman -Syu` (Arch ships them in the
-`core` repo). After a kernel upgrade, reboot when convenient — the old
-kernel is still available via the boot menu until `mkinitcpio` replaces
-it, which happens automatically on the next upgrade.
+Kernel updates arrive via regular `shedman update` / `pacman -Syu`.
+ShedOS ships only `shedos-kernel`, a vendored `linux-zen` rebuild,
+from the `[shedos]` repo. After a kernel upgrade, reboot when
+convenient — the old kernel image stays in `/boot` until the next
+`mkinitcpio -P` runs, so a fallback is always available via the
+Limine menu if the new kernel doesn't suit your hardware.
 
 ## Opting in to the testing channel
 
-ShedOS publishes a canary channel at `repo.shedos.org/$arch-testing`
+ShedOS publishes a canary channel at `repo.shedos.org/test/$arch`
 that receives RC packages (built from `v<date>-rcN` tags) before they
 reach the stable repo. Stable cuts also publish to the testing
 channel, so opting in only changes behavior during RC windows.
@@ -448,7 +434,7 @@ To opt in, add a `[pacman.repos.shedos-testing]` stanza to
 
 ```toml
 [pacman.repos.shedos-testing]
-server   = "https://repo.shedos.org/$arch-testing"
+server   = "https://repo.shedos.org/test/$arch"
 siglevel = "Required DatabaseRequired"
 ```
 
