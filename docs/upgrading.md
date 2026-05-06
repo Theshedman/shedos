@@ -422,6 +422,31 @@ convenient — the old kernel image stays in `/boot` until the next
 `mkinitcpio -P` runs, so a fallback is always available via the
 Limine menu if the new kernel doesn't suit your hardware.
 
+## Opting out of default services
+
+ShedOS enables a handful of services at install time (PostgreSQL,
+Docker, etc.) that not everyone needs. Each is reconciled through
+`/etc/shedos/system.toml`, so opting out is two lines plus an apply.
+
+```toml
+[services.docker]
+enable = false
+
+[services.postgresql]
+auto-init   = false   # skip /var/lib/postgres/data initialization
+per-user-db = false   # skip per-Linux-user role + database bootstrap
+```
+
+Then:
+
+```sh
+sudo shedman apply
+```
+
+`shedman apply --dry-run` prints the plan without touching anything.
+The fully-commented schema lives at
+`/usr/share/shedos/system.toml.example`.
+
 ## Opting in to the testing channel
 
 ShedOS publishes a canary channel at `repo.shedos.org/test/$arch`
