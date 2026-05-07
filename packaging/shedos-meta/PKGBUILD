@@ -11,8 +11,8 @@
 # as the source of truth for "what's on a fresh install".
 
 pkgname=shedos-meta
-pkgver=2026.05.06
-pkgrel=2
+pkgver=2026.05.07
+pkgrel=1
 pkgdesc='ShedOS meta-package — installs the full default ShedOS environment'
 arch=('any')
 url='https://github.com/theshedman/shedos'
@@ -102,12 +102,12 @@ depends=(
     'cdparanoia'
     'cifs-utils'
     'clang'
-    'clang20'
+    'clang21'
     'cliphist'
     'cmake'
     'code'
     'compiler-rt'
-    'compiler-rt20'
+    'compiler-rt21'
     'confuse'
     'containerd'
     'coreutils'
@@ -291,6 +291,7 @@ depends=(
     'haskell-assoc'
     'haskell-base-orphans'
     'haskell-bifunctors'
+    'haskell-character-ps'
     'haskell-colour'
     'haskell-comonad'
     'haskell-contravariant'
@@ -300,7 +301,6 @@ depends=(
     'haskell-dlist'
     'haskell-erf'
     'haskell-fgl'
-    'haskell-foldable1-classes-compat'
     'haskell-generically'
     'haskell-hashable'
     'haskell-indexed-traversable'
@@ -339,6 +339,7 @@ depends=(
     'haskell-vector-stream'
     'haskell-witherable'
     'hdparm'
+    'helm'
     'helvum'
     'hicolor-icon-theme'
     'hidapi'
@@ -429,6 +430,7 @@ depends=(
     'kservice'
     'kstatusnotifieritem'
     'ksvg'
+    'kubectl'
     'kwallet'
     'kwidgetsaddons'
     'kwindowsystem'
@@ -708,10 +710,10 @@ depends=(
     'linux-firmware-realtek'
     'linux-firmware-whence'
     'lld'
-    'lld20'
+    'lld21'
     'lldb'
     'llhttp'
-    'llvm20-libs'
+    'llvm21-libs'
     'llvm-libs'
     'lmdb'
     'lm_sensors'
@@ -743,6 +745,7 @@ depends=(
     'memtest86+-efi'
     'mesa'
     'mesa-utils'
+    'minikube'
     'minizip'
     'mkinitcpio'
     'mkinitcpio-archiso'
