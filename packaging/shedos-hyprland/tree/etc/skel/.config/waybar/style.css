@@ -342,3 +342,17 @@ separator {
     background-color: @surface0;
     color: @yellow;
 }
+
+#custom-shedos-logo {
+    background-image: url("file:///usr/share/shedos-hyprland/shedos-s.png");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    background-origin: content-box;
+    background-clip: content-box;
+    min-width: 36px;
+    padding: 8px 10px;
+    margin: 0;
+    color: transparent;
+}
+
