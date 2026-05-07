@@ -3,12 +3,12 @@
 # Compared against current hashes on every run to decide what to bump.
 
 shedos-branding = "e5f5549a07a070f29b2309e8033824d04d5607ce795747d4f361bc5b0dc35cce"
-shedos-greeter = "d23b5f2bca585c3ae34803fd771686290e76ac4c8267fe72577be94abc53884c"
+shedos-greeter = "42275b8ae2a5ebc17045b742d51ce7dd3e1a1d090eb7694fcf23d458a828aea6"
 shedos-hyprland = "3a0fb65d7107549a564ad61a89a39abe1fbfcb063c98a75fbb201e16d6ed68d5"
 shedos-kernel = "2b3fcf7a0cb6dfdad4728a058630f5241082df0f9600da831df786f189b55ef2"
 shedos-keyring = "c44c7a66041c4eb6214a5c34a24617ffb13fecad98cde7db664ad893c86d5b65"
 shedos-meta = "34b64ed709c2e7813af5faa81d75324ee4605f25b6f3559c09d6f7adc9dbdf96"
 shedos-migrate-to-packaged = "49b34dd761132330abadba380070d24665c813dff08f4bc50c7b417ab9dcbbd7"
 shedos-nvim = "1f4aa0ddca79c86ab86b262e099dcf67457e2ab9e663ba6e47a02ad413eb60f9"
-shedos-screensaver = "d136feb0a52cc7b4c7eddc8c5fe6512c9bf8e390e86a92c54018f07371cde465"
-shedos-system = "9a933699db738bfa4cd9829a7a3a5c724caffbd67a93148a791797cb03be79cf"
+shedos-screensaver = "a0df270a691c86baa5efb3c7014f7bf94f1339ba7bd8952051025acf02399bd4"
+shedos-system = "ec316235eaf4838441188581901dea75267f51200b2279b487b8b8020db23ab3"
