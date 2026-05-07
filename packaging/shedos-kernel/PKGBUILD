@@ -2,9 +2,10 @@
 #
 # Adapted from Arch's linux-zen package
 # (https://gitlab.archlinux.org/archlinux/packaging/packages/linux-zen).
-# We track upstream linux-zen's pkgver and ship the same kernel.org
-# tarball, the same zen-kernel patch series, and the same .config
-# (vendored byte-for-byte at config.x86_64). The package differs only
+# We track upstream linux-zen's pkgver and source tarball, but vendor
+# a ShedOS-tuned .config at config.x86_64 (BTF preserved, debug-info
+# minimized, plus other knobs for our stack — see config.x86_64's
+# git log for the rationale of each change). The package also differs
 # in name, signing key, and the localversion string that surfaces in
 # `uname -r`.
 #
