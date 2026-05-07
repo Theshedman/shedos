@@ -4,10 +4,10 @@
 
 shedos-branding = "e5f5549a07a070f29b2309e8033824d04d5607ce795747d4f361bc5b0dc35cce"
 shedos-greeter = "d6997f6bc4885e5f0f96827bebc18f797efa47c9d01fb0ac3d1c7df027f6a5fa"
-shedos-hyprland = "52927952b0977276e5dddf51ab820923e4bb27e7ea4aef8914ef280974f31d56"
+shedos-hyprland = "469db91de26f503f0d268c0ca4061b0ba3e06d6117d708ec41480ce3be7f9c98"
 shedos-kernel = "5179b27f426f817c5efc5d672f3d22f7fd93d3a44d8add89391c9e3030124702"
 shedos-keyring = "c44c7a66041c4eb6214a5c34a24617ffb13fecad98cde7db664ad893c86d5b65"
-shedos-meta = "34b64ed709c2e7813af5faa81d75324ee4605f25b6f3559c09d6f7adc9dbdf96"
+shedos-meta = "cb8eca99a6157bfa725cf276bf462a16be657be3c2be7074642e3b3a234162b0"
 shedos-migrate-to-packaged = "49b34dd761132330abadba380070d24665c813dff08f4bc50c7b417ab9dcbbd7"
 shedos-nvim = "e586ac8da1ddbb7069b784bdcebbd6ea0b9abf9d75eba4fb6a3aee4e0f1b76b3"
 shedos-screensaver = "3bd649b0906a672ec7c7e47909f810ec9d5e1b4c364d0caa21e7a164034af7bb"
