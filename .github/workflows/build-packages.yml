@@ -287,20 +287,24 @@ jobs:
         # run on different kernel sources (its key is aur.txt-only,
         # orthogonal to the kernel state). The dedicated kernel-pkg-cache
         # is the authoritative gate:
-        #   * hit  → wipe AUR-restored kernel, lay down the cached one
-        #   * miss → wipe AUR-restored kernel so the script's pre-flight
-        #            file-exists check fails and triggers a real rebuild
-        # Either way archiso/shedos-repo's kernel state matches the
-        # current PKGBUILD.
+        #   * hit AND non-empty → wipe AUR-restored kernel, lay down the cached one
+        #   * miss OR empty     → wipe AUR-restored kernel so the script's pre-flight
+        #                         file-exists check fails and triggers a real rebuild
+        # An empty hit is possible: a prior run's earlier-step failure left
+        # /tmp/shedos-kernel-pkg-cache empty before the save step ran.
+        # Treat that as a miss so the kernel rebuilds from source.
         run: |
           mkdir -p archiso/shedos-repo
           rm -f archiso/shedos-repo/shedos-kernel-*.pkg.tar.zst
-          if [[ "${{ steps.kernel-pkg-cache.outputs.cache-hit }}" == "true" ]]; then
-              cp -v /tmp/shedos-kernel-pkg-cache/*.pkg.tar.zst archiso/shedos-repo/
+          shopt -s nullglob
+          cached=( /tmp/shedos-kernel-pkg-cache/*.pkg.tar.zst )
+          shopt -u nullglob
+          if [[ "${{ steps.kernel-pkg-cache.outputs.cache-hit }}" == "true" && ${#cached[@]} -gt 0 ]]; then
+              cp -v "${cached[@]}" archiso/shedos-repo/
               chown -R builder:builder archiso/shedos-repo
               echo "Cached kernel staged; build-shedos-packages.sh pre-flight will skip rebuild."
           else
-              echo "Kernel cache missed; build-shedos-packages.sh will rebuild from source."
+              echo "Kernel cache miss or empty; build-shedos-packages.sh will rebuild from source."
           fi
 
       - name: Restore shedos-pkgs cache
@@ -348,20 +352,31 @@ jobs:
         # pkg.tar.zst into the dedicated cache path so the save step below
         # pushes it to GHA cache. No-op on hit (same files staged in
         # archiso/shedos-repo would be copied to themselves).
+        # has_files output gates the save step so a build-shedos-packages.sh
+        # failure that aborts before the kernel is built doesn't poison the
+        # cache slot with an empty entry that future runs would hit.
+        id: kernel-cache-stage
         if: always() && steps.kernel-pkg-cache.outputs.cache-hit != 'true'
         run: |
           mkdir -p /tmp/shedos-kernel-pkg-cache
           cp -v archiso/shedos-repo/shedos-kernel-*.pkg.tar.zst \
               /tmp/shedos-kernel-pkg-cache/ 2>/dev/null || true
           ls -la /tmp/shedos-kernel-pkg-cache/
+          shopt -s nullglob
+          files=( /tmp/shedos-kernel-pkg-cache/*.pkg.tar.zst )
+          if (( ${#files[@]} > 0 )); then
+              echo "has_files=1" >> "$GITHUB_OUTPUT"
+          else
+              echo "has_files=0" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Save shedos-kernel package cache
         # Persist the freshly-built kernel for the next run. Only saves on
-        # cache miss — a hit means the cache already has these files.
-        # `if: always()` so a downstream failure (signing, publish) doesn't
-        # discard the kernel build we just spent ~40 min on (or longer
-        # cold).
-        if: always() && steps.kernel-pkg-cache.outputs.cache-hit != 'true'
+        # cache miss with files actually staged — `if: always()` so a
+        # downstream failure (signing, publish) doesn't discard the build,
+        # but has_files=='1' prevents an empty cache from clobbering the
+        # slot if the build itself failed before producing the kernel.
+        if: always() && steps.kernel-pkg-cache.outputs.cache-hit != 'true' && steps.kernel-cache-stage.outputs.has_files == '1'
         uses: actions/cache/save@v4
         with:
           path: /tmp/shedos-kernel-pkg-cache
