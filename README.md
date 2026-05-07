@@ -1,4 +1,4 @@
-# shedOS
+# ShedOS
 
 > A developer-focused Arch Linux distribution with Hyprland, BTRFS, and a rolling-release upgrade story.
 
@@ -14,7 +14,7 @@ system stays current via `pacman -Syu` — no reinstall, no image swap.
 - **Hyprland**: Tiling window manager with **Catppuccin Mocha** theme.
 - **Waybar**: Status bar with media controls, bluetooth, keyboard state, and an update-available indicator.
 - **Walker**: Application launcher with 7+ search engines (StackOverflow, Arch Wiki, etc.).
-- **Visuals**: Custom geometric wallpapers and consistent "shedOS" branding.
+- **Visuals**: Custom geometric wallpapers and consistent "ShedOS" branding.
 
 ### 🚀 Productivity
 - **Screen Recording**: Built-in interactive menu (`Super+R`).
@@ -27,7 +27,7 @@ system stays current via `pacman -Syu` — no reinstall, no image swap.
 - **Containers**: Docker + K8s tools ready (kubectl, kind, helm, k9s).
 
 ### 🔒 System
-- **Native-package install**: All shedOS-specific content is delivered as signed Arch packages (see `packaging/`).
+- **Native-package install**: All ShedOS-specific content is delivered as signed Arch packages (see `packaging/`).
 - **BTRFS**: Pre-configured subvolumes and snapshots.
 - **Secure**: Optional LUKS encryption.
 - **In-place upgrades**: `shedman update` + the waybar indicator surface updates the moment they land on the repo.
@@ -106,22 +106,22 @@ ShedOS uses **CalVer** (`YYYY.MM.DD`) with optional `-rcN` suffix:
 
 Two channels at `repo.shedos.org`:
 
-- **`/test/x86_64/`** — every push to `main` and every RC tag publishes
-  here. Live ISOs (RC + dev) pacstrap from this channel at install time.
+- **`/test/x86_64/`** — every push to `main` and every RC tag
+  publishes here. Receiving channel for in-development packages.
 - **`/stable/x86_64/`** — frozen until promoted. Pushing a stable tag
   (`v<CalVer>` without `-rcN`) triggers `rclone copy /test/ → /stable/`
   in CI — no rebuild. Stable users `pacman -Syu` from here.
 
-`bump-version.sh` is hash-aware (since v2026.05.02): only packages
-whose content drifted since the manifest in
-`packaging/.last-release-hashes.toml` get pkgver/pkgrel bumped. CI
-caches per-package builds keyed on content hash, so unchanged
-packages skip makepkg entirely.
+`bump-version.sh` is hash-aware: only packages whose content drifted
+since the manifest in `packaging/.last-release-hashes.toml` get
+pkgver/pkgrel bumped. CI caches per-package builds keyed on content
+hash, so unchanged packages skip makepkg entirely.
 
-The install model is **online pacstrap** at Calamares run time. The
-live ISO is a lean ~1.5 GB Arch+Calamares environment; the full shedOS
-arrives via `shedos-meta` from `/test/` (RC ISOs) or `/stable/`
-(stable ISOs) during install.
+Installs are fully offline. The ISO ships every package needed for
+a default ShedOS install. `mkarchiso` pacstraps the full environment
+into the airootfs squashfs at build time, and Calamares copies that
+squashfs onto `/target` with `unpackfs`. Target install time is 5–8
+minutes; no network connection is required.
 
 For the full pipeline (R2 bucket layout, signing, retention sweep,
 build incrementality) see
@@ -141,18 +141,23 @@ build incrementality) see
 
 ```
 shedos/
-├── archiso/              # Archiso profile (slimmed — live-only bits)
-├── packaging/            # Native shedos-* Arch packages (source of truth)
-├── packages/             # Package lists driving shedos-meta + the ISO
+├── archiso/              # Archiso profile for the live + install ISO
+├── packaging/            # Native shedos-* PKGBUILDs (source of truth)
+├── packages/             # Package source-of-truth lists
 │   ├── official/*.txt    # Arch repo packages, by category
-│   ├── aur.txt           # AUR packages
-│   └── aur-norepublish.txt  # Proprietary AUR (optdepends only)
-├── installer/            # Calamares modules + branding
-├── branding/             # Logos, wallpapers, Plymouth assets
-├── scripts/              # build, test, version-bump, package-list gen
-├── docs/                 # User + maintainer docs
-├── .github/workflows/    # build-packages.yml, build-iso.yml
+│   ├── aur.txt           # AUR packages built locally and shipped
+│   └── aur-norepublish.txt  # Proprietary AUR (bundled into ISO, never republished)
+├── installer/            # Calamares branding + custom Python modules + shared library
+├── branding/             # Wallpapers, ASCII logos, /etc/issue, /etc/motd, os-release
+├── scripts/              # Build, release, package-list, kernel-bump helpers
+├── docs/                 # Maintainer documentation
+├── site/                 # Astro source for shedos.org
+├── test/                 # Fixture-driven test suites
+├── .github/workflows/    # CI: build-packages, build-iso, release-weekly,
+│                         #     kernel-version-watcher, aur-cache-refresh, deploy-site
+├── architecture.txt      # System architecture overview
 ├── Makefile
+├── LICENSE
 └── VERSION
 ```
 

@@ -1,15 +1,19 @@
 name: build-iso
 
-# Builds the ShedOS ISO on tag push (v*). The ISO itself (multi-GB) is
-# published to R2 at https://repo.shedos.org/iso/ — GitHub Releases caps
-# individual files at 2 GiB and our ISO is ~3.6-3.9 GB, so only the
-# SHA256SUMS + download-link release notes land on GitHub. Depends on
-# the packages workflow having already published to R2.
+# Builds the ShedOS ISO on tag push (v*). The ISO is published to R2
+# at https://repo.shedos.org/iso/. It exceeds GitHub Releases' per-file
+# size limit, so only the .sha256 + download-link release notes land
+# on GitHub. Depends on the packages workflow having already published
+# to R2.
 
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
+
+concurrency:
+  group: iso-publish
+  cancel-in-progress: false
 
 jobs:
   iso:
@@ -513,7 +517,7 @@ jobs:
           echo "PREV_TAG=$prev_tag" >> "$GITHUB_ENV"
 
       - name: Publish GitHub Release
-        # GitHub Releases caps files at 2 GiB — our ISO is ~7.6 GiB. Attach
+        # The ISO exceeds GitHub Releases' per-file size limit. Attach
         # only the per-file .sha256 + point at R2 in the body. The Release
         # itself is still the canonical "what's in tag vX" pin.
         uses: softprops/action-gh-release@v2
@@ -541,5 +545,5 @@ jobs:
 
             ### Upgrading an existing ShedOS system
             You don't need this ISO to upgrade. Click the waybar update icon
-            or run `shedos-update` — `pacman -Syu` pulls signed packages
+            or run `shedman update` — `pacman -Syu` pulls signed packages
             directly from `repo.shedos.org`.

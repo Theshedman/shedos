@@ -11,8 +11,8 @@
 # as the source of truth for "what's on a fresh install".
 
 pkgname=shedos-meta
-pkgver=2026.05.05
-pkgrel=4
+pkgver=2026.05.06
+pkgrel=1
 pkgdesc='ShedOS meta-package — installs the full default ShedOS environment'
 arch=('any')
 url='https://github.com/theshedman/shedos'
@@ -1269,7 +1269,6 @@ depends=(
     'zstd'
     'ananicy-cpp-git'
     'bluetui'
-    'calamares'
     'catppuccin-gtk-theme-mocha'
     'elephant'
     'elephant-archlinuxpkgs'
@@ -1299,11 +1298,11 @@ depends=(
     'zsh-theme-powerlevel10k-git'
 )
 optdepends=(
-    'claude-code-bin: proprietary AUR package; install via shedos-welcome / yay'
-    'google-chrome: proprietary AUR package; install via shedos-welcome / yay'
-    'jetbrains-toolbox: proprietary AUR package; install via shedos-welcome / yay'
-    'postman-bin: proprietary AUR package; install via shedos-welcome / yay'
-    'ttf-ms-fonts: proprietary AUR package; install via shedos-welcome / yay'
+    'claude-code-bin: proprietary AUR package; reinstall via shedman install'
+    'google-chrome: proprietary AUR package; reinstall via shedman install'
+    'jetbrains-toolbox: proprietary AUR package; reinstall via shedman install'
+    'postman-bin: proprietary AUR package; reinstall via shedman install'
+    'ttf-ms-fonts: proprietary AUR package; reinstall via shedman install'
 )
 conflicts=(
     'jack2'

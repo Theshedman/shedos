@@ -364,16 +364,21 @@ jobs:
         # Walk archiso/shedos-repo/, sign each .pkg.tar.zst with the ShedOS
         # key, and move to dist/x86_64/ — UNLESS the package is listed in
         # packages/aur-norepublish.txt (proprietary EULAs forbid third-party
-        # redistribution under our signature; users get those via yay /
-        # shedos-welcome).
+        # redistribution under our signature). Those packages are bundled
+        # into the ISO unsigned; reinstalls go via `shedman install`.
         run: |
           install -d -o builder -g builder dist/x86_64
           # build-shedos-packages.sh emits packages as root-owned (via cp);
           # chown so gpg running as builder can read.
           chown -R builder:builder archiso/shedos-repo
 
+          # Skip both legal-restricted entries (aur-norepublish.txt) and
+          # installer-only entries (installer-only.txt) — neither should
+          # land in the public repo.
           mapfile -t norepublish < <(
-              grep -hEv '^\s*(#|$)' packages/aur-norepublish.txt
+              grep -hEv '^\s*(#|$)' \
+                  packages/aur-norepublish.txt \
+                  packages/installer-only.txt
           )
 
           staged=0 reused=0 skipped=0

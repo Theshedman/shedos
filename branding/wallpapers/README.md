@@ -1,14 +1,14 @@
-# shedOS Wallpapers
+# ShedOS Wallpapers
 
-Custom wallpapers for shedOS featuring geometric patterns and Catppuccin Mocha color scheme.
+Custom wallpapers for ShedOS featuring geometric patterns and Catppuccin Mocha color scheme.
 
 ## Wallpapers
 
 ### shedos-default.png (4K - 3840x2160)
-**Primary wallpaper** with gentle geometric circles in shedOS brand colors:
+**Primary wallpaper** with gentle geometric circles in ShedOS brand colors:
 - Base gradient: `#1e1e2e` → `#11111b` (Catppuccin Mocha base/crust)
 - Accent colors:
-  - shedOS Blue (#89b4fa) - primary brand color
+  - ShedOS Blue (#89b4fa) - primary brand color
   - Sapphire (#74c7ec) - complementary
   - Lavender (#b4befe) - complementary
 
@@ -25,7 +25,7 @@ These wallpapers were generated using ImageMagick with the following approach:
 
 1. **Base gradient:** Diagonal gradient from Catppuccin Mocha colors
 2. **Geometric elements:** Circular shapes with transparency and Gaussian blur
-3. **Color palette:** shedOS brand colors with opacity for subtlety
+3. **Color palette:** ShedOS brand colors with opacity for subtlety
 
 ### Regenerating Wallpapers
 
@@ -62,7 +62,7 @@ magick -size 3840x2160 \
 - Base: `#1e1e2e`
 - Mantle: `#181825`
 - Crust: `#11111b`
-- Blue (shedOS): `#89b4fa`
+- Blue (ShedOS): `#89b4fa`
 - Sapphire: `#74c7ec`
 - Lavender: `#b4befe`
 - Text: `#cdd6f4`
@@ -83,4 +83,4 @@ ln -sf /usr/share/shedos/wallpapers/shedos-default.png ~/.config/hypr/wallpaper.
 
 ## License
 
-Part of shedOS - https://github.com/theshedman/shedos
+Part of ShedOS - https://github.com/theshedman/shedos

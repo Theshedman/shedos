@@ -5,10 +5,10 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ---- Brand palette -----------------------------------------------------
-   Source of truth: branding/new_assets/shedOS-Color palette.pdf.
-   Dark theme uses Classic Black + Electric Blue; light theme inverts to
-   Pure White + Electric Blue with AA-contrast text pairings. Every
-   variable is defined in both :root (light) and .dark.                  */
+   ShedOS brand colors. Dark theme uses Classic Black + Electric Blue;
+   light theme inverts to Pure White + Electric Blue with AA-contrast
+   text pairings. Every variable is defined in both :root (light) and
+   .dark.                                                                */
 @theme {
     --font-sans:
         "Inter Variable", "Inter", ui-sans-serif, system-ui, -apple-system,

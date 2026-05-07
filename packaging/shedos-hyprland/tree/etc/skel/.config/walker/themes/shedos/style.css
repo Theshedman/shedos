@@ -1,5 +1,5 @@
 /*
- * shedOS walker theme. Palette is imported from the theme reconciler
+ * ShedOS walker theme. Palette is imported from the theme reconciler
  * so `shedman theme set palette …` keeps walker in sync with hyprland,
  * waybar, hyprlock, the greeter, and GTK. Spacing is tighter than the
  * upstream default and selected items get a thin accent rail.
