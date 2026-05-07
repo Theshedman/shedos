@@ -422,6 +422,19 @@ convenient — the old kernel image stays in `/boot` until the next
 `mkinitcpio -P` runs, so a fallback is always available via the
 Limine menu if the new kernel doesn't suit your hardware.
 
+## Hyprland session logs
+
+After login, `uwsm` and Hyprland's startup output go to the journal
+under the tag `hyprland-session` instead of the framebuffer console.
+View with:
+
+```sh
+journalctl -t hyprland-session -b
+```
+
+This keeps the post-auth screen clean (no flash of text between
+greeter and desktop) but preserves every diagnostic for debugging.
+
 ## Opting out of default services
 
 ShedOS enables a handful of services at install time (PostgreSQL,
