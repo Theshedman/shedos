@@ -71,9 +71,6 @@ export EDITOR="nvim"
 export VISUAL="nvim"
 export SUDO_EDITOR="nvim"
 
-# Browser
-export BROWSER="firefox"
-
 # Terminal
 export TERMINAL="kitty"
 
