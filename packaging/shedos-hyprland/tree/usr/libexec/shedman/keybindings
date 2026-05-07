@@ -1,23 +1,90 @@
 #!/usr/bin/env python3
-"""shedman keybindings — list every Hyprland bind in a walker dmenu."""
+"""shedman keybindings — searchable reference dialog.
+
+Reads the live Hyprland keybinds from ~/.config/hypr/*.conf, joins them
+with display metadata at /usr/share/shedos-hyprland/keybindings-meta.toml,
+and renders a 3-column dialog (keybinding · program · description)
+grouped by category. The metadata file controls the *display*; the
+binding still comes from keybindings.conf, so a user-customized bind
+without a metadata entry shows up under "Other" with its raw command.
+"""
 
 from __future__ import annotations
 
 import os
 import re
-import subprocess
 import sys
 from pathlib import Path
+from typing import Iterable
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # python <3.11 — Arch ships 3.11+, but be safe
+    import tomli as tomllib  # type: ignore
+
+import gi
+gi.require_version("Gtk", "4.0")
+from gi.repository import GLib, Gtk, Gdk  # noqa: E402
 
 
 VAR_RE = re.compile(r"^\s*\$([A-Za-z_]\w*)\s*=\s*(.+?)\s*$")
 BIND_RE = re.compile(r"^\s*(bind[lemnro]*)\s*=\s*(.+?)\s*$")
-PLACEHOLDER = "Search keybindings"
+
+META_PATH = Path("/usr/share/shedos-hyprland/keybindings-meta.toml")
+CSS_PATH = Path("/usr/share/shedos-hyprland/keybindings-dialog.css")
+LOGO_PATH = Path("/usr/share/shedos-hyprland/shedos-s.png")
+HYPR_DIR = Path(
+    os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config"))
+) / "hypr"
+
+CATEGORIES = [
+    "Applications",
+    "Windows & Tiling",
+    "Workspaces",
+    "Screenshots",
+    "System",
+    "Audio & Media",
+    "Other",
+]
+CATEGORY_CSS_CLASS = {
+    "Applications": "cat-applications",
+    "Windows & Tiling": "cat-windows",
+    "Workspaces": "cat-workspaces",
+    "Screenshots": "cat-screenshots",
+    "System": "cat-system",
+    "Audio & Media": "cat-audio",
+    "Other": "cat-other",
+}
+MOD_ORDER = {"SUPER": 0, "CTRL": 1, "SHIFT": 2, "ALT": 3}
 
 
-def _load_configs(cfg_dir: Path) -> tuple[dict[str, str], list[tuple[str, str, str]]]:
+# ─── parsing ──────────────────────────────────────────────────────────
+
+
+def _expand(text: str, variables: dict[str, str]) -> str:
+    pattern = re.compile(r"\$([A-Za-z_]\w*)")
+    for _ in range(5):
+        new = pattern.sub(lambda m: variables.get(m.group(1), m.group(0)), text)
+        if new == text:
+            return text
+        text = new
+    return text
+
+
+def _canonical(mods: str, key: str) -> str:
+    parts = [p.upper() for p in mods.split() if p]
+    parts.sort(key=lambda x: MOD_ORDER.get(x, 99))
+    if key:
+        parts.append(key)
+    return "+".join(parts)
+
+
+def parse_binds(cfg_dir: Path) -> dict[str, tuple[str, str]]:
+    """Return {canonical_keys: (dispatcher, args)} from every conf in cfg_dir."""
     variables: dict[str, str] = {}
-    binds: list[tuple[str, str, str]] = []
+    binds: dict[str, tuple[str, str]] = {}
+    if not cfg_dir.is_dir():
+        return binds
     for conf in sorted(cfg_dir.glob("*.conf")):
         try:
             text = conf.read_text(encoding="utf-8", errors="replace")
@@ -34,75 +101,331 @@ def _load_configs(cfg_dir: Path) -> tuple[dict[str, str], list[tuple[str, str, s
             m = BIND_RE.match(line)
             if not m:
                 continue
-            body = m.group(2)
-            parts = [p.strip() for p in body.split(",", 3)]
+            parts = [p.strip() for p in m.group(2).split(",", 3)]
             if len(parts) < 3:
                 continue
-            mods, key, dispatcher = parts[0], parts[1], parts[2]
+            mods = _expand(parts[0], variables).strip()
+            key = parts[1]
+            dispatcher = parts[2]
             args = parts[3] if len(parts) > 3 else ""
-            binds.append((f"{mods}|{key}", dispatcher, args))
-    return variables, binds
+            binds[_canonical(mods, key)] = (dispatcher, args)
+    return binds
 
 
-def _expand(s: str, variables: dict[str, str]) -> str:
-    pattern = re.compile(r"\$([A-Za-z_]\w*)")
-    for _ in range(5):
-        new = pattern.sub(lambda m: variables.get(m.group(1), m.group(0)), s)
-        if new == s:
-            return s
-        s = new
-    return s
+def load_meta(meta_path: Path) -> dict[str, dict]:
+    """Return {keys: {category, name, description}} from the TOML."""
+    out: dict[str, dict] = {}
+    if not meta_path.is_file():
+        return out
+    try:
+        with meta_path.open("rb") as f:
+            data = tomllib.load(f)
+    except (tomllib.TOMLDecodeError, OSError) as e:
+        print(f"shedman keybindings: failed to read {meta_path}: {e}",
+              file=sys.stderr)
+        return out
+    for entry in data.get("bind", []):
+        keys = entry.get("keys")
+        if not keys:
+            continue
+        out[keys] = {
+            "category": entry.get("category", "Other"),
+            "name": entry.get("name", ""),
+            "description": entry.get("description", ""),
+        }
+    return out
 
 
-def _format(binds: list[tuple[str, str, str]], variables: dict[str, str]) -> list[tuple[str, str, str]]:
-    rows: list[tuple[str, str, str]] = []
-    for raw_key, dispatcher, args in binds:
-        mods, key = raw_key.split("|", 1)
-        mods = _expand(mods, variables).strip()
-        key_display = f"{mods.replace(' ', '+')}+{key}" if mods else key
-        action = f"{dispatcher} {args}".strip() if args else dispatcher
-        rows.append((key_display, action, args))
-    return rows
+def compose_rows(
+    binds: dict[str, tuple[str, str]],
+    meta: dict[str, dict],
+) -> dict[str, list[dict]]:
+    """Group rows by category, in CATEGORIES order."""
+    grouped: dict[str, list[dict]] = {c: [] for c in CATEGORIES}
+    seen: set[str] = set()
+    # Pass 1: emit metadata entries in their declared order, only if the
+    # bind actually exists in the live conf.
+    for keys, m in meta.items():
+        if keys not in binds:
+            continue
+        cat = m["category"] if m["category"] in grouped else "Other"
+        grouped[cat].append({
+            "keys": keys,
+            "name": m["name"] or _fallback_name(*binds[keys]),
+            "description": m["description"] or "",
+        })
+        seen.add(keys)
+    # Pass 2: any live bind without metadata goes under "Other" with the
+    # raw exec line as a description so user-customized binds don't vanish.
+    for keys, (dispatcher, args) in binds.items():
+        if keys in seen:
+            continue
+        grouped["Other"].append({
+            "keys": keys,
+            "name": _fallback_name(dispatcher, args),
+            "description": _fallback_description(dispatcher, args),
+        })
+    return grouped
+
+
+def _fallback_name(dispatcher: str, args: str) -> str:
+    if dispatcher == "exec":
+        return (args.split() or ["exec"])[0]
+    return dispatcher
+
+
+def _fallback_description(dispatcher: str, args: str) -> str:
+    if dispatcher == "exec" and args:
+        return args
+    return dispatcher
+
+
+# ─── UI ───────────────────────────────────────────────────────────────
+
+
+class KeybindingsApp(Gtk.Application):
+    def __init__(self, grouped: dict[str, list[dict]]):
+        super().__init__(application_id="org.shedos.keybindings",
+                         flags=0)
+        self.grouped = grouped
+
+    def do_activate(self):
+        self._load_css()
+        win = KeybindingsWindow(self, self.grouped)
+        win.present()
+
+    def _load_css(self):
+        if not CSS_PATH.is_file():
+            return
+        provider = Gtk.CssProvider()
+        try:
+            provider.load_from_path(str(CSS_PATH))
+        except GLib.Error as e:
+            print(f"shedman keybindings: CSS load failed: {e}",
+                  file=sys.stderr)
+            return
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(),
+            provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+        )
+
+
+class KeybindingsWindow(Gtk.ApplicationWindow):
+    def __init__(self, app: Gtk.Application, grouped: dict[str, list[dict]]):
+        super().__init__(application=app)
+        self.set_title("ShedOS Keybindings")
+        self.set_default_size(960, 680)
+        self.add_css_class("keybindings-dialog")
+
+        self.grouped = grouped
+        self._row_widgets: list[tuple[Gtk.Widget, dict, Gtk.Widget]] = []
+
+        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.set_child(outer)
+
+        outer.append(self._build_header())
+        outer.append(self._build_search())
+        outer.append(self._build_list())
+        outer.append(self._build_footer())
+
+        # Esc to close. `/` to focus the search.
+        ev = Gtk.EventControllerKey()
+        ev.connect("key-pressed", self._on_key)
+        self.add_controller(ev)
+
+    # ---- header ----
+
+    def _build_header(self) -> Gtk.Widget:
+        box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            spacing=10,
+        )
+        box.add_css_class("keybindings-header")
+
+        if LOGO_PATH.is_file():
+            image = Gtk.Image.new_from_file(str(LOGO_PATH))
+            image.set_pixel_size(28)
+            box.append(image)
+
+        text_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        title = Gtk.Label(label="ShedOS Keybindings", xalign=0.0)
+        title.add_css_class("title")
+        subtitle = Gtk.Label(label="Press Esc to close · / to search",
+                             xalign=0.0)
+        subtitle.add_css_class("subtitle")
+        text_box.append(title)
+        text_box.append(subtitle)
+        text_box.set_hexpand(True)
+        box.append(text_box)
+        return box
+
+    # ---- search ----
+
+    def _build_search(self) -> Gtk.Widget:
+        self.search = Gtk.SearchEntry()
+        self.search.set_placeholder_text("Filter keybindings…")
+        self.search.add_css_class("keybindings-search")
+        self.search.connect("search-changed", self._on_search_changed)
+        return self.search
+
+    # ---- list ----
+
+    def _build_list(self) -> Gtk.Widget:
+        self.scrolled = Gtk.ScrolledWindow()
+        self.scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.scrolled.set_vexpand(True)
+        self.scrolled.add_css_class("keybindings-list")
+
+        body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        body.set_margin_start(8)
+        body.set_margin_end(8)
+
+        self._empty_label = Gtk.Label(label="No keybindings match")
+        self._empty_label.add_css_class("keybindings-empty")
+        self._empty_label.set_visible(False)
+        body.append(self._empty_label)
+
+        for category in CATEGORIES:
+            rows = self.grouped.get(category, [])
+            if not rows:
+                continue
+            section_header = self._build_section_header(category)
+            body.append(section_header)
+            section_rows: list[Gtk.Widget] = []
+            for row in rows:
+                row_widget = self._build_row(row)
+                body.append(row_widget)
+                section_rows.append(row_widget)
+                self._row_widgets.append((row_widget, row, section_header))
+            # Track section header so it disappears when all rows hidden.
+            section_header.section_rows = section_rows  # type: ignore[attr-defined]
+
+        self.scrolled.set_child(body)
+        return self.scrolled
+
+    def _build_section_header(self, category: str) -> Gtk.Widget:
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        box.add_css_class("keybindings-section-header")
+        title = Gtk.Label(label=category, xalign=0.0)
+        title.add_css_class("keybindings-section-title")
+        chip = Gtk.Label(label=category.upper())
+        chip.add_css_class("keybindings-section-chip")
+        chip.add_css_class(CATEGORY_CSS_CLASS.get(category, "cat-other"))
+        box.append(title)
+        box.append(chip)
+        return box
+
+    def _build_row(self, row: dict) -> Gtk.Widget:
+        outer = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        outer.add_css_class("keybindings-row")
+
+        keys_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        keys_box.add_css_class("keybindings-keys")
+        parts = row["keys"].split("+")
+        for i, part in enumerate(parts):
+            if i > 0:
+                plus = Gtk.Label(label="+")
+                plus.add_css_class("keybindings-key-plus")
+                keys_box.append(plus)
+            chip = Gtk.Label(label=_human_key(part))
+            chip.add_css_class("keybindings-key-chip")
+            keys_box.append(chip)
+        outer.append(keys_box)
+
+        name = Gtk.Label(label=row["name"], xalign=0.0)
+        name.add_css_class("keybindings-name")
+        name.set_ellipsize(3)  # PANGO_ELLIPSIZE_END
+        outer.append(name)
+
+        desc = Gtk.Label(label=row["description"], xalign=0.0)
+        desc.add_css_class("keybindings-description")
+        desc.set_ellipsize(3)
+        desc.set_hexpand(True)
+        outer.append(desc)
+        return outer
+
+    # ---- footer ----
+
+    def _build_footer(self) -> Gtk.Widget:
+        label = Gtk.Label(
+            label=("Bindings: ~/.config/hypr/keybindings.conf"
+                   "    Names: /usr/share/shedos-hyprland/keybindings-meta.toml"),
+            xalign=0.0,
+        )
+        label.add_css_class("keybindings-footer")
+        return label
+
+    # ---- behavior ----
+
+    def _on_key(self, _ctl, keyval, _kc, _state) -> bool:
+        if keyval == Gdk.KEY_Escape:
+            self.close()
+            return True
+        if keyval == Gdk.KEY_slash and not self.search.has_focus():
+            self.search.grab_focus()
+            return True
+        return False
+
+    def _on_search_changed(self, entry: Gtk.SearchEntry) -> None:
+        query = entry.get_text().strip().lower()
+        any_visible = False
+        per_section_visibility: dict[Gtk.Widget, bool] = {}
+        for row_widget, row_data, section_header in self._row_widgets:
+            if query and not _row_matches(row_data, query):
+                row_widget.set_visible(False)
+            else:
+                row_widget.set_visible(True)
+                any_visible = True
+                per_section_visibility[section_header] = True
+        # Hide section headers whose rows are all filtered out.
+        for row_widget, _row_data, section_header in self._row_widgets:
+            section_header.set_visible(per_section_visibility.get(section_header, False))
+        self._empty_label.set_visible(not any_visible)
+
+
+def _human_key(part: str) -> str:
+    return {
+        "SUPER": "Super",
+        "CTRL": "Ctrl",
+        "SHIFT": "Shift",
+        "ALT": "Alt",
+    }.get(part, part)
+
+
+def _row_matches(row: dict, query: str) -> bool:
+    fields: Iterable[str] = (
+        row.get("keys", ""),
+        row.get("name", ""),
+        row.get("description", ""),
+    )
+    return any(query in (f or "").lower() for f in fields)
+
+
+# ─── entry point ──────────────────────────────────────────────────────
 
 
 def main() -> int:
     if len(sys.argv) > 1 and sys.argv[1] == "--help-summary":
-        print("show all keybindings in a walker menu")
+        print("show all keybindings in a searchable dialog")
         return 0
     if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help"):
-        print("Usage: shedman keybindings\nList every Hyprland bind in a searchable walker menu.")
+        print(
+            "Usage: shedman keybindings\n"
+            "Open a searchable reference dialog showing every Hyprland\n"
+            "bind with a human-readable name and description.")
         return 0
 
-    cfg_dir = Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config"))) / "hypr"
-    if not cfg_dir.is_dir():
-        print(f"shedman keybindings: no hypr config at {cfg_dir}", file=sys.stderr)
-        return 1
-
-    variables, binds = _load_configs(cfg_dir)
+    binds = parse_binds(HYPR_DIR)
     if not binds:
-        print("shedman keybindings: no binds found", file=sys.stderr)
+        print(f"shedman keybindings: no binds found in {HYPR_DIR}",
+              file=sys.stderr)
         return 1
+    meta = load_meta(META_PATH)
+    grouped = compose_rows(binds, meta)
 
-    rows = _format(binds, variables)
-    width = max(len(r[0]) for r in rows) + 2
-    menu_lines = [f"{key:<{width}} → {action}" for key, action, _ in rows]
-
-    proc = subprocess.run(
-        ["walker", "--dmenu", "--placeholder", PLACEHOLDER],
-        input="\n".join(menu_lines),
-        capture_output=True,
-        text=True,
-    )
-    chosen = proc.stdout.strip()
-    if proc.returncode != 0 or not chosen:
-        return 0
-
-    for key, action, args in rows:
-        if chosen == f"{key:<{width}} → {action}":
-            if action.startswith("exec ") or action == "exec":
-                subprocess.run(["hyprctl", "dispatch", "exec", "--", args], check=False)
-            return 0
-    return 0
+    app = KeybindingsApp(grouped)
+    return app.run([sys.argv[0]])
 
 
 if __name__ == "__main__":

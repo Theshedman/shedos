@@ -1,0 +1,146 @@
+/* ShedOS keybindings reference dialog — GTK4 stylesheet.
+ * Catppuccin tokens come from the live theme so `shedman theme set
+ * palette …` propagates here just like it does for waybar / walker. */
+
+@import url("file:///etc/shedos/themes/current/palette.css");
+
+window.keybindings-dialog {
+    background-color: alpha(@base, 0.97);
+    border-radius: 18px;
+    color: @text;
+}
+
+.keybindings-header {
+    padding: 18px 24px 14px 24px;
+    border-bottom: 1px solid @surface0;
+}
+
+.keybindings-header image {
+    -gtk-icon-size: 28px;
+    margin-right: 12px;
+}
+
+.keybindings-header .title {
+    font-weight: 600;
+    font-size: 18px;
+    color: @text;
+}
+
+.keybindings-header .subtitle {
+    font-size: 11px;
+    color: @subtext1;
+}
+
+.keybindings-search {
+    margin: 14px 24px 6px 24px;
+    padding: 8px 12px;
+    background-color: @surface0;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: @text;
+    caret-color: @blue;
+}
+
+.keybindings-search:focus-within {
+    border-color: alpha(@blue, 0.6);
+    background-color: @mantle;
+}
+
+.keybindings-search image {
+    color: @subtext0;
+    margin-right: 8px;
+}
+
+.keybindings-empty {
+    color: @overlay0;
+    font-style: italic;
+    padding: 48px 24px;
+}
+
+scrolledwindow.keybindings-list {
+    margin: 6px 16px 12px 16px;
+}
+
+scrolledwindow.keybindings-list undershoot,
+scrolledwindow.keybindings-list overshoot {
+    background: none;
+}
+
+.keybindings-section-header {
+    padding: 14px 8px 8px 8px;
+}
+
+.keybindings-section-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: @text;
+    margin-right: 10px;
+}
+
+.keybindings-section-chip {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 8px;
+    color: @base;
+}
+
+.keybindings-section-chip.cat-applications  { background-color: @blue; }
+.keybindings-section-chip.cat-windows       { background-color: @mauve; }
+.keybindings-section-chip.cat-workspaces    { background-color: @peach; }
+.keybindings-section-chip.cat-screenshots   { background-color: @green; }
+.keybindings-section-chip.cat-system        { background-color: @red; color: @base; }
+.keybindings-section-chip.cat-audio         { background-color: @sky; }
+.keybindings-section-chip.cat-other         { background-color: @overlay0; }
+
+.keybindings-row {
+    padding: 8px 8px;
+    border-radius: 8px;
+}
+
+.keybindings-row:hover {
+    background-color: alpha(@surface0, 0.55);
+}
+
+.keybindings-keys {
+    min-width: 200px;
+}
+
+.keybindings-key-chip {
+    font-family: "JetBrainsMono Nerd Font", monospace;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    margin: 0 2px;
+    background-color: @surface0;
+    color: @text;
+    border: 1px solid alpha(@overlay0, 0.4);
+    border-radius: 6px;
+}
+
+.keybindings-key-plus {
+    font-family: "JetBrainsMono Nerd Font", monospace;
+    font-size: 11px;
+    color: @subtext0;
+    margin: 0 1px;
+}
+
+.keybindings-name {
+    min-width: 240px;
+    font-weight: 600;
+    font-size: 13px;
+    color: @text;
+    margin-right: 16px;
+}
+
+.keybindings-description {
+    font-size: 12px;
+    color: @subtext0;
+}
+
+.keybindings-footer {
+    padding: 10px 24px 14px 24px;
+    border-top: 1px solid @surface0;
+    color: @overlay0;
+    font-size: 10px;
+}

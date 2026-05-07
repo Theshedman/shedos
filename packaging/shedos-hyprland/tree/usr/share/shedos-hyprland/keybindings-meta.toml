@@ -1,0 +1,537 @@
+# Display metadata for `shedman keybindings`. Source of truth for the
+# *display* (program name + description); the binding itself comes from
+# /etc/skel/.config/hypr/keybindings.conf. Custom user binds without a
+# metadata entry surface under "Other" with the raw exec line.
+#
+# `keys` format: modifiers in canonical order (SUPER, CTRL, SHIFT, ALT)
+# joined with `+`, then the key. Examples: SUPER+Return, SUPER+SHIFT+U.
+# For non-modifier-prefixed binds (Print, XF86…), `keys` is just the
+# key. Match is case-sensitive.
+
+# ---- Applications ----------------------------------------------------
+
+[[bind]]
+keys = "SUPER+Return"
+category = "Applications"
+name = "Terminal"
+description = "Open a new terminal window"
+
+[[bind]]
+keys = "SUPER+SHIFT+Return"
+category = "Applications"
+name = "Floating Terminal"
+description = "Open a terminal that floats above tiled windows"
+
+[[bind]]
+keys = "SUPER+D"
+category = "Applications"
+name = "Application Launcher"
+description = "Search and launch installed applications"
+
+[[bind]]
+keys = "SUPER+E"
+category = "Applications"
+name = "Code Editor"
+description = "Open Visual Studio Code"
+
+[[bind]]
+keys = "SUPER+N"
+category = "Applications"
+name = "File Manager"
+description = "Open a new file manager window"
+
+[[bind]]
+keys = "SUPER+A"
+category = "Applications"
+name = "API Client"
+description = "Open Postman"
+
+[[bind]]
+keys = "SUPER+B"
+category = "Applications"
+name = "Default Browser"
+description = "Open the default web browser in a new window"
+
+[[bind]]
+keys = "SUPER+C"
+category = "Applications"
+name = "Clipboard History"
+description = "Browse and paste from clipboard history"
+
+[[bind]]
+keys = "SUPER+ALT+J"
+category = "Applications"
+name = "System Logs"
+description = "Open the ShedOS log viewer"
+
+[[bind]]
+keys = "SUPER+ALT+K"
+category = "Applications"
+name = "Keybindings Reference"
+description = "Show this keybindings dialog"
+
+[[bind]]
+keys = "SUPER+SHIFT+U"
+category = "Applications"
+name = "Upgrade History"
+description = "Review past system upgrades"
+
+[[bind]]
+keys = "SUPER+SHIFT+P"
+category = "Applications"
+name = "Color Picker"
+description = "Pick a color from anywhere on the screen"
+
+# ---- Windows & Tiling -----------------------------------------------
+
+[[bind]]
+keys = "SUPER+Q"
+category = "Windows & Tiling"
+name = "Close Window"
+description = "Close the focused window"
+
+[[bind]]
+keys = "SUPER+V"
+category = "Windows & Tiling"
+name = "Toggle Floating"
+description = "Switch the focused window between tiled and floating"
+
+[[bind]]
+keys = "SUPER+F"
+category = "Windows & Tiling"
+name = "Fullscreen"
+description = "Maximize the focused window to full screen"
+
+[[bind]]
+keys = "SUPER+M"
+category = "Windows & Tiling"
+name = "Maximize Borderless"
+description = "Take the focused window full size with no decorations"
+
+[[bind]]
+keys = "SUPER+P"
+category = "Windows & Tiling"
+name = "Toggle Pseudotile"
+description = "Treat a tiled window as floating within its slot"
+
+[[bind]]
+keys = "SUPER+J"
+category = "Windows & Tiling"
+name = "Toggle Split"
+description = "Switch the tile-split direction at the focused location"
+
+[[bind]]
+keys = "SUPER+H"
+category = "Windows & Tiling"
+name = "Focus Left"
+description = "Move keyboard focus to the window on the left (vim binding)"
+
+[[bind]]
+keys = "SUPER+left"
+category = "Windows & Tiling"
+name = "Focus Left"
+description = "Move keyboard focus to the window on the left"
+
+[[bind]]
+keys = "SUPER+L"
+category = "Windows & Tiling"
+name = "Focus Right"
+description = "Move keyboard focus to the window on the right (vim binding)"
+
+[[bind]]
+keys = "SUPER+right"
+category = "Windows & Tiling"
+name = "Focus Right"
+description = "Move keyboard focus to the window on the right"
+
+[[bind]]
+keys = "SUPER+K"
+category = "Windows & Tiling"
+name = "Focus Up"
+description = "Move keyboard focus to the window above (vim binding)"
+
+[[bind]]
+keys = "SUPER+up"
+category = "Windows & Tiling"
+name = "Focus Up"
+description = "Move keyboard focus to the window above"
+
+[[bind]]
+keys = "SUPER+SHIFT+J"
+category = "Windows & Tiling"
+name = "Focus Down"
+description = "Move keyboard focus to the window below (vim binding)"
+
+[[bind]]
+keys = "SUPER+down"
+category = "Windows & Tiling"
+name = "Focus Down"
+description = "Move keyboard focus to the window below"
+
+[[bind]]
+keys = "SUPER+SHIFT+H"
+category = "Windows & Tiling"
+name = "Move Window Left"
+description = "Swap the focused window with its left neighbour (vim binding)"
+
+[[bind]]
+keys = "SUPER+SHIFT+left"
+category = "Windows & Tiling"
+name = "Move Window Left"
+description = "Swap the focused window with its left neighbour"
+
+[[bind]]
+keys = "SUPER+SHIFT+L"
+category = "Windows & Tiling"
+name = "Move Window Right"
+description = "Swap the focused window with its right neighbour (vim binding)"
+
+[[bind]]
+keys = "SUPER+SHIFT+right"
+category = "Windows & Tiling"
+name = "Move Window Right"
+description = "Swap the focused window with its right neighbour"
+
+[[bind]]
+keys = "SUPER+SHIFT+K"
+category = "Windows & Tiling"
+name = "Move Window Up"
+description = "Swap the focused window with its upper neighbour (vim binding)"
+
+[[bind]]
+keys = "SUPER+SHIFT+up"
+category = "Windows & Tiling"
+name = "Move Window Up"
+description = "Swap the focused window with its upper neighbour"
+
+[[bind]]
+keys = "SUPER+SHIFT+down"
+category = "Windows & Tiling"
+name = "Move Window Down"
+description = "Swap the focused window with its lower neighbour"
+
+[[bind]]
+keys = "SUPER+CTRL+H"
+category = "Windows & Tiling"
+name = "Resize Narrower"
+description = "Shrink the focused window's width (vim binding)"
+
+[[bind]]
+keys = "SUPER+CTRL+left"
+category = "Windows & Tiling"
+name = "Resize Narrower"
+description = "Shrink the focused window's width"
+
+[[bind]]
+keys = "SUPER+CTRL+L"
+category = "Windows & Tiling"
+name = "Resize Wider"
+description = "Grow the focused window's width (vim binding)"
+
+[[bind]]
+keys = "SUPER+CTRL+right"
+category = "Windows & Tiling"
+name = "Resize Wider"
+description = "Grow the focused window's width"
+
+[[bind]]
+keys = "SUPER+CTRL+K"
+category = "Windows & Tiling"
+name = "Resize Shorter"
+description = "Shrink the focused window's height (vim binding)"
+
+[[bind]]
+keys = "SUPER+CTRL+up"
+category = "Windows & Tiling"
+name = "Resize Shorter"
+description = "Shrink the focused window's height"
+
+[[bind]]
+keys = "SUPER+CTRL+J"
+category = "Windows & Tiling"
+name = "Resize Taller"
+description = "Grow the focused window's height (vim binding)"
+
+[[bind]]
+keys = "SUPER+CTRL+down"
+category = "Windows & Tiling"
+name = "Resize Taller"
+description = "Grow the focused window's height"
+
+[[bind]]
+keys = "SUPER+mouse:272"
+category = "Windows & Tiling"
+name = "Drag Window"
+description = "Hold Super and click-drag with left mouse to move a window"
+
+[[bind]]
+keys = "SUPER+mouse:273"
+category = "Windows & Tiling"
+name = "Resize Window"
+description = "Hold Super and click-drag with right mouse to resize a window"
+
+# ---- Workspaces ------------------------------------------------------
+
+[[bind]]
+keys = "SUPER+1"
+category = "Workspaces"
+name = "Workspace 1"
+description = "Switch to workspace 1"
+
+[[bind]]
+keys = "SUPER+2"
+category = "Workspaces"
+name = "Workspace 2"
+description = "Switch to workspace 2"
+
+[[bind]]
+keys = "SUPER+3"
+category = "Workspaces"
+name = "Workspace 3"
+description = "Switch to workspace 3"
+
+[[bind]]
+keys = "SUPER+4"
+category = "Workspaces"
+name = "Workspace 4"
+description = "Switch to workspace 4"
+
+[[bind]]
+keys = "SUPER+5"
+category = "Workspaces"
+name = "Workspace 5"
+description = "Switch to workspace 5"
+
+[[bind]]
+keys = "SUPER+6"
+category = "Workspaces"
+name = "Workspace 6"
+description = "Switch to workspace 6"
+
+[[bind]]
+keys = "SUPER+7"
+category = "Workspaces"
+name = "Workspace 7"
+description = "Switch to workspace 7"
+
+[[bind]]
+keys = "SUPER+8"
+category = "Workspaces"
+name = "Workspace 8"
+description = "Switch to workspace 8"
+
+[[bind]]
+keys = "SUPER+9"
+category = "Workspaces"
+name = "Workspace 9"
+description = "Switch to workspace 9"
+
+[[bind]]
+keys = "SUPER+0"
+category = "Workspaces"
+name = "Workspace 10"
+description = "Switch to workspace 10"
+
+[[bind]]
+keys = "SUPER+SHIFT+1"
+category = "Workspaces"
+name = "Send to Workspace 1"
+description = "Move the focused window to workspace 1"
+
+[[bind]]
+keys = "SUPER+SHIFT+2"
+category = "Workspaces"
+name = "Send to Workspace 2"
+description = "Move the focused window to workspace 2"
+
+[[bind]]
+keys = "SUPER+SHIFT+3"
+category = "Workspaces"
+name = "Send to Workspace 3"
+description = "Move the focused window to workspace 3"
+
+[[bind]]
+keys = "SUPER+SHIFT+4"
+category = "Workspaces"
+name = "Send to Workspace 4"
+description = "Move the focused window to workspace 4"
+
+[[bind]]
+keys = "SUPER+SHIFT+5"
+category = "Workspaces"
+name = "Send to Workspace 5"
+description = "Move the focused window to workspace 5"
+
+[[bind]]
+keys = "SUPER+SHIFT+6"
+category = "Workspaces"
+name = "Send to Workspace 6"
+description = "Move the focused window to workspace 6"
+
+[[bind]]
+keys = "SUPER+SHIFT+7"
+category = "Workspaces"
+name = "Send to Workspace 7"
+description = "Move the focused window to workspace 7"
+
+[[bind]]
+keys = "SUPER+SHIFT+8"
+category = "Workspaces"
+name = "Send to Workspace 8"
+description = "Move the focused window to workspace 8"
+
+[[bind]]
+keys = "SUPER+SHIFT+9"
+category = "Workspaces"
+name = "Send to Workspace 9"
+description = "Move the focused window to workspace 9"
+
+[[bind]]
+keys = "SUPER+SHIFT+0"
+category = "Workspaces"
+name = "Send to Workspace 10"
+description = "Move the focused window to workspace 10"
+
+[[bind]]
+keys = "SUPER+S"
+category = "Workspaces"
+name = "Toggle Scratchpad"
+description = "Show or hide the special scratchpad workspace"
+
+[[bind]]
+keys = "SUPER+SHIFT+S"
+category = "Workspaces"
+name = "Send to Scratchpad"
+description = "Move the focused window to the scratchpad workspace"
+
+[[bind]]
+keys = "SUPER+mouse_down"
+category = "Workspaces"
+name = "Next Workspace"
+description = "Hold Super and scroll the mouse wheel down"
+
+[[bind]]
+keys = "SUPER+mouse_up"
+category = "Workspaces"
+name = "Previous Workspace"
+description = "Hold Super and scroll the mouse wheel up"
+
+# ---- Screenshots -----------------------------------------------------
+
+[[bind]]
+keys = "Print"
+category = "Screenshots"
+name = "Region Screenshot"
+description = "Capture a selected region and edit it"
+
+[[bind]]
+keys = "SHIFT+Print"
+category = "Screenshots"
+name = "Full Screenshot"
+description = "Capture the entire screen and edit it"
+
+[[bind]]
+keys = "SUPER+Print"
+category = "Screenshots"
+name = "Save Region"
+description = "Capture a region and save it under ~/Pictures/Screenshots"
+
+[[bind]]
+keys = "SUPER+R"
+category = "Screenshots"
+name = "Screen Recorder"
+description = "Start (or stop) a screen recording via walker prompt"
+
+[[bind]]
+keys = "SUPER+SHIFT+R"
+category = "Screenshots"
+name = "Stop Recording"
+description = "Stop the active screen recording"
+
+# ---- System ----------------------------------------------------------
+
+[[bind]]
+keys = "SUPER+Escape"
+category = "System"
+name = "Lock Screen"
+description = "Lock the desktop"
+
+[[bind]]
+keys = "SUPER+SHIFT+E"
+category = "System"
+name = "Exit Session"
+description = "Sign out of the Hyprland session"
+
+[[bind]]
+keys = "SUPER+CTRL+SHIFT+R"
+category = "System"
+name = "Reload Hyprland"
+description = "Re-read the Hyprland configuration"
+
+[[bind]]
+keys = "SUPER+F9"
+category = "System"
+name = "Night Light"
+description = "Toggle the blue-light filter on the active display"
+
+# ---- Audio & Media ---------------------------------------------------
+
+[[bind]]
+keys = "XF86AudioRaiseVolume"
+category = "Audio & Media"
+name = "Volume Up"
+description = "Raise the system volume by 5%"
+
+[[bind]]
+keys = "XF86AudioLowerVolume"
+category = "Audio & Media"
+name = "Volume Down"
+description = "Lower the system volume by 5%"
+
+[[bind]]
+keys = "XF86AudioMute"
+category = "Audio & Media"
+name = "Mute"
+description = "Toggle audio output mute"
+
+[[bind]]
+keys = "XF86AudioMicMute"
+category = "Audio & Media"
+name = "Mute Microphone"
+description = "Toggle the microphone mute"
+
+[[bind]]
+keys = "XF86AudioPlay"
+category = "Audio & Media"
+name = "Play / Pause"
+description = "Toggle media playback"
+
+[[bind]]
+keys = "XF86AudioPause"
+category = "Audio & Media"
+name = "Play / Pause"
+description = "Toggle media playback (separate Pause key on some keyboards)"
+
+[[bind]]
+keys = "XF86AudioNext"
+category = "Audio & Media"
+name = "Next Track"
+description = "Skip to the next track"
+
+[[bind]]
+keys = "XF86AudioPrev"
+category = "Audio & Media"
+name = "Previous Track"
+description = "Return to the previous track"
+
+[[bind]]
+keys = "XF86MonBrightnessUp"
+category = "Audio & Media"
+name = "Brightness Up"
+description = "Raise screen brightness by 5%"
+
+[[bind]]
+keys = "XF86MonBrightnessDown"
+category = "Audio & Media"
+name = "Brightness Down"
+description = "Lower screen brightness by 5%"
