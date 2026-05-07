@@ -111,6 +111,11 @@ if [[ $EUID -eq 0 ]]; then
     _strip_shedos_block
     cp /etc/pacman.conf "$PACMAN_CONF_BACKUP"
 
+    # Marker read by shedos-system.install :: _add_shedos_repo to skip
+    # adding the production [shedos] block to /etc/pacman.conf when the
+    # scriptlet runs as a transitive --syncdeps install during this build.
+    touch /.shedos-build-environment
+
     # Bind-mount the repo at /srv/shedos-build-repo so the alpm sandbox user
     # can reach it without needing to traverse the invoking user's $HOME.
     mkdir -p "$PUBLIC_REPO_DIR"
@@ -131,6 +136,7 @@ EOF
         if [[ -f "$PACMAN_CONF_BACKUP" ]]; then
             mv "$PACMAN_CONF_BACKUP" /etc/pacman.conf
         fi
+        rm -f /.shedos-build-environment
         mountpoint -q "$PUBLIC_REPO_DIR" 2>/dev/null && umount "$PUBLIC_REPO_DIR"
         rmdir "$PUBLIC_REPO_DIR" 2>/dev/null || true
         userdel -r builduser 2>/dev/null || true
