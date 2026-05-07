@@ -98,6 +98,13 @@ jobs:
           # fetch-depth: 0 so we have full history for the push.
           fetch-depth: 0
 
+      - name: Trust workspace for git
+        # The container runs as a different uid than the checkout owner;
+        # without this, `git ls-files` (called by compute-pkg-hash.sh) fails
+        # with "dubious ownership" on the tag-push validate step that runs
+        # before the auto-bump step's own safe.directory call.
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       - name: Auto-bump release-hashes (main + manual)
         # Skip when the actor is the bot itself — that's the push this step
         # just made; running again would be a no-op but still trigger build

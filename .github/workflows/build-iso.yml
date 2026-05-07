@@ -97,6 +97,13 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      - name: Trust workspace for git
+        # The container runs as a different uid than the checkout owner;
+        # without this, `git ls-files` (called by compute-pkg-hash.sh) fails
+        # with "dubious ownership". Set globally so every later step that
+        # touches git in this checkout works.
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       - name: Validate release-hashes manifest
         run: bash scripts/bump-version.sh --check
 
