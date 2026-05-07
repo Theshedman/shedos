@@ -96,6 +96,17 @@ _strip_shedos_block() {
     fi
 }
 
+# Reverse shedos-system's _add_shedos_repo scriptlet inside the build
+# chroot — without this, the next `pacman -Sy` 404s on the prod repo.
+_strip_shedos_prod_blocks() {
+    [[ $EUID -eq 0 ]] || return 0
+    [[ -f /etc/pacman.conf ]] || return 0
+    sed -i \
+        -e '/^# >>> shedos <<<$/,/^# <<< shedos >>>$/d' \
+        -e '/^# >>> shedos-testing <<<$/,/^# <<< shedos-testing >>>$/d' \
+        /etc/pacman.conf
+}
+
 if [[ $EUID -eq 0 ]]; then
     _strip_shedos_block
     cp /etc/pacman.conf "$PACMAN_CONF_BACKUP"
@@ -141,6 +152,7 @@ chmod 755 "$BUILD_ROOT"
 # rebuild it incrementally after each makepkg so later packages can resolve
 # earlier ones via pacman.
 _refresh_repo_db() {
+    _strip_shedos_prod_blocks
     local pkg_count
     pkg_count=$(find "$REPO_DIR" -maxdepth 1 -name '*.pkg.tar.zst' | wc -l)
     if (( pkg_count == 0 )); then
