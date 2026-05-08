@@ -3,7 +3,7 @@
 # Compared against current hashes on every run to decide what to bump.
 
 shedos-branding = "8bb9ca4edc4a55cb79f88d6159f848445c4c9116f12d4cb4b76adbf708f0a41f"
-shedos-greeter = "cac8c0729faed7ef5fc4244f1ba1af06ab216fc06882da9dfb8a075050226c3a"
+shedos-greeter = "62ba776407cf28fcae5bea1d1b44906788ac18af9508dddbf75355b1f6cb0515"
 shedos-hyprland = "f876a4cf2942cdf81077fb06d235383ddac7f322f5eb120c4dd18766d76564c3"
 shedos-kernel = "5179b27f426f817c5efc5d672f3d22f7fd93d3a44d8add89391c9e3030124702"
 shedos-keyring = "c44c7a66041c4eb6214a5c34a24617ffb13fecad98cde7db664ad893c86d5b65"
