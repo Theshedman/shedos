@@ -18,6 +18,7 @@ _strip_live_zprofile() {
 
 post_install() {
     _strip_live_zprofile
+    systemctl daemon-reload 2>/dev/null || true
     systemctl --global enable shedos-hypr-reload.path 2>/dev/null || true
     cat <<'EOF'
 
@@ -33,5 +34,6 @@ EOF
 
 post_upgrade() {
     _strip_live_zprofile
+    systemctl daemon-reload 2>/dev/null || true
     systemctl --global enable shedos-hypr-reload.path 2>/dev/null || true
 }
