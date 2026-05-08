@@ -1,11 +1,14 @@
 # shedos-hyprland install scriptlet
 
-_strip_live_zprofile() {
+_strip_live_artifacts() {
     # Skip in the live ISO build chroot and on the running live ISO —
     # /etc/calamares ships only on the live ISO and is excluded from the
     # installed system via unpackfs-exclude.conf. Without this guard, the
     # hook strips /home/shedos/.zprofile from the airootfs during pacstrap.
     [[ -d /etc/calamares ]] && return 0
+
+    # 1. Per-user .zprofile: revert from the live-ISO auto-installer
+    #    variant back to the skeleton baseline.
     local marker='ShedOS Live Environment - Auto-start graphical installer on tty1'
     local home zp
     while IFS=: read -r _ _ _ _ _ home _; do
@@ -14,10 +17,30 @@ _strip_live_zprofile() {
         grep -qF "$marker" "$zp" 2>/dev/null || continue
         install -Dm644 /etc/skel/.zprofile "$zp" 2>/dev/null || true
     done < <(getent passwd | awk -F: '$3 >= 1000 && $3 < 65000 && $6 ~ /^\/home\//')
+
+    # 2. /etc/profile.d/shedos-live.sh: the live-ISO welcome banner.
+    #    Calamares' unpackfs-exclude.conf skips this file on fresh
+    #    installs done with the post-fix installer, but earlier
+    #    installs (and ones done before the exclude entry shipped)
+    #    have it on disk and source it on every interactive bash
+    #    login — which leaves the banner text in the VT's vcs buffer,
+    #    visible as console-text flashes during DRM-master handoffs
+    #    (Plymouth→cage, cage→Hyprland, Hyprland→Plymouth-shutdown).
+    #    Removing the file eliminates the source; clearing
+    #    /dev/vcs1 + /dev/vcs2 wipes the leftover text already in
+    #    those framebuffer text buffers so the next gap paints empty.
+    if [[ -f /etc/profile.d/shedos-live.sh ]]; then
+        rm -f /etc/profile.d/shedos-live.sh
+        # Best-effort buffer wipe: empty the vcs of the typical
+        # active VTs (1 and 2). Failures (e.g. when running inside
+        # pacstrap with no /dev/vcs) are silently ignored.
+        : > /dev/vcs1 2>/dev/null || true
+        : > /dev/vcs2 2>/dev/null || true
+    fi
 }
 
 post_install() {
-    _strip_live_zprofile
+    _strip_live_artifacts
     systemctl --global enable shedos-hypr-reload.path 2>/dev/null || true
     cat <<'EOF'
 
@@ -32,6 +55,6 @@ EOF
 }
 
 post_upgrade() {
-    _strip_live_zprofile
+    _strip_live_artifacts
     systemctl --global enable shedos-hypr-reload.path 2>/dev/null || true
 }
