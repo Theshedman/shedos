@@ -179,6 +179,36 @@ release:
 	fi
 	@echo -e "$(GREEN)Released $(TAG). CI will build and publish.$(NC)"
 
+# Convenience wrappers: derive the tag from today's UTC date so a
+# stale VERSION file can never produce a wrong-dated release. Both
+# delegate to `release` which still enforces working-tree-clean,
+# branch=main, and tag-not-already-on-origin.
+#
+#   make release-stable    # tag: v<today-UTC>
+#   make release-rc        # tag: v<today-UTC>-rcN  (N = next available)
+#
+# UTC is the reference clock so the tag matches CI/R2's timestamps
+# regardless of where the cut runs from. Use `make release TAG=...`
+# directly for backports, retags, or non-today dates.
+release-stable:
+	@today="$$(date -u +%Y.%m.%d)"; \
+	tag="v$$today"; \
+	if git ls-remote --tags origin "refs/tags/$$tag" 2>/dev/null | grep -q "refs/tags/$$tag$$"; then \
+		echo -e "$(RED)Tag $$tag already exists on origin$(NC)" >&2; \
+		echo -e "$(YELLOW)Use 'make release TAG=...' to override (e.g. for a same-day re-cut on a different commit).$(NC)" >&2; \
+		exit 1; \
+	fi; \
+	$(MAKE) release TAG=$$tag
+
+release-rc:
+	@today="$$(date -u +%Y.%m.%d)"; \
+	max_n="$$(git ls-remote --tags origin "refs/tags/v$$today-rc*" 2>/dev/null \
+		| sed -nE 's|.*refs/tags/v[0-9]{4}\.[0-9]{2}\.[0-9]{2}-rc([0-9]+)$$|\1|p' \
+		| sort -n | tail -1)"; \
+	next="$${max_n:+$$((max_n + 1))}"; \
+	next="$${next:-1}"; \
+	$(MAKE) release TAG="v$$today-rc$$next"
+
 build-aur:
 	@echo -e "$(GREEN)Building AUR packages...$(NC)"
 	@./scripts/build-aur-packages.sh
