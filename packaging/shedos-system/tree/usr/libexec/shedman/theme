@@ -63,7 +63,53 @@ PYEOF
 }
 
 run_renderer() {
-    sudo python3 "$RENDERER"
+    sudo python3 "$RENDERER" || return $?
+    _run_post_apply_hooks
+}
+
+# Post-apply hook runner. Every executable file under
+# /etc/shedos/themes/post-apply.d/ runs in user-session context — the
+# hooks typically need to talk to per-user daemons (awww-daemon for
+# wallpaper IPC, waybar/walker reloads, etc.) which live under the
+# human user's UID, not root. If the script was invoked under outer
+# `sudo`, step back down to $SUDO_USER and seed XDG_RUNTIME_DIR so
+# awww's socket resolves. Hooks are best-effort: a failing hook logs
+# a warning but doesn't fail the apply.
+_run_post_apply_hooks() {
+    local hooks_dir=/etc/shedos/themes/post-apply.d
+    [[ -d $hooks_dir ]] || return 0
+
+    local runner=()
+    if [[ -n "${SUDO_USER:-}" && "$SUDO_USER" != "root" && "$EUID" -eq 0 ]]; then
+        local user_uid user_home wayland_disp
+        user_uid=$(id -u "$SUDO_USER")
+        user_home=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+        # awww (and most user-session tools) need WAYLAND_DISPLAY to
+        # find the right IPC socket. The Wayland socket file is created
+        # by the compositor at /run/user/<uid>/wayland-N — discover it
+        # from the filesystem rather than guessing or shelling out.
+        wayland_disp=""
+        local sock
+        for sock in /run/user/"$user_uid"/wayland-*; do
+            [[ -S $sock ]] || continue
+            wayland_disp=$(basename "$sock")
+            break
+        done
+        runner=(sudo -u "$SUDO_USER" env
+            "HOME=$user_home"
+            "XDG_RUNTIME_DIR=/run/user/$user_uid"
+            "WAYLAND_DISPLAY=$wayland_disp"
+            "PATH=$PATH"
+        )
+    fi
+
+    local hook
+    for hook in "$hooks_dir"/*.sh; do
+        [[ -x $hook ]] || continue
+        if ! "${runner[@]}" "$hook"; then
+            echo "shedman theme: post-apply hook $hook returned non-zero" >&2
+        fi
+    done
 }
 
 write_value() {
