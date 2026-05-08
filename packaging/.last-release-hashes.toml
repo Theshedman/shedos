@@ -4,7 +4,7 @@
 
 shedos-branding = "8bb9ca4edc4a55cb79f88d6159f848445c4c9116f12d4cb4b76adbf708f0a41f"
 shedos-greeter = "cac8c0729faed7ef5fc4244f1ba1af06ab216fc06882da9dfb8a075050226c3a"
-shedos-hyprland = "2f7ec861b529c7fa36f59f2d32efc855dd008d88865938f1b7f8913725ee567f"
+shedos-hyprland = "a62b58c67b3c2aba10fc39bc8b4d047b40b2ae21f5adabc7b8e848b388209058"
 shedos-kernel = "5179b27f426f817c5efc5d672f3d22f7fd93d3a44d8add89391c9e3030124702"
 shedos-keyring = "c44c7a66041c4eb6214a5c34a24617ffb13fecad98cde7db664ad893c86d5b65"
 shedos-meta = "cb8eca99a6157bfa725cf276bf462a16be657be3c2be7074642e3b3a234162b0"
