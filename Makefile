@@ -24,7 +24,7 @@ YELLOW := \033[0;33m
 RED := \033[0;31m
 NC := \033[0m
 
-.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages regen bump bump-today bump-check release test-review-configs test-sync-configs test-check-health test-tui-logs test-tui-history test-apply test-apply-checkpoint test-doctor test-shedman test-status test-completions test-migrate test-man test-screenrecord test-kernel test-installer test-config test-rollback test-update test-install test-welcome test-screensaver test-screensaver-rust lint-rust
+.PHONY: all iso clean test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages regen bump bump-today bump-check release push test-review-configs test-sync-configs test-check-health test-tui-logs test-tui-history test-apply test-apply-checkpoint test-doctor test-shedman test-status test-completions test-migrate test-man test-screenrecord test-kernel test-installer test-config test-rollback test-update test-install test-welcome test-screensaver test-screensaver-rust lint-rust
 
 all: iso
 
@@ -39,6 +39,7 @@ help:
 	@echo "  bump-today         Set VERSION to today's date and run bump"
 	@echo "  bump-check         Validate manifest matches working tree; CI gate"
 	@echo "  release TAG=v...   Bump + commit + push main + tag, race-free"
+	@echo "  push               Fetch + rebase onto origin/main + push (handles CI auto-bumps)"
 	@echo "  download-packages  Download packages & freeze package state (DETERMINISTIC)"
 	@echo "  iso                Build the ShedOS ISO image (fully offline, uses frozen packages)"
 	@echo "  clean              Remove build artifacts (preserves packages & frozen databases)"
@@ -178,6 +179,30 @@ release:
 		exit 1; \
 	fi
 	@echo -e "$(GREEN)Released $(TAG). CI will build and publish.$(NC)"
+
+# Pull-rebase first. CI auto-bumps pkgrel after each push, so a
+# bare `git push` is rejected non-ff.
+push:
+	@branch="$$(git rev-parse --abbrev-ref HEAD)"; \
+	if [ "$$branch" != "main" ]; then \
+		echo -e "$(RED)Must be on main (currently on $$branch)$(NC)" >&2; exit 1; \
+	fi
+	@if ! git diff --quiet HEAD; then \
+		echo -e "$(RED)Working tree has uncommitted changes; commit or stash first$(NC)" >&2; \
+		git status --short >&2; exit 1; \
+	fi
+	@echo -e "$(GREEN)→ Fetching origin...$(NC)"
+	@git fetch origin
+	@echo -e "$(GREEN)→ Rebasing local commits onto origin/main...$(NC)"
+	@git pull --rebase origin main
+	@if [ "$$(git rev-parse HEAD)" = "$$(git rev-parse origin/main)" ]; then \
+		echo -e "$(GREEN)→ Already up to date with origin/main; nothing to push.$(NC)"; \
+		exit 0; \
+	fi
+	@count=$$(git rev-list --count origin/main..HEAD); \
+	echo -e "$(GREEN)→ Pushing $$count commit(s) to origin/main...$(NC)"
+	@git push origin main
+	@echo -e "$(GREEN)Pushed. CI will build and publish.$(NC)"
 
 # Convenience wrappers: derive the tag from today's UTC date so a
 # stale VERSION file can never produce a wrong-dated release. Both
