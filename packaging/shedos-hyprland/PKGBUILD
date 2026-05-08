@@ -74,20 +74,6 @@ package() {
     install -Dm644 tree/usr/lib/systemd/user/shedos-hypr-reload.service \
         "$pkgdir/usr/lib/systemd/user/shedos-hypr-reload.service"
 
-    # plymouth-{reboot,poweroff,halt,kexec}.service drop-ins: hold
-    # plymouthd in shutdown mode for 1s so Hyprland (running under
-    # uwsm at user level) can release DRM master before plymouthd
-    # tries to acquire it. Without these, the shutdown brand never
-    # renders before plymouth-switch-root-initramfs pivots.
-    local _plymouth_units=(
-        plymouth-reboot plymouth-poweroff plymouth-halt plymouth-kexec
-    )
-    for _name in "${_plymouth_units[@]}"; do
-        install -Dm644 \
-            "tree/usr/lib/systemd/system/$_name.service.d/wait-for-compositor.conf" \
-            "$pkgdir/usr/lib/systemd/system/$_name.service.d/wait-for-compositor.conf"
-    done
-
     # Silent back-compat shims for the old /usr/bin/shedos-* names.
     local _shims=(
         shedos-launch-walker shedos-power-confirm
