@@ -27,6 +27,7 @@ malformed (caller's `current/` keeps the previous good theme).
 import argparse
 import re
 import shutil
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -41,6 +42,11 @@ DEFAULT_PALETTE = "catppuccin-mocha-blue"
 DEFAULT_WALLPAPER = "/usr/share/shedos/wallpapers/dusk.png"
 DEFAULT_FONT_UI = "Inter 11"
 DEFAULT_FONT_MONO = "JetBrainsMono Nerd Font"
+
+# Strength of the gaussian blur applied to user-set wallpapers that
+# lack a shipped -blurred companion. Tuned to match the look of
+# dusk-blurred.png and the other shipped variants.
+WALLPAPER_BLUR_KERNEL = "0x30"
 
 HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 
@@ -112,7 +118,12 @@ def _write_palette_css(tmp, ctx):
 def _write_greeter_toml(tmp, ctx, target):
     doc = tomlkit.document()
     doc["output_schema_version"] = SCHEMA_VERSION
+    # The desktop wallpaper daemon (awww) reads `wallpaper`; lock-screen
+    # consumers (greeter, shedos-screensaver --mode=lock) read
+    # `wallpaper_blurred` so the desktop stays sharp while the lock
+    # surface is softened.
     doc["wallpaper"] = str(target / "wallpaper.png")
+    doc["wallpaper_blurred"] = str(target / "wallpaper-blurred.png")
     fonts = tomlkit.table()
     fonts["ui"] = ctx["font_ui"]
     fonts["mono"] = ctx["font_mono"]
@@ -143,11 +154,58 @@ def _write_gsettings_sh(tmp, ctx):
     (tmp / "gsettings.sh").chmod(0o755)
 
 
+def _resolve_blurred_companion(wallpaper):
+    """Return path to a sibling -blurred file if one exists, else None."""
+    p = Path(wallpaper)
+    if p.stem.endswith("-blurred"):
+        return p
+    sibling = p.parent / f"{p.stem}-blurred{p.suffix}"
+    if sibling.is_file():
+        return sibling
+    return None
+
+
 def _write_wallpaper_link(tmp, ctx):
-    link = tmp / "wallpaper.png"
-    if link.exists() or link.is_symlink():
-        link.unlink()
-    link.symlink_to(ctx["wallpaper"])
+    """Write wallpaper.png (sharp, for awww) and wallpaper-blurred.png
+    (softened, for greeter / lock screen). The sharp file is always a
+    symlink to the source; the blurred companion symlinks to a shipped
+    sibling when present, otherwise it's a real file generated via
+    `magick … -blur`.
+    """
+    sharp = tmp / "wallpaper.png"
+    if sharp.exists() or sharp.is_symlink():
+        sharp.unlink()
+    sharp.symlink_to(ctx["wallpaper"])
+
+    blurred = tmp / "wallpaper-blurred.png"
+    if blurred.exists() or blurred.is_symlink():
+        blurred.unlink()
+
+    sibling = _resolve_blurred_companion(ctx["wallpaper"])
+    if sibling is not None:
+        blurred.symlink_to(sibling)
+        return
+
+    # No shipped -blurred companion — generate one. The result is a
+    # real file (not a symlink) so the lock screen has something to
+    # render even if the source is later moved or deleted.
+    try:
+        subprocess.run(
+            ["magick", str(ctx["wallpaper"]),
+             "-blur", WALLPAPER_BLUR_KERNEL, str(blurred)],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except FileNotFoundError as e:
+        raise ThemeRenderError(
+            f"imagemagick not installed; cannot blur {ctx['wallpaper']}: {e}"
+        )
+    except subprocess.CalledProcessError as e:
+        raise ThemeRenderError(
+            f"failed to blur {ctx['wallpaper']}: "
+            f"{e.stderr.strip() or e.stdout.strip() or 'magick exited non-zero'}"
+        )
 
 
 def _write_applied_at(tmp):
@@ -173,6 +231,16 @@ def _validate_outputs(tmp):
         resolved = wallpaper.resolve()
         if not resolved.is_file():
             errors.append(f"wallpaper symlink target {resolved} is not readable")
+
+    blurred = tmp / "wallpaper-blurred.png"
+    if not blurred.is_file():
+        if blurred.is_symlink():
+            errors.append(
+                f"wallpaper-blurred symlink target "
+                f"{blurred.resolve()} is not readable"
+            )
+        else:
+            errors.append("wallpaper-blurred.png missing")
 
     if (tmp / "greeter.toml").is_file():
         try:
