@@ -74,6 +74,13 @@ package() {
     install -Dm644 tree/usr/lib/systemd/user/shedos-hypr-reload.service \
         "$pkgdir/usr/lib/systemd/user/shedos-hypr-reload.service"
 
+    # uwsm's wayland-wm@.service template inherits stderr from its
+    # caller, ending at /dev/console. Drop-in pins Hyprland's stderr
+    # to journal so wlroots backend logs don't leak to tty1's vcs
+    # buffer and get painted by fbcon during DRM-master gaps.
+    install -Dm644 tree/etc/systemd/user/wayland-wm@.service.d/journal-only.conf \
+        "$pkgdir/etc/systemd/user/wayland-wm@.service.d/journal-only.conf"
+
     # Silent back-compat shims for the old /usr/bin/shedos-* names.
     local _shims=(
         shedos-launch-walker shedos-power-confirm
