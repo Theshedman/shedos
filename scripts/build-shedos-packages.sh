@@ -250,6 +250,23 @@ for dir in "${PKG_DIRS[@]}"; do
     rm -rf "$work"
     cp -a "$dir" "$work"
 done
+
+# Pre-stage workspace library crates that ship as Cargo `path = "../<name>"`
+# deps but have no PKGBUILD of their own (e.g. shedos-prompt-ui — the
+# shared lock-surface renderer used by shedos-greeter and, soon,
+# shedos-screensaver). Same precedent as shedos-screensaver's
+# include_str! reach into shedos-branding: the consuming package's
+# `cargo build` resolves `../shedos-prompt-ui` against BUILD_ROOT, so
+# the sibling has to physically exist there.
+for crate in shedos-prompt-ui; do
+    src="$PACKAGING_DIR/$crate"
+    [[ -d "$src" ]] || continue
+    [[ -f "$src/Cargo.toml" ]] || continue
+    dst="$BUILD_ROOT/$crate"
+    rm -rf "$dst"
+    cp -a "$src" "$dst"
+done
+
 [[ $EUID -eq 0 ]] && chown -R builduser:builduser "$BUILD_ROOT"
 
 BUILT_PKGS=()

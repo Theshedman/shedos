@@ -22,13 +22,37 @@ root=$(cd -- "$here/.." && pwd)
 dir=$root/packaging/$pkg
 [[ -d $dir ]] || { echo "no such package dir: $dir" >&2; exit 1; }
 
+# Workspace path siblings: any `path = "../<sibling>"` reference in this
+# package's Cargo.toml(s) makes the sibling's source files a build input.
+# Without folding them into the hash, editing e.g. shedos-prompt-ui would
+# leave shedos-greeter's hash unchanged and CI would serve a stale cached
+# package compiled against the OLD prompt-ui — silent regression.
+sibling_paths=()
+if compgen -G "$dir/Cargo.toml" >/dev/null; then
+    while IFS= read -r name; do
+        [[ -n "$name" ]] || continue
+        [[ "$name" == "$pkg" ]] && continue   # self-reference, skip
+        sib="$root/packaging/$name"
+        [[ -d "$sib" ]] || continue
+        sibling_paths+=("packaging/$name/")
+    done < <(
+        find "$dir" -maxdepth 3 -name 'Cargo.toml' \
+            -exec grep -hE 'path[[:space:]]*=[[:space:]]*"\.\./[a-zA-Z0-9_-]+"' {} \; |
+        sed -E 's|.*path[[:space:]]*=[[:space:]]*"\.\./([a-zA-Z0-9_-]+)".*|\1|' |
+        LC_ALL=C sort -u
+    )
+fi
+
 cd "$root"
 {
-    git ls-files -z -- "packaging/$pkg/" \
+    # Hash the package itself plus any workspace path-dep siblings.
+    # `git ls-files` over the union deterministically orders entries.
+    git ls-files -z -- "packaging/$pkg/" "${sibling_paths[@]}" \
     | LC_ALL=C sort -z \
     | while IFS= read -r -d '' f; do
         case "$f" in
             "packaging/$pkg/.gitignore") continue ;;
+            packaging/*/.gitignore) continue ;;
         esac
         printf '%s\n' "$f"
         cat "$f"
