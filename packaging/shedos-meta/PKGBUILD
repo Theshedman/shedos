@@ -1304,6 +1304,13 @@ optdepends=(
     'claude-code-bin: proprietary AUR package; reinstall via shedman install'
     'google-chrome: proprietary AUR package; reinstall via shedman install'
     'jetbrains-toolbox: proprietary AUR package; reinstall via shedman install'
+    'libfprint-2-tod1-broadcom: proprietary AUR package; reinstall via shedman install'
+    'libfprint-2-tod1-broadcom-cv3plus: proprietary AUR package; reinstall via shedman install'
+    'libfprint-2-tod1-elan: proprietary AUR package; reinstall via shedman install'
+    'libfprint-2-tod1-goodix: proprietary AUR package; reinstall via shedman install'
+    'libfprint-2-tod1-goodix-v2: proprietary AUR package; reinstall via shedman install'
+    'libfprint-2-tod1-synatudor-git: proprietary AUR package; reinstall via shedman install'
+    'libfprint-2-tod1-xps9300-bin: proprietary AUR package; reinstall via shedman install'
     'postman-bin: proprietary AUR package; reinstall via shedman install'
     'ttf-ms-fonts: proprietary AUR package; reinstall via shedman install'
 )
