@@ -74,6 +74,14 @@ package() {
     install -Dm644 tree/usr/lib/systemd/user/shedos-hypr-reload.service \
         "$pkgdir/usr/lib/systemd/user/shedos-hypr-reload.service"
 
+    install -Dm644 tree/usr/lib/systemd/user/shedos-lock-migration.service \
+        "$pkgdir/usr/lib/systemd/user/shedos-lock-migration.service"
+    install -Dm755 tree/usr/libexec/shedos-hyprland/lock-migration \
+        "$pkgdir/usr/libexec/shedos-hyprland/lock-migration"
+    install -d "$pkgdir/usr/libexec/shedos-postupgrade"
+    ln -sf ../shedos-hyprland/lock-migration \
+        "$pkgdir/usr/libexec/shedos-postupgrade/lock-migration"
+
     # uwsm's wayland-wm@.service template inherits stderr from its
     # caller, ending at /dev/console. Drop-in pins Hyprland's stderr
     # to journal so wlroots backend logs don't leak to tty1's vcs

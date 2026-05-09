@@ -1,0 +1,191 @@
+#!/usr/bin/env python3
+# One-shot per-user retrofit from the pre-Phase-5 hyprlock-based
+# lock chain to the screensaver-as-lock-client flow. Stamp-gated;
+# all operations are no-ops on already-migrated systems.
+
+from __future__ import annotations
+
+import os
+import re
+import shutil
+import subprocess
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+OLD_LOCK_CMD_VALUES = {
+    "/usr/libexec/shedman/lock",
+    "hyprlock",
+}
+NEW_LOCK_CMD = "systemctl --user start shedos-screensaver-lock.service"
+
+
+def log(msg: str) -> None:
+    print(f"shedos-lock-migration: {msg}", flush=True)
+
+
+def home() -> Path:
+    return Path(os.environ.get("HOME") or os.path.expanduser("~"))
+
+
+def state_dir() -> Path:
+    base = os.environ.get("XDG_STATE_HOME") or str(home() / ".local" / "state")
+    return Path(base) / "shedos-hyprland"
+
+
+def hypr_dir() -> Path:
+    base = os.environ.get("XDG_CONFIG_HOME") or str(home() / ".config")
+    return Path(base) / "hypr"
+
+
+def stamp_path() -> Path:
+    return state_dir() / "lock-migration-applied"
+
+
+def write_stamp() -> None:
+    state_dir().mkdir(parents=True, exist_ok=True)
+    stamp_path().write_text(datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ\n"))
+
+
+def replace_lock_cmd(text: str) -> tuple[str, bool]:
+    pattern = re.compile(
+        r"^([ \t]*lock_cmd[ \t]*=[ \t]*)([^\n#]*)(?:#[^\n]*)?$",
+        re.MULTILINE,
+    )
+    changed = False
+
+    def repl(m: re.Match[str]) -> str:
+        nonlocal changed
+        prefix, value = m.group(1), m.group(2).strip()
+        if value in OLD_LOCK_CMD_VALUES:
+            changed = True
+            return f"{prefix}{NEW_LOCK_CMD}"
+        return m.group(0)
+
+    return pattern.sub(repl, text), changed
+
+
+def drop_obsolete_listener_blocks(text: str) -> tuple[str, int]:
+    lines = text.splitlines(keepends=False)
+    out: list[str] = []
+    dropped = 0
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if re.match(r"^[ \t]*listener[ \t]*\{[ \t]*$", line):
+            block: list[str] = [line]
+            j = i + 1
+            depth = 1
+            while j < len(lines) and depth > 0:
+                block.append(lines[j])
+                if "{" in lines[j]:
+                    depth += lines[j].count("{")
+                if "}" in lines[j]:
+                    depth -= lines[j].count("}")
+                j += 1
+            body = "\n".join(block)
+            obsolete = (
+                "shedos-screensaver.service" in body
+                or ("dispatch dpms off" in body and "dispatch dpms on" in body)
+            )
+            if obsolete:
+                if out and re.match(r"^[ \t]*#", out[-1]):
+                    out.pop()
+                if j < len(lines) and lines[j].strip() == "":
+                    j += 1
+                dropped += 1
+            else:
+                out.extend(block)
+            i = j
+            continue
+        out.append(line)
+        i += 1
+    return "\n".join(out) + ("\n" if text.endswith("\n") else ""), dropped
+
+
+def migrate_hypridle() -> bool:
+    path = hypr_dir() / "hypridle.conf"
+    if not path.is_file():
+        return False
+    original = path.read_text()
+    new_text = original
+    new_text, lock_cmd_changed = replace_lock_cmd(new_text)
+    new_text, listeners_dropped = drop_obsolete_listener_blocks(new_text)
+    if new_text == original:
+        return False
+    backup = path.with_suffix(path.suffix + ".pre-shedos-migration.bak")
+    if not backup.exists():
+        shutil.copy2(path, backup)
+        log(f"backed up original to {backup}")
+    path.write_text(new_text)
+    if lock_cmd_changed:
+        log(f"updated lock_cmd to: {NEW_LOCK_CMD}")
+    if listeners_dropped:
+        log(f"dropped {listeners_dropped} obsolete listener block(s)")
+    return True
+
+
+def restart_hypridle_if_running() -> bool:
+    # Hypridle reads its config once at startup, so the new lock_cmd
+    # only takes effect after a kill+respawn.
+    try:
+        probe = subprocess.run(
+            ["pgrep", "-x", "hypridle"],
+            capture_output=True,
+            timeout=2,
+        )
+    except Exception:
+        return False
+    if probe.returncode != 0:
+        return False
+    subprocess.run(["pkill", "-x", "hypridle"], timeout=2)
+    time.sleep(0.5)
+    try:
+        subprocess.Popen(
+            ["hypridle"],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+    except FileNotFoundError:
+        return False
+    return True
+
+
+def archive_hyprlock_conf() -> bool:
+    path = hypr_dir() / "hyprlock.conf"
+    if not path.is_file():
+        return False
+    archived = path.with_suffix(path.suffix + ".shedos-bak")
+    if archived.exists():
+        path.unlink()
+        log(f"removed {path} (existing archive at {archived} preserved)")
+        return True
+    path.rename(archived)
+    log(f"archived {path} -> {archived}")
+    return True
+
+
+def main() -> int:
+    if stamp_path().is_file():
+        return 0
+    log("starting one-shot migration")
+    try:
+        hypridle_changed = migrate_hypridle()
+        hyprlock_archived = archive_hyprlock_conf()
+        if not hypridle_changed and not hyprlock_archived:
+            log("no old-world lock config detected; nothing to migrate")
+        if hypridle_changed and restart_hypridle_if_running():
+            log("restarted hypridle to pick up new lock_cmd")
+        write_stamp()
+        log(f"complete; stamp at {stamp_path()}")
+    except Exception as exc:
+        log(f"aborted: {exc!r}")
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

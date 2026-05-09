@@ -42,6 +42,7 @@ _strip_live_artifacts() {
 post_install() {
     _strip_live_artifacts
     systemctl --global enable shedos-hypr-reload.path 2>/dev/null || true
+    systemctl --global enable shedos-lock-migration.service 2>/dev/null || true
     cat <<'EOF'
 
 ShedOS Hyprland profile installed.
@@ -57,4 +58,5 @@ EOF
 post_upgrade() {
     _strip_live_artifacts
     systemctl --global enable shedos-hypr-reload.path 2>/dev/null || true
+    systemctl --global enable shedos-lock-migration.service 2>/dev/null || true
 }

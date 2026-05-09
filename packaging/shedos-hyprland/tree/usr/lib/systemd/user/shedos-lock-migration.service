@@ -1,0 +1,13 @@
+[Unit]
+Description=Retrofit hypridle.conf and hyprlock.conf to the new lock-screen flow
+After=graphical-session.target
+PartOf=graphical-session.target
+ConditionPathExists=/usr/libexec/shedos-hyprland/lock-migration
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/shedos-hyprland/lock-migration
+RemainAfterExit=yes
+
+[Install]
+WantedBy=graphical-session.target
