@@ -86,8 +86,8 @@ _run_post_apply_hooks() {
         user_home=$(getent passwd "$SUDO_USER" | cut -d: -f6)
         # awww (and most user-session tools) need WAYLAND_DISPLAY to
         # find the right IPC socket. The Wayland socket file is created
-        # by the compositor at /run/user/<uid>/wayland-N — discover it
-        # from the filesystem rather than guessing or shelling out.
+        # by the compositor at /run/user/<uid>/wayland-N. Discover it
+        # from the filesystem rather than guessing.
         wayland_disp=""
         local sock
         for sock in /run/user/"$user_uid"/wayland-*; do
