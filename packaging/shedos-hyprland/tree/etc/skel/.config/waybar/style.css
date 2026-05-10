@@ -344,15 +344,16 @@ separator {
 }
 
 #custom-shedos-logo {
+    background-color: @surface0;
     background-image: url("file:///usr/share/shedos-hyprland/shedos-s.png");
     background-repeat: no-repeat;
     background-position: center;
-    background-size: contain;
-    background-origin: content-box;
-    background-clip: content-box;
+    background-size: auto 18px;
+    border-radius: 10px;
     min-width: 36px;
     padding: 8px 10px;
-    margin: 0;
+    margin: 5px 2px;
+    transition: all 0.2s ease;
     color: transparent;
 }
 
