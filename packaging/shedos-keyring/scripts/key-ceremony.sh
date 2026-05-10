@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# key-ceremony.sh — generate the ShedOS repo signing key.
+# key-ceremony.sh; generate the ShedOS repo signing key.
 #
 # Run this ONCE, offline, on a trusted machine. Outputs:
 #   - tree/shedos.gpg                (public key, committed)
