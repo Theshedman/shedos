@@ -114,7 +114,7 @@ jobs:
         # disagrees with the filename. Fail fast before we burn ~35 min on
         # AUR prebuilds + mkarchiso. Stable tags (v<CalVer>) must match
         # VERSION exactly; RC tags (v<CalVer>-rcN) match after stripping -rcN.
-        # Skipped on workflow_dispatch from a branch — only tag builds ship.
+        # Skipped on workflow_dispatch from a branch; only tag builds ship.
         if: github.ref_type == 'tag'
         run: |
           tag="${GITHUB_REF_NAME#v}"
@@ -184,7 +184,7 @@ jobs:
 
       - name: Save AUR package cache
         # Save unconditionally when the cache key wasn't an exact hit, even
-        # if later steps fail — mirrors the build-packages.yml pattern to
+        # if later steps fail; mirrors the build-packages.yml pattern to
         # avoid discarding 35 min of prebuilt output on a downstream flake.
         if: always() && steps.aur-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
@@ -208,7 +208,7 @@ jobs:
 
       - name: Stage cached shedos-kernel package (or clear stale)
         # The AUR-cache restore step above may have brought back a
-        # shedos-kernel-*.pkg.tar.zst with a stale pkgver-pkgrel — the
+        # shedos-kernel-*.pkg.tar.zst with a stale pkgver-pkgrel; the
         # AUR cache key is hashFiles('packages/aur.txt'), which is
         # orthogonal to kernel state, so it can't be trusted to reflect
         # the current kernel sources. The dedicated kernel-pkg-cache is
@@ -249,7 +249,7 @@ jobs:
         # Skip .sig files: they were signed by SHEDOS_REPO_SIGNING_KEY in
         # build-packages.yml but the iso runner doesn't import that key
         # into its keyring, so pacstrap's keyring lookup would fail offline.
-        # archiso pacstrap only needs the .pkg.tar.zst — sigs are for the
+        # archiso pacstrap only needs the .pkg.tar.zst; sigs are for the
         # published repo (build-packages.yml's job), not the ISO build.
         run: |
           if [[ -d /tmp/shedos-pkg-cache ]]; then
@@ -264,7 +264,7 @@ jobs:
         # Regenerates packages/.meta-closure.txt against the runner's
         # fresh pacman db so render-meta-depends.sh (called by `make
         # shedos-packages` below) sees the current closure. Runs as
-        # root — pacman -Sy needs it.
+        # root; pacman -Sy needs it.
         run: bash scripts/resolve-meta-closure.sh
 
       - name: Build ShedOS native packages
@@ -411,7 +411,7 @@ jobs:
           KEEP_RCS=1
 
           # One-time cleanup of the old nested layout from the rc1 era
-          # (/iso/v<tag>/<file>). Safe to run every time — `rclone purge` on
+          # (/iso/v<tag>/<file>). Safe to run every time; `rclone purge` on
           # a non-existent path is a no-op with this flag set. Drop this step
           # once no v*/ prefixes remain in the bucket.
           for legacy in $(rclone lsf "r2:$R2_BUCKET/iso/" --dirs-only 2>/dev/null \
@@ -420,7 +420,7 @@ jobs:
               rclone purge "r2:$R2_BUCKET/iso/$legacy" || true
           done
 
-          # `sort -V` so rc8 < rc9 < rc10 — plain sort is lexicographic.
+          # `sort -V` so rc8 < rc9 < rc10; plain sort is lexicographic.
           mapfile -t all_isos < <(
               rclone lsf "r2:$R2_BUCKET/iso/" --files-only \
                   --include 'shedos-*-x86_64.iso' | sort -V
@@ -473,7 +473,7 @@ jobs:
 
           # Conventional Commits convention used across this repo:
           # feat | fix | perf | revert | docs | ci | chore | release
-          # `release:` commits are pure version bumps — drop them. Everything
+          # `release:` commits are pure version bumps; drop them. Everything
           # else buckets by type; unrecognised prefixes land in "Other".
           mapfile -t subjects < <(git log "$range" --no-merges --pretty='%s' \
               | grep -Ev '^(release|chore\(release\)):' || true)

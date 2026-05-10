@@ -1,7 +1,7 @@
 name: release-weekly
 
 # Opens a "release: v<today>" PR every Monday at 07:00 UTC. Does NOT push
-# to main directly — the ShedOS repo requires SSH-signed commits + tags
+# to main directly; the ShedOS repo requires SSH-signed commits + tags
 # under a single maintainer identity, and handing that key to CI would be
 # a security regression. The PR carries an unsigned bot commit; the
 # maintainer amends-signs it locally and fast-forwards main, then signs +
@@ -92,7 +92,7 @@ jobs:
               exit 0
           fi
           # Unsigned bot commit. The maintainer's finalize step amends + signs
-          # before merging to main — see docs/releasing.md.
+          # before merging to main; see docs/releasing.md.
           git commit -m "release: v$today"
           git push -u origin "$branch"
 

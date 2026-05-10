@@ -7,7 +7,7 @@ name: aur-cache-refresh
 # slow upstream doesn't hold up release-PR creation.
 #
 # The push-driven build-packages.yml has a cache-trust pre-flight that
-# skips AUR clones whenever a cached .pkg.tar.zst is present — that's
+# skips AUR clones whenever a cached .pkg.tar.zst is present; that's
 # what protects releases from AUR's TLS flakiness. This workflow's only
 # job is to keep that cache from drifting too far behind upstream pkgvers.
 # If aur.archlinux.org is fully down, this job fails harmlessly and the
@@ -31,7 +31,7 @@ jobs:
       options: --privileged
     # actions:write is needed by the "Drop stale cache entry" step below
     # so we can delete the existing aur-* cache via the gh API before
-    # saving the refreshed archive — actions/cache/save errors out on a
+    # saving the refreshed archive; actions/cache/save errors out on a
     # duplicate key.
     permissions:
       actions: write
@@ -57,7 +57,7 @@ jobs:
 
       - name: Restore current AUR cache
         # Restore-keys gives us the latest available cache even when the
-        # exact aur.txt hash hasn't been seen yet — that's still a useful
+        # exact aur.txt hash hasn't been seen yet; that's still a useful
         # warm start (only new entries need fresh clones).
         uses: actions/cache/restore@v4
         with:
@@ -93,7 +93,7 @@ jobs:
 
       - name: Save refreshed cache
         # Always save (even on a no-op refresh) so the cache stays
-        # bumpable on every weekly tick — keeps GHA from evicting it
+        # bumpable on every weekly tick; keeps GHA from evicting it
         # for inactivity (7-day TTL).
         if: always()
         uses: actions/cache/save@v4

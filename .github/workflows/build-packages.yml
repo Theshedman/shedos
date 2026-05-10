@@ -77,7 +77,7 @@ jobs:
           # below; it cuts shedos-kernel rebuilds from ~40 min to ~5 min on
           # warm cache.
           # makepkg runs with --nodeps for the pure-copy shedos-* packages,
-          # so makedeps can't be left to --syncdeps — install them directly.
+          # so makedeps can't be left to --syncdeps; install them directly.
           pacman -S --needed --noconfirm base-devel git sudo gnupg rclone pacman-contrib scdoc ccache python
           # archlinux:latest ships an empty pacman keyring. Initialize + populate
           # the archlinux trust chain so makepkg --syncdeps can verify signed
@@ -106,7 +106,7 @@ jobs:
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Auto-bump release-hashes (main + manual)
-        # Skip when the actor is the bot itself — that's the push this step
+        # Skip when the actor is the bot itself; that's the push this step
         # just made; running again would be a no-op but still trigger build
         # noise. Using an actor gate instead of `[skip ci]` in the commit
         # message: `[skip ci]` would also block tag-push workflows that
@@ -135,7 +135,7 @@ jobs:
 
       - name: Validate release-hashes manifest (tag pushes)
         # Tag pushes must point at a commit whose manifest already
-        # matches its PKGBUILDs — CI doesn't rewrite tagged commits.
+        # matches its PKGBUILDs; CI doesn't rewrite tagged commits.
         # If --check fails here, push to main first to trigger the
         # auto-bump, then re-tag the resulting auto-bump commit.
         if: startsWith(github.ref, 'refs/tags/')
@@ -147,7 +147,7 @@ jobs:
         # cache (real source change), but a CI re-run on the same sources
         # warm-hits and trims ~2 h off the build. Restore-keys falls back
         # to any prior cache for partial reuse. Same key shape as
-        # build-iso.yml — both workflows populate / consume one cache.
+        # build-iso.yml; both workflows populate / consume one cache.
         uses: actions/cache@v4
         with:
           path: /home/builder/.ccache
@@ -235,7 +235,7 @@ jobs:
         #
         # We use restore/save as separate actions (not the combined `cache`
         # action) because the combined action's post-save is gated on
-        # `success()` — so a downstream failure would discard a successful
+        # `success()`; so a downstream failure would discard a successful
         # prebuild's output. Save is triggered explicitly below with
         # `if: always()`.
         id: aur-cache
@@ -372,7 +372,7 @@ jobs:
 
       - name: Save shedos-kernel package cache
         # Persist the freshly-built kernel for the next run. Only saves on
-        # cache miss with files actually staged — `if: always()` so a
+        # cache miss with files actually staged; `if: always()` so a
         # downstream failure (signing, publish) doesn't discard the build,
         # but has_files=='1' prevents an empty cache from clobbering the
         # slot if the build itself failed before producing the kernel.
@@ -384,7 +384,7 @@ jobs:
 
       - name: Sign + stage packages for publication
         # Walk archiso/shedos-repo/, sign each .pkg.tar.zst with the ShedOS
-        # key, and move to dist/x86_64/ — UNLESS the package is listed in
+        # key, and move to dist/x86_64/; UNLESS the package is listed in
         # packages/aur-norepublish.txt (proprietary EULAs forbid third-party
         # redistribution under our signature). Those packages are bundled
         # into the ISO unsigned; reinstalls go via `shedman install`.
@@ -395,7 +395,7 @@ jobs:
           chown -R builder:builder archiso/shedos-repo
 
           # Skip both legal-restricted entries (aur-norepublish.txt) and
-          # installer-only entries (installer-only.txt) — neither should
+          # installer-only entries (installer-only.txt); neither should
           # land in the public repo.
           mapfile -t norepublish < <(
               grep -hEv '^\s*(#|$)' \
@@ -419,7 +419,7 @@ jobs:
               fi
               # Reuse cache-restored signature if present. GPG signatures
               # don't expire, so a cached sig is just as valid as a fresh
-              # one — and rclone sync skips the re-upload because bytes
+              # one; and rclone sync skips the re-upload because bytes
               # don't change. Saves ~50 GPG calls + ~50 R2 PUTs per no-op
               # build. On key rotation, manually purge the GHA cache.
               if [[ -f "${pkg}.sig" ]]; then
@@ -432,7 +432,7 @@ jobs:
               sudo -u builder gpg --batch --detach-sign --no-armor \
                   --local-user "$GPG_FP" \
                   --output "$pkg.sig" "$pkg"
-              # cp (not mv) — keep the package in archiso/shedos-repo/ so it
+              # cp (not mv); keep the package in archiso/shedos-repo/ so it
               # remains in the cache snapshot for the next run.
               cp "$pkg" "$pkg.sig" dist/x86_64/
               staged=$((staged+1))
@@ -492,7 +492,7 @@ jobs:
           echo "Rebuilding repo DB: built=$([[ -s /tmp/built-pkgs.txt ]] && wc -l </tmp/built-pkgs.txt || echo 0), disk=$disk_count, db=$db_count"
           cd dist/x86_64
           # Wipe the cached db artifacts so repo-add rebuilds fresh.
-          # Without this, repo-add only adds entries — it never removes
+          # Without this, repo-add only adds entries; it never removes
           # entries whose .pkg.tar.zst was cleaned up between builds,
           # leading pacman to 404 on stale package names listed in db.
           rm -f shedos.db shedos.db.sig shedos.db.tar.gz shedos.db.tar.gz.sig \
@@ -607,7 +607,7 @@ jobs:
       - name: Retention sweep for test channel
         # Keep the latest 3 RC iterations + 2 stables-of-each-package in
         # /test/x86_64/. Anything older is purged. Stable repo
-        # (/stable/x86_64/) has no sweep — repo-add already manages its
+        # (/stable/x86_64/) has no sweep; repo-add already manages its
         # generation, and stable users want the long tail of older
         # versions for downgrade.
         env:
