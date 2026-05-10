@@ -1,7 +1,7 @@
 # Maintainer: ShedOS <https://github.com/theshedman/shedos>
 #
 # ShedOS default Neovim config. Split off from shedos-hyprland because:
-#   1. nvim config is heavily user-modified — conservative sync is mandatory.
+#   1. nvim config is heavily user-modified; conservative sync is mandatory.
 #      The accompanying sync-policy file instructs shedos-sync-configs to
 #      always drop .shedosnew instead of auto-merging (even when the user
 #      hasn't touched the file), preventing a bad upgrade from breaking
@@ -33,11 +33,11 @@ optdepends=(
 package() {
     cd "$startdir"
 
-    # /etc/skel/.config/nvim — seed for new users via useradd -m.
+    # /etc/skel/.config/nvim; seed for new users via useradd -m.
     install -d "$pkgdir/etc/skel/.config"
     cp -a tree/etc/skel/.config/nvim "$pkgdir/etc/skel/.config/nvim"
 
-    # /usr/share/shedos/nvim/defaults/.config/nvim — pristine mirror for
+    # /usr/share/shedos/nvim/defaults/.config/nvim; pristine mirror for
     # shedos-sync-configs. Path layout identical to $HOME-relative relpaths.
     install -d "$pkgdir/usr/share/shedos/nvim/defaults/.config"
     cp -a tree/etc/skel/.config/nvim \

@@ -49,10 +49,10 @@ optdepends=(
 package() {
     cd "$startdir"
 
-    # /etc/skel/ — seed for new users via useradd -m.
+    # /etc/skel/; seed for new users via useradd -m.
     cp -a tree/etc "$pkgdir/"
 
-    # /usr/share/shedos/hyprland/defaults/ — pristine mirror for sync tool.
+    # /usr/share/shedos/hyprland/defaults/; pristine mirror for sync tool.
     # Identical to what we put in /etc/skel/, rooted at the same layout the
     # user sees (so relpath logic in `shedman config --sync` is straightforward).
     install -d "$pkgdir/usr/share/shedos/hyprland/defaults"
@@ -112,7 +112,7 @@ package() {
     # "Terminal" alias for kitty so users searching the launcher for
     # "term" / "terminal" find it. The elephant-desktopapplications
     # provider is configured with only_search_title=true, so it matches
-    # by Name only — Categories=TerminalEmulator alone isn't enough. We
+    # by Name only; Categories=TerminalEmulator alone isn't enough. We
     # ship a parallel .desktop with Name=Terminal pointing at kitty.
     install -Dm644 tree/usr/share/applications/terminal.desktop \
         "$pkgdir/usr/share/applications/terminal.desktop"

@@ -4,12 +4,12 @@
 # (https://gitlab.archlinux.org/archlinux/packaging/packages/linux-zen).
 # We track upstream linux-zen's pkgver and source tarball, but vendor
 # a ShedOS-tuned .config at config.x86_64 (BTF preserved, debug-info
-# minimized, plus other knobs for our stack — see config.x86_64's
+# minimized, plus other knobs for our stack; see config.x86_64's
 # git log for the rationale of each change). The package also differs
 # in name, signing key, and the localversion string that surfaces in
 # `uname -r`.
 #
-# pkgver here intentionally does NOT follow ShedOS's CalVer — it
+# pkgver here intentionally does NOT follow ShedOS's CalVer; it
 # tracks upstream so users get a meaningful kernel version number.
 # scripts/bump-version.sh skips this package; scripts/bump-kernel.sh
 # is the dedicated bumper.
@@ -54,7 +54,7 @@ source=(
     $_zen_url/releases/download/$_srctag/linux-$_srctag.patch.zst{,.sig}
 )
 source_x86_64=(config.x86_64)
-# Auto-synced from Arch's linux-zen on every kernel bump — see
+# Auto-synced from Arch's linux-zen on every kernel bump; see
 # scripts/bump-kernel.sh's _replace_array call. Trust delegation:
 # we trust whatever fingerprints the linux-zen maintainer trusts,
 # which is the same trust we already extend by mirroring their

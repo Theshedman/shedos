@@ -28,7 +28,7 @@ depends=(
 package() {
     cd "$startdir"
 
-    # Subcommand — invoked as `shedman migrate`.
+    # Subcommand; invoked as `shedman migrate`.
     install -Dm755 tree/usr/libexec/shedman/migrate \
         "$pkgdir/usr/libexec/shedman/migrate"
 

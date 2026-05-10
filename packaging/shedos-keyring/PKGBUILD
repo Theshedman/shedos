@@ -1,6 +1,6 @@
 # Maintainer: ShedOS <https://github.com/theshedman/shedos>
 #
-# Repository keyring for [shedos]. This is the *trust anchor* — every other
+# Repository keyring for [shedos]. This is the *trust anchor*; every other
 # ShedOS package is verified against the key this package installs. Do not
 # delete or downgrade without understanding the consequences (pacman will
 # start refusing ShedOS updates).
