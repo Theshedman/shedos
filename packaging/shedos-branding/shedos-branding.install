@@ -3,7 +3,7 @@
 post_install() {
     # Skip -R during pacstrap: shedos-branding installs before shedos-kernel,
     # so /etc/mkinitcpio.d is empty and `mkinitcpio -P` would error. Just
-    # write the theme config — the kernel package's own postinstall runs
+    # write the theme config; the kernel package's own postinstall runs
     # mkinitcpio -P after dropping presets and picks the theme up then.
     if command -v plymouth-set-default-theme >/dev/null 2>&1; then
         if compgen -G '/etc/mkinitcpio.d/*.preset' >/dev/null 2>&1; then

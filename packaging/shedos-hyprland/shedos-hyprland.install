@@ -23,7 +23,7 @@ _strip_live_artifacts() {
     #    installs done with the post-fix installer, but earlier
     #    installs (and ones done before the exclude entry shipped)
     #    have it on disk and source it on every interactive bash
-    #    login — which leaves the banner text in the VT's vcs buffer,
+    #    login; which leaves the banner text in the VT's vcs buffer,
     #    visible as console-text flashes during DRM-master handoffs
     #    (Plymouth→cage, cage→Hyprland, Hyprland→Plymouth-shutdown).
     #    Removing the file eliminates the source; clearing
