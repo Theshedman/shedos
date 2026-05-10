@@ -173,12 +173,13 @@ jobs:
             aur-${{ runner.os }}-
 
       - name: Pre-build AUR dependencies
-        # shedos-hyprland depends on oh-my-zsh-git etc.; shedos-branding on
-        # catppuccin-sddm-theme-mocha. These must exist in the build-local
-        # repo BEFORE `make shedos-packages` runs makepkg --syncdeps, else
-        # dependency resolution fails. `make download-packages` invokes
-        # scripts/build-aur-packages.sh which populates archiso/shedos-repo/.
-        # With the cache restored above, unchanged packages skip rebuilds.
+        # shedos-hyprland depends on AUR packages (oh-my-zsh-git,
+        # zsh-theme-powerlevel10k-git, etc.). These must exist in the
+        # build-local repo BEFORE `make shedos-packages` runs makepkg
+        # --syncdeps, else dependency resolution fails. `make
+        # download-packages` invokes scripts/build-aur-packages.sh which
+        # populates archiso/shedos-repo/. With the cache restored above,
+        # unchanged packages skip rebuilds.
         run: make download-packages
 
       - name: Save AUR package cache
