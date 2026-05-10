@@ -3,8 +3,8 @@
 #
 # Edits /etc/shedos/system.toml's [theme] section and re-renders
 # /etc/shedos/themes/current/ via /usr/lib/shedos/theme_renderer.py
-# so the change propagates to hyprland, hyprlock, waybar, walker,
-# the greeter, and GTK apps.
+# so the change propagates to hyprland, waybar, walker, the
+# greeter, and GTK apps.
 
 set -euo pipefail
 

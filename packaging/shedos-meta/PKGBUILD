@@ -357,7 +357,6 @@ depends=(
     'hyprland'
     'hyprland-guiutils'
     'hyprlang'
-    'hyprlock'
     'hyprpicker'
     'hyprsunset'
     'hyprtoolkit'
