@@ -186,7 +186,7 @@ def _write_wallpaper_link(tmp, ctx):
         blurred.symlink_to(sibling)
         return
 
-    # No shipped -blurred companion — generate one. The result is a
+    # No shipped -blurred companion; generate one. The result is a
     # real file (not a symlink) so the lock screen has something to
     # render even if the source is later moved or deleted.
     try:

@@ -42,7 +42,7 @@ mv ~/.config/nvim ~/.config/nvim.bak
 # Clone this repository
 git clone https://github.com/<your-username>/nvim.git ~/.config/nvim
 
-# Launch Neovim — Lazy and Mason will auto-install everything
+# Launch Neovim; Lazy and Mason will auto-install everything
 nvim
 ```
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-# shedman browser — launch the user's default web browser in a new window.
+# shedman browser; launch the user's default web browser in a new window.
 #
 # Resolution order (system-default first so an in-browser "set as default"
 # UI takes effect on the next press without the user having to clean up
@@ -40,7 +40,7 @@ if command -v xdg-settings >/dev/null 2>&1; then
         if [[ -n "$binary" ]] && command -v "$binary" >/dev/null 2>&1; then
             exec "$binary" --new-window "$@"
         fi
-        # Unknown desktop file — let the .desktop's own Exec= line decide.
+        # Unknown desktop file; let the .desktop's own Exec= line decide.
         if command -v gio >/dev/null 2>&1; then
             exec gio launch "/usr/share/applications/$desktop" "$@"
         fi

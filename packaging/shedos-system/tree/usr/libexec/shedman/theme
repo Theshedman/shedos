@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shedman theme — manage ShedOS theme (wallpaper, palette, fonts).
+# shedman theme; manage ShedOS theme (wallpaper, palette, fonts).
 #
 # Edits /etc/shedos/system.toml's [theme] section and re-renders
 # /etc/shedos/themes/current/ via /usr/lib/shedos/theme_renderer.py
@@ -68,7 +68,7 @@ run_renderer() {
 }
 
 # Post-apply hook runner. Every executable file under
-# /etc/shedos/themes/post-apply.d/ runs in user-session context — the
+# /etc/shedos/themes/post-apply.d/ runs in user-session context; the
 # hooks typically need to talk to per-user daemons (awww-daemon for
 # wallpaper IPC, waybar/walker reloads, etc.) which live under the
 # human user's UID, not root. If the script was invoked under outer

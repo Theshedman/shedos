@@ -17,7 +17,7 @@ export ZSH="$HOME/.oh-my-zsh"
 # Theme: Powerlevel10k (configured via ~/.p10k.zsh)
 ZSH_THEME="powerlevel10k/powerlevel10k"
 
-# Plugins — only those whose tools are actually shipped in packages/*.txt.
+# Plugins; only those whose tools are actually shipped in packages/*.txt.
 # Plugins for optional tools (kubectl, helm, terraform) are gated by OMZ
 # internally against `command -v`, so they're cheap when the binary is absent.
 plugins=(
@@ -341,7 +341,7 @@ fif() {
 }
 
 # ─────────────────────────────────────────────────────────────
-# ShedOS Welcome — fastfetch on first interactive shell per session.
+# ShedOS Welcome; fastfetch on first interactive shell per session.
 # Marker lives in XDG_RUNTIME_DIR (tmpfs, cleared on reboot / final logout),
 # so the banner shows once per boot and stays quiet for subsequent terminals.
 # ─────────────────────────────────────────────────────────────

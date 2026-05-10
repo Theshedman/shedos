@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# shedman migrate — retrofit a pre-packaging ShedOS install onto the
+# shedman migrate; retrofit a pre-packaging ShedOS install onto the
 # packaged model.
 #
 # Target audience: installs dated before the April 2026 packaging
 # cut-over (commit 2148ff0), where the system was laid down by the
 # ISO's archiso payload as plain dotfiles, with no shedos-* packages
-# installed. Running this tool is idempotent — a packaged install
+# installed. Running this tool is idempotent; a packaged install
 # detects "already packaged" on entry and exits 0.
 #
 # What it does on a legacy install:
@@ -13,12 +13,12 @@
 #      can be rolled back if anything explodes.
 #   2. append the [shedos] fence block to /etc/pacman.conf (same
 #      format shedos-system.install emits on fresh install).
-#   3. pacman -Syu shedos-meta — brings shedos-keyring, shedos-system,
+#   3. pacman -Syu shedos-meta; brings shedos-keyring, shedos-system,
 #      shedos-hyprland, shedos-nvim, shedos-branding, plus the full
 #      Arch/AUR stack. .pacnew files land on any /etc collisions.
 #   4. shedman config --sync --rebuild-manifest if available, else
 #      plain --sync to seed state.
-#   5. shedman doctor — sanity check that the system is aligned.
+#   5. shedman doctor; sanity check that the system is aligned.
 #
 # By default the tool runs in dry-run mode: it prints the plan and
 # exits 0. Pass --yes to execute. This matches every other shedman
@@ -28,7 +28,7 @@
 #   SHEDOS_MIGRATE_ROOT    synthetic root, defaults to "/". The tool
 #                          reads /etc/pacman.conf and pacman -Q under
 #                          this prefix so fixtures can stub both.
-#   PATH-stubbed pacman / snapper / shedman — fixtures prepend a stub
+#   PATH-stubbed pacman / snapper / shedman; fixtures prepend a stub
 #                          dir so the tool invokes the stubs in place
 #                          of the real binaries.
 
@@ -89,7 +89,7 @@ detect_state() {
     fi
 }
 
-# Mutations — each function is idempotent and honors $dry_run.
+# Mutations; each function is idempotent and honors $dry_run.
 
 _snapshot() {
     local dry=$1
@@ -125,7 +125,7 @@ _fence_pacman_conf() {
     cat >>"$conf" <<'EOF'
 
 # >>> shedos <<<
-# Managed by shedos-system — do not edit between these markers.
+# Managed by shedos-system; do not edit between these markers.
 # Run `pacman -R shedos-system` to remove automatically.
 [shedos]
 SigLevel = Required DatabaseRequired

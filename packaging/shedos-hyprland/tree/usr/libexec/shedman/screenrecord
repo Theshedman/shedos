@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shedman screenrecord — wf-recorder wrapper with toggle, mode prompt,
+# shedman screenrecord; wf-recorder wrapper with toggle, mode prompt,
 # region selection, and a waybar indicator. Single binary; the waybar
 # pill, the keybind, and the on-click hook all dispatch here via flags.
 #
@@ -9,7 +9,7 @@
 #   --start [--region]    start a recording. --region invokes slurp.
 #   --stop                stop the active recording.
 #   --waybar              JSON for waybar's custom/screenrecording-indicator.
-#                         Always exits 0 — empty payload when idle.
+#                         Always exits 0; empty payload when idle.
 #   --help-summary        one-line summary for `shedman help`.
 #   --help | -h           usage.
 #   --complete-{bash,zsh,fish}  emit flag list for shell completion.
@@ -111,14 +111,14 @@ _cmd_waybar() {
         tip=${tip//\"/\\\"}
         printf '{"text":" REC","tooltip":"%s","class":"recording"}\n' "$tip"
     else
-        # Stale PID file (process died without --stop) — clean up.
+        # Stale PID file (process died without --stop); clean up.
         [[ -f $PID_FILE ]] && _clear_state
         printf '{"text":"","tooltip":"","class":"idle"}\n'
     fi
 }
 
 _refresh_waybar() {
-    # Custom/screenrecording-indicator uses signal 8 — same as custom/updates.
+    # Custom/screenrecording-indicator uses signal 8; same as custom/updates.
     # Both modules re-poll on that signal, which is harmless: each runs its
     # own exec command. Keep the kick best-effort; missing waybar is fine.
     pkill -RTMIN+8 waybar 2>/dev/null || true
@@ -223,7 +223,7 @@ _cmd_toggle() {
         return $?
     fi
 
-    # No live recording — prompt for mode if walker is available; default
+    # No live recording; prompt for mode if walker is available; default
     # to full-screen otherwise (so a keybind from a non-walker session
     # still works).
     if _have walker; then

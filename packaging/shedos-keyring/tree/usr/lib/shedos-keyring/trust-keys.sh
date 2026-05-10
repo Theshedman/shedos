@@ -3,7 +3,7 @@
 # listed in /usr/share/pacman/keyrings/shedos-trusted.
 #
 # Runs on first boot via shedos-keyring-trust.service (sentinel-gated) and
-# can be re-run manually after a key rotation. Must stay idempotent — every
+# can be re-run manually after a key rotation. Must stay idempotent; every
 # action should be safe on a system that's already trusted the key.
 
 set -u

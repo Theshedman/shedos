@@ -1,5 +1,5 @@
 #!/bin/bash
-# shedman launcher — bring up Walker. Hyprland binds this to Super+D.
+# shedman launcher; bring up Walker. Hyprland binds this to Super+D.
 # elephant + walker --gapplication-service are started by autostart.conf
 # so this is a near-instant dbus toggle into the warm service.
 
