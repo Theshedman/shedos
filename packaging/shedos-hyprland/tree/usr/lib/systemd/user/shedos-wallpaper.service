@@ -1,0 +1,16 @@
+[Unit]
+Description=ShedOS wallpaper daemon (awww-daemon) and initial wallpaper apply
+PartOf=graphical-session.target
+After=graphical-session.target
+Requisite=graphical-session.target
+ConditionEnvironment=WAYLAND_DISPLAY
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/awww-daemon
+ExecStartPost=/bin/sh -c 'sleep 0.5 && /usr/bin/awww img /etc/shedos/themes/current/wallpaper.png'
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=graphical-session.target

@@ -78,6 +78,8 @@ package() {
         "$pkgdir/usr/lib/systemd/user/shedos-lock-migration.service"
     install -Dm755 tree/usr/libexec/shedos-hyprland/lock-migration \
         "$pkgdir/usr/libexec/shedos-hyprland/lock-migration"
+    install -Dm644 tree/usr/lib/systemd/user/shedos-wallpaper.service \
+        "$pkgdir/usr/lib/systemd/user/shedos-wallpaper.service"
     install -d "$pkgdir/usr/libexec/shedos-postupgrade"
     ln -sf ../shedos-hyprland/lock-migration \
         "$pkgdir/usr/libexec/shedos-postupgrade/lock-migration"
@@ -90,6 +92,8 @@ package() {
         "$pkgdir/etc/systemd/user/wayland-wm@.service.d/journal-only.conf"
     install -Dm644 tree/etc/systemd/user/wayland-wm@.service.d/restart.conf \
         "$pkgdir/etc/systemd/user/wayland-wm@.service.d/restart.conf"
+    install -Dm644 tree/etc/systemd/user/wayland-session-shutdown.target \
+        "$pkgdir/etc/systemd/user/wayland-session-shutdown.target"
     install -Dm755 tree/usr/lib/shedos/relock-on-restart \
         "$pkgdir/usr/lib/shedos/relock-on-restart"
 

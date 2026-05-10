@@ -20,6 +20,18 @@ OLD_LOCK_CMD_VALUES = {
 }
 NEW_LOCK_CMD = "systemctl --user start shedos-screensaver-lock.service"
 
+# exec-once lines now owned by systemd user units (waybar.service,
+# mako.service, hypridle.service, shedos-wallpaper.service). Match
+# the exact ShedOS-shipped defaults; user-customised invocations
+# (e.g. `exec-once = waybar -c custom`) are left alone.
+OBSOLETE_AUTOSTART_LINES = {
+    "exec-once = waybar",
+    "exec-once = mako",
+    "exec-once = awww-daemon",
+    "exec-once = sleep 1 && awww img /etc/shedos/themes/current/wallpaper.png",
+    "exec-once = hypridle",
+}
+
 
 def log(msg: str) -> None:
     print(f"shedos-lock-migration: {msg}", flush=True)
@@ -43,9 +55,13 @@ def stamp_path() -> Path:
     return state_dir() / "lock-migration-applied"
 
 
-def write_stamp() -> None:
+def autostart_stamp_path() -> Path:
+    return state_dir() / "autostart-migration-applied"
+
+
+def write_stamp(path: Path) -> None:
     state_dir().mkdir(parents=True, exist_ok=True)
-    stamp_path().write_text(datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ\n"))
+    path.write_text(datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ\n"))
 
 
 def replace_lock_cmd(text: str) -> tuple[str, bool]:
@@ -154,6 +170,31 @@ def restart_hypridle_if_running() -> bool:
     return True
 
 
+def migrate_autostart() -> bool:
+    path = hypr_dir() / "autostart.conf"
+    if not path.is_file():
+        return False
+    original = path.read_text()
+    lines = original.splitlines(keepends=False)
+    out: list[str] = []
+    dropped = 0
+    for line in lines:
+        if line.strip() in OBSOLETE_AUTOSTART_LINES:
+            dropped += 1
+            continue
+        out.append(line)
+    if dropped == 0:
+        return False
+    new_text = "\n".join(out) + ("\n" if original.endswith("\n") else "")
+    backup = path.with_suffix(path.suffix + ".pre-shedos-migration.bak")
+    if not backup.exists():
+        shutil.copy2(path, backup)
+        log(f"backed up original to {backup}")
+    path.write_text(new_text)
+    log(f"stripped {dropped} obsolete exec-once line(s) (now systemd-managed)")
+    return True
+
+
 def archive_hyprlock_conf() -> bool:
     path = hypr_dir() / "hyprlock.conf"
     if not path.is_file():
@@ -169,18 +210,25 @@ def archive_hyprlock_conf() -> bool:
 
 
 def main() -> int:
-    if stamp_path().is_file():
-        return 0
-    log("starting one-shot migration")
     try:
-        hypridle_changed = migrate_hypridle()
-        hyprlock_archived = archive_hyprlock_conf()
-        if not hypridle_changed and not hyprlock_archived:
-            log("no old-world lock config detected; nothing to migrate")
-        if hypridle_changed and restart_hypridle_if_running():
-            log("restarted hypridle to pick up new lock_cmd")
-        write_stamp()
-        log(f"complete; stamp at {stamp_path()}")
+        if not stamp_path().is_file():
+            log("starting lock-config migration")
+            hypridle_changed = migrate_hypridle()
+            hyprlock_archived = archive_hyprlock_conf()
+            if not hypridle_changed and not hyprlock_archived:
+                log("no old-world lock config detected; nothing to migrate")
+            if hypridle_changed and restart_hypridle_if_running():
+                log("restarted hypridle to pick up new lock_cmd")
+            write_stamp(stamp_path())
+            log(f"lock-config migration complete; stamp at {stamp_path()}")
+
+        if not autostart_stamp_path().is_file():
+            log("starting autostart.conf migration")
+            autostart_changed = migrate_autostart()
+            if not autostart_changed:
+                log("no obsolete exec-once lines detected; nothing to migrate")
+            write_stamp(autostart_stamp_path())
+            log(f"autostart migration complete; stamp at {autostart_stamp_path()}")
     except Exception as exc:
         log(f"aborted: {exc!r}")
         return 1
