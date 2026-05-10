@@ -88,6 +88,10 @@ package() {
     # buffer and get painted by fbcon during DRM-master gaps.
     install -Dm644 tree/etc/systemd/user/wayland-wm@.service.d/journal-only.conf \
         "$pkgdir/etc/systemd/user/wayland-wm@.service.d/journal-only.conf"
+    install -Dm644 tree/etc/systemd/user/wayland-wm@.service.d/restart.conf \
+        "$pkgdir/etc/systemd/user/wayland-wm@.service.d/restart.conf"
+    install -Dm755 tree/usr/lib/shedos/relock-on-restart \
+        "$pkgdir/usr/lib/shedos/relock-on-restart"
 
     # Silent back-compat shims for the old /usr/bin/shedos-* names.
     local _shims=(

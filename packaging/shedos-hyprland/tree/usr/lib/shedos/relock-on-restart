@@ -1,0 +1,6 @@
+#!/bin/bash
+# Re-engage the lock screen after a compositor restart if the
+# session was locked when Hyprland died.
+
+[[ -e "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/shedos-locked" ]] || exit 0
+systemctl --user start shedos-screensaver-lock.service
