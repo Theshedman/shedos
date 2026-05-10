@@ -8,7 +8,7 @@
 #   scripts/bump-kernel.sh 6.19.15.zen1      # pin to a specific upstream
 #
 # Side effects: rewrites packaging/shedos-kernel/{PKGBUILD,config.x86_64}.
-# Does not git add / commit / push — leaves the diff for the caller to
+# Does not git add / commit / push; leaves the diff for the caller to
 # review and stage.
 
 set -euo pipefail
@@ -105,7 +105,7 @@ echo "Fetching $base/config.x86_64…"
 curl -fsS --max-time 30 -o "$config_file" "$base/config.x86_64"
 local_x86_64_sha=$(sha256sum "$config_file" | awk '{print $1}')
 
-# Cross-check our config matches the sha256 listed upstream — if not,
+# Cross-check our config matches the sha256 listed upstream; if not,
 # our extraction is buggy or upstream's checksum is wrong.
 upstream_x86_64_sha=$(echo "$new_sha256sums_x86_64" \
     | awk -F"'" '/[0-9a-f]{64}/ {print $2; exit}')

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Emit a canonical SHA-256 of packaging/<pkgname>/. Used by
 # bump-version.sh and build-shedos-packages.sh to skip rebuilds when
-# source content is unchanged. Hashes tracked files only — git ls-files
+# source content is unchanged. Hashes tracked files only; git ls-files
 # naturally excludes makepkg byproducts (target/, pkg/, *.pkg.tar.zst,
 # man/build/, __pycache__) via .gitignore, keeping the digest identical
 # between any clean clone and a working tree with local build artifacts.
@@ -11,7 +11,7 @@
 # source of truth for reproducible Rust builds, so a `cargo update`
 # legitimately means "the build inputs have changed → bump pkgrel".
 # If you're trying to update Rust deps, run `cargo update` in the
-# package dir, then `make bump` to record the new state — don't
+# package dir, then `make bump` to record the new state; don't
 # treat the resulting pkgrel bump as spurious.
 
 set -euo pipefail
@@ -26,7 +26,7 @@ dir=$root/packaging/$pkg
 # package's Cargo.toml(s) makes the sibling's source files a build input.
 # Without folding them into the hash, editing e.g. shedos-prompt-ui would
 # leave shedos-greeter's hash unchanged and CI would serve a stale cached
-# package compiled against the OLD prompt-ui — silent regression.
+# package compiled against the OLD prompt-ui; silent regression.
 sibling_paths=()
 if compgen -G "$dir/Cargo.toml" >/dev/null; then
     while IFS= read -r name; do

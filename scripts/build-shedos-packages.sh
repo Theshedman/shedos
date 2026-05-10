@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# build-shedos-packages.sh — build packaging/shedos-* into archiso/shedos-repo.
+# build-shedos-packages.sh; build packaging/shedos-* into archiso/shedos-repo.
 #
 # Parallels scripts/build-aur-packages.sh: output goes to the same local repo
 # so a single `mkarchiso` pacstrap pulls both AUR-sourced packages (e.g.
@@ -27,7 +27,7 @@ mkdir -p "$REPO_DIR"
 # current state.
 "$SCRIPT_DIR/render-meta-depends.sh"
 
-# Topological order — shedos-meta last (it depends on every other
+# Topological order; shedos-meta last (it depends on every other
 # shedos-* package and version-pins them). Alphabetical sort would
 # break shedos-hyprland → shedos-system.
 BUILD_ORDER=(
@@ -54,7 +54,7 @@ for name in "${BUILD_ORDER[@]}"; do
 done
 
 # Catch any new packages that got added to packaging/ without being put in
-# BUILD_ORDER — build them last, after the canonical set.
+# BUILD_ORDER; build them last, after the canonical set.
 while IFS= read -r d; do
     name=$(basename "$d")
     # shellcheck disable=SC2076
@@ -97,7 +97,7 @@ _strip_shedos_block() {
 }
 
 # Reverse shedos-system's _add_shedos_repo scriptlet inside the build
-# chroot — without this, the next `pacman -Sy` 404s on the prod repo.
+# chroot; without this, the next `pacman -Sy` 404s on the prod repo.
 _strip_shedos_prod_blocks() {
     [[ $EUID -eq 0 ]] || return 0
     [[ -f /etc/pacman.conf ]] || return 0
@@ -181,7 +181,7 @@ _refresh_repo_db() {
     fi
 
     if [[ $EUID -eq 0 ]]; then
-        # -y without -u: do NOT upgrade the host system — just resync the
+        # -y without -u: do NOT upgrade the host system; just resync the
         # local repo DB into pacman's cache so makepkg sees fresh packages.
         pacman -Sy --noconfirm
     fi
@@ -252,7 +252,7 @@ for dir in "${PKG_DIRS[@]}"; do
 done
 
 # Pre-stage workspace library crates that ship as Cargo `path = "../<name>"`
-# deps but have no PKGBUILD of their own (e.g. shedos-prompt-ui — the
+# deps but have no PKGBUILD of their own (e.g. shedos-prompt-ui; the
 # shared lock-surface renderer used by shedos-greeter and, soon,
 # shedos-screensaver). Same precedent as shedos-screensaver's
 # include_str! reach into shedos-branding: the consuming package's
@@ -299,7 +299,7 @@ for dir in "${PKG_DIRS[@]}"; do
     # compile step, no makedepends, just `cp -a tree/… $pkgdir`. Runtime
     # depends=() are needed on the INSTALLED system, not on the build host.
     # Using --syncdeps for those installs runtime deps into the build
-    # container for no benefit — and is actively harmful when the installed
+    # container for no benefit; and is actively harmful when the installed
     # dep mutates build-host state via its .install scriptlet
     # (shedos-system's post_install appends [shedos] to /etc/pacman.conf;
     # the next `pacman -Sy` then 404s because the prod repo doesn't exist
@@ -307,7 +307,7 @@ for dir in "${PKG_DIRS[@]}"; do
     #
     # shedos-kernel + shedos-screensaver + shedos-greeter actually compile
     # code and need their makedepends + depends pulled in. Everything else
-    # is pure cp -a payload — --nodeps avoids running runtime install
+    # is pure cp -a payload; --nodeps avoids running runtime install
     # scriptlets (e.g. shedos-system's pacman.conf rewrite) inside the
     # build chroot.
     #
@@ -399,7 +399,7 @@ ls -lh "$REPO_DIR"/shedos-repo.*
 # Persist the freshly-built package list so downstream CI steps know
 # which packages need re-signing + repo-add. Cached packages are
 # excluded; the file is left untouched (or empty) on a no-op build.
-# Append rather than overwrite — build-aur-packages.sh writes its own
+# Append rather than overwrite; build-aur-packages.sh writes its own
 # rebuild entries to the same file, and we don't want to clobber them.
 if (( ${#BUILT_PKGS[@]} > 0 )); then
     printf '%s\n' "${BUILT_PKGS[@]}" >> /tmp/built-pkgs.txt

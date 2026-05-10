@@ -74,7 +74,7 @@ declare -A skip_bump=(
 # Robust PKGBUILD field reader.
 #   - Handles `field=value`, `field='value'`, `field="value"`,
 #     with optional trailing `# comment`.
-#   - Refuses dynamic values (`$(...)`, backticks, ${...}) — bump-version
+#   - Refuses dynamic values (`$(...)`, backticks, ${...}); bump-version
 #     can't safely round-trip those, so failing loud beats silently
 #     mangling them with sed.
 _read_pkgbuild_field() {
