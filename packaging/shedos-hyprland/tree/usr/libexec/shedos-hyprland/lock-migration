@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-# One-shot per-user retrofit from the pre-Phase-5 hyprlock-based
-# lock chain to the screensaver-as-lock-client flow. Stamp-gated;
-# all operations are no-ops on already-migrated systems.
+# Per-user migration from hyprlock to the shedos-screensaver lock
+# client. Stamp-gated; idempotent on already-migrated systems.
 
 from __future__ import annotations
 
@@ -20,10 +19,9 @@ OLD_LOCK_CMD_VALUES = {
 }
 NEW_LOCK_CMD = "systemctl --user start shedos-screensaver-lock.service"
 
-# exec-once lines now owned by systemd user units (waybar.service,
-# mako.service, hypridle.service, shedos-wallpaper.service). Match
-# the exact ShedOS-shipped defaults; user-customised invocations
-# (e.g. `exec-once = waybar -c custom`) are left alone.
+# These exec-once lines are now owned by systemd user units. Only
+# the exact ShedOS-shipped defaults match; user customisations like
+# `exec-once = waybar -c custom` are left alone.
 OBSOLETE_AUTOSTART_LINES = {
     "exec-once = waybar",
     "exec-once = mako",
