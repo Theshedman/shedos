@@ -98,18 +98,19 @@ window#waybar>box {
     background-color: @red;
 }
 
-#mpris,
 #bluetooth,
-#keyboard-state,
-#pulseaudio,
 #network,
+#pulseaudio,
 #cpu,
-#memory,
+#custom-health,
+#custom-conflicts,
 #battery,
 #custom-power {
-    padding: 0 10px;
-    margin: 5px 2px;
-    border-radius: 10px;
+    min-width: 22px;
+    min-height: 22px;
+    padding: 0 8px;
+    margin: 3px 2px;
+    border-radius: 8px;
     background: @surface0;
     color: @text;
     transition: all 0.2s ease;
@@ -136,12 +137,7 @@ window#waybar>box {
 }
 
 #custom-conflicts {
-    padding: 0 10px;
-    margin: 5px 2px;
-    border-radius: 10px;
-    background: @surface0;
     color: @peach;
-    transition: all 0.2s ease;
 }
 
 #custom-conflicts.has-conflicts {
@@ -151,22 +147,19 @@ window#waybar>box {
 }
 
 #custom-conflicts.no-conflicts {
-    padding: 0;
+    min-width: 0;
+    min-height: 0;
     margin: 0;
     background: transparent;
 }
 
 #custom-health {
-    padding: 0 10px;
-    margin: 5px 2px;
-    border-radius: 10px;
-    background: @surface0;
     color: @yellow;
-    transition: all 0.2s ease;
 }
 
 #custom-health.ok {
-    padding: 0;
+    min-width: 0;
+    min-height: 0;
     margin: 0;
     background: transparent;
 }
@@ -236,8 +229,7 @@ window#waybar>box {
 
 #custom-power {
     color: @red;
-    font-size: 14px;
-    padding: 0 12px;
+    font-size: 16px;
 }
 
 #custom-power:hover {

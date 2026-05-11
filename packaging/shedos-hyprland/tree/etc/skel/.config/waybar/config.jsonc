@@ -96,7 +96,7 @@
         "on-click": "kitty --class impala -e impala"
     },
     "battery": {
-        "format": "{capacity}% {icon}",
+        "format": "{icon}",
         "format-discharging": "{icon}",
         "format-charging": "{icon}",
         "format-plugged": "",
@@ -210,7 +210,7 @@
         "spacing": 17
     },
     "custom/power": {
-        "format": "⏻ ",
+        "format": "⏻",
         "tooltip": false,
         "on-click": "shedman power"
     }
