@@ -24,7 +24,6 @@
         "pulseaudio",
         "cpu",
         "custom/health",
-        "custom/doctor",
         "custom/conflicts",
         "battery",
         "custom/power"
@@ -179,6 +178,7 @@
         "exec": "/usr/bin/shedman updates --waybar",
         "interval": 3600,
         "return-type": "json",
+        "hide-empty-text": true,
         "on-click": "/usr/bin/kitty --class shedos-update -e /usr/bin/shedman update",
         "signal": 8
     },
@@ -186,6 +186,7 @@
         "exec": "/usr/bin/shedman conflicts --waybar",
         "interval": 3600,
         "return-type": "json",
+        "hide-empty-text": true,
         "on-click": "/usr/bin/kitty --class shedos-review -e /usr/bin/shedman config --review",
         "signal": 9
     },
@@ -193,15 +194,9 @@
         "exec": "/usr/bin/shedman health --waybar",
         "interval": 300,
         "return-type": "json",
+        "hide-empty-text": true,
         "on-click": "/usr/bin/kitty --class btop -e btop --force-utf",
         "signal": 10
-    },
-    "custom/doctor": {
-        "exec": "/usr/bin/shedman doctor --waybar",
-        "interval": 21600,
-        "return-type": "json",
-        "on-click": "/usr/bin/kitty --class shedos-doctor -e sh -c '/usr/bin/shedman doctor --diff; echo; read -p \"[enter] to close \"'",
-        "signal": 11
     },
     "custom/screenrecording-indicator": {
         "on-click": "/usr/bin/shedman screenrecord",
