@@ -32,4 +32,9 @@ package() {
 
     install -Dm644 tree/etc/shedos-ascii.txt \
         "$pkgdir/etc/shedos-ascii.txt"
+
+    install -Dm644 tree/usr/share/shedos/shedos-wordmark-on-dark.png \
+        "$pkgdir/usr/share/shedos/shedos-wordmark-on-dark.png"
+    install -Dm644 tree/usr/share/shedos/shedos-wordmark-on-light.png \
+        "$pkgdir/usr/share/shedos/shedos-wordmark-on-light.png"
 }
