@@ -138,8 +138,8 @@ def _write_greeter_toml(tmp, ctx, target):
 
 
 def _write_gsettings_sh(tmp, ctx):
-    accent_capitalized = ctx["primary_token"][:1].upper() + ctx["primary_token"][1:]
-    gtk_theme_name = f"Catppuccin-Mocha-Standard-{accent_capitalized}-Dark"
+    accent = ctx["primary_token"]
+    gtk_theme_name = f"catppuccin-mocha-{accent}-standard+default"
     body = (
         "#!/usr/bin/env bash\n"
         f"# output_schema_version={SCHEMA_VERSION}\n"
@@ -149,6 +149,15 @@ def _write_gsettings_sh(tmp, ctx):
         'gsettings set org.gnome.desktop.interface cursor-theme "Adwaita"\n'
         'gsettings set org.gnome.desktop.interface color-scheme "prefer-dark"\n'
         f'gsettings set org.gnome.desktop.interface font-name "{ctx["font_ui"]}"\n'
+        "\n"
+        '# libadwaita ignores gtk-theme-name; importing the theme\'s\n'
+        '# gtk-4.0 stylesheet here pulls the Catppuccin overrides into\n'
+        '# libadwaita\'s style cascade so Nautilus / file-chooser /\n'
+        '# every libadwaita app picks up the accent.\n'
+        'mkdir -p "$HOME/.config/gtk-4.0"\n'
+        f'cat > "$HOME/.config/gtk-4.0/gtk.css" <<EOF\n'
+        f'@import url("file:///usr/share/themes/{gtk_theme_name}/gtk-4.0/gtk.css");\n'
+        'EOF\n'
     )
     (tmp / "gsettings.sh").write_text(body)
     (tmp / "gsettings.sh").chmod(0o755)
