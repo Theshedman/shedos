@@ -311,14 +311,14 @@ for dir in "${PKG_DIRS[@]}"; do
     # scriptlets (e.g. shedos-system's pacman.conf rewrite) inside the
     # build chroot.
     #
-    # shedos-greeter is a single-crate Rust package: its actual Rust
-    # sources live at packaging/shedos-greeter/src/ which collides with
-    # makepkg's $srcdir convention. --cleanbuild would rm -rf $srcdir
-    # before build() runs and delete our sources. The outer
-    # `rm -rf $work && cp -a $dir $work` above already gives a fresh
-    # per-run copy, so dropping --cleanbuild for this one package is safe.
+    # shedos-greeter and shedos-power are single-crate Rust packages:
+    # their actual Rust sources live at packaging/<pkg>/src/ which
+    # collides with makepkg's $srcdir convention. --cleanbuild would
+    # rm -rf $srcdir before build() runs and delete our sources. The
+    # outer `rm -rf $work && cp -a $dir $work` above already gives a
+    # fresh per-run copy, so dropping --cleanbuild for these is safe.
     case "$pkgname" in
-        shedos-greeter)
+        shedos-greeter|shedos-power)
             mk_flags=(--syncdeps --noconfirm --force)
             ;;
         shedos-kernel|shedos-screensaver)
