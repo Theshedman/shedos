@@ -1,86 +1,51 @@
 # Releasing ShedOS
 
-ShedOS follows the **hybrid cadence** from
-[`docs/cadence-proposal.md`](cadence-proposal.md):
+Two release gates:
 
 - **Gate 1 (repo)** — signed packages republish on every merge to `main`
-  that touches `packaging/**` or `packages/**`. Continuous, already live.
-- **Gate 2 (ISO)** — new `v<CalVer>` tag every **Monday**, plus manual
-  hotfix / RC paths for anything that can't wait.
+  that touches `packaging/**` or `packages/**`. `build-packages.yml`
+  runs `scripts/bump-version.sh` (no args) to auto-bump `pkgrel` for
+  every shedos-* package whose content hash drifted since the last
+  release, commits the bump back to `main` under the `shedos-ci[bot]`
+  identity, then rebuilds and publishes. Continuous; no maintainer
+  action needed once the merge lands.
+- **Gate 2 (ISO)** — a new `v<CalVer>` tag, cut on demand by the
+  maintainer when there's something worth shipping. The tag fires
+  `build-iso.yml`.
 
 This doc covers gate 2.
 
 ---
 
-## The weekly release
-
-Every Monday at 07:00 UTC, `.github/workflows/release-weekly.yml` opens a
-PR titled `release: v<today>` containing a `bump-version.sh --today` diff.
-The PR's commit is **unsigned** — CI does not have the maintainer's SSH
-signing key, and won't. Merging the PR directly through the GitHub UI
-would land an unsigned commit on `main`; don't do it.
-
-Instead, **finalize locally**:
+## Cutting a release
 
 ```sh
-today=$(date -u +%Y.%m.%d)            # or whatever date the PR is cut for
-branch="release/v$today"
-
-git fetch origin "$branch"
-git checkout main && git pull --ff-only
-git merge --squash "origin/$branch"
+today=$(date -u +%Y.%m.%d)
+scripts/bump-version.sh "$today"
+git add VERSION packaging/
 git commit -S -s -m "release: v$today"
 git tag -s "v$today" -m "ShedOS v$today"
 git push origin main
 git push origin "v$today"
-git push origin --delete "$branch"
-gh pr close <PR-number>
 ```
 
-Pushing the tag fires `build-iso.yml`; pushing `main` fires
-`build-packages.yml`. Both land within ~45 min. No manual step after
-that — the retention sweep in `build-iso.yml` keeps R2 tidy.
+`bump-version.sh <date>` writes `VERSION` and bumps `pkgrel` for every
+shedos-* package whose content hash drifted since the last release
+manifest (`packaging/.last-release-hashes.toml`).
 
----
+Pushing `main` fires `build-packages.yml`; the tag push fires
+`build-iso.yml`. Both land within ~45 min. The retention sweep in
+`build-iso.yml` keeps R2 tidy.
 
-## Skipping a week
-
-`touch .no-release-this-week && git commit -S -s -m 'release: skip next Monday' && git push`
-
-The scheduled workflow removes the marker on Monday (via the bot account)
-and exits. The following Monday defaults back to opening a PR.
-
-This is the right hatch when:
-
-- You're mid-debug on a cross-package refactor and don't want Monday's
-  cut to capture a half-finished state.
-- The week had no `packaging/**` changes anyway (the workflow also
-  auto-skips in that case — the marker is only needed to suppress an
-  otherwise-wanted cut).
-
----
-
-## Hotfix release (out-of-band)
-
-When something on `main` needs to ship before Monday:
+If you've already shipped a release dated today and need another, append
+an incremental suffix:
 
 ```sh
-# Bump with an incremental suffix — never reuse a published CalVer date.
-# Example: last release was 2026.04.21; today is 2026.04.22; urgent fix:
 scripts/bump-version.sh 2026.04.22.1
-git add VERSION packaging/
-git commit -S -s -m "release: v2026.04.22.1 (hotfix: <what>)"
-git tag -s "v2026.04.22.1" -m "ShedOS v2026.04.22.1"
-git push origin main
-git push origin v2026.04.22.1
 ```
 
-`bump-version.sh` validates that `YYYY.MM.DD.N` is still CalVer-shaped;
+`bump-version.sh` validates that `YYYY.MM.DD[.N]` is still CalVer-shaped;
 anything else errors out.
-
-A hotfix between Mondays doesn't cancel the next Monday's scheduled PR —
-the scheduled workflow will propose `v<next-Monday>` on top and that one
-will include the hotfix plus anything else that landed.
 
 ---
 
@@ -101,9 +66,9 @@ git push origin "v$today-rc1"
 - Marks the GitHub Release as a prerelease and slots the ISO into the
   RC retention bucket (1 kept) rather than the stable bucket (2 kept).
 - Renders the live ISO's `pacman.conf` to pacstrap from
-  `[shedos-testing] = repo.shedos.org/test/x86_64` (the always-fresh
-  channel that the RC's packages were just published to). So the RC
-  ISO actually installs and exercises the RC packages under bake.
+  `[shedos-testing] = repo.shedos.org/test/x86_64` — the always-fresh
+  channel that the RC's packages were just published to. So the RC ISO
+  actually installs and exercises the RC packages under bake.
 
 If the RC holds up, promote by cutting the plain stable tag:
 
@@ -123,44 +88,35 @@ The stable tag triggers two things in parallel:
    from the stable ISO pull from the same channel they'll subsequently
    `pacman -Syu` from.
 
-No VERSION file churn between RC and stable — `bump-version.sh` is
-hash-aware (since v2026.05.02) and only bumps packages whose content
-actually changed since the manifest in
-`packaging/.last-release-hashes.toml`. A no-source-change stable cut
-publishes nothing new; the rclone promote is the only artifact move.
+No `VERSION` churn between RC and stable — `bump-version.sh` is
+hash-aware and only bumps packages whose content actually changed since
+the manifest. A no-source-change stable cut publishes nothing new; the
+rclone promote is the only artifact move.
 
 ---
 
-## Why the maintainer is still in the loop
+## Why the maintainer signs locally
 
-The whole rationale for the PR-then-finalize flow is the SSH-signing
-invariant. Alternatives we rejected:
+Every commit and tag on `main` is SSH-signed under a single maintainer
+identity. CI does not have that key and won't; handing it to GitHub
+Actions would double the attack surface for a release cadence that takes
+two minutes to do by hand.
 
-- **CI-side signing key** — would require a second entry in
-  `~/.ssh/allowed_signers` and a private key in CI secrets. Doubles the
-  attack surface for a release cadence we can handle with a 2-minute
-  Monday chore.
-- **Unsigned bot merges to `main`** — the whole point of signing every
-  commit is that `git log --show-signature` stays clean; a bot commit
-  puts a gap in that chain.
+The only exception is `build-packages.yml`'s pkgrel auto-bump, which
+lands an unsigned `shedos-ci[bot]` commit. That's accepted because the
+bot's authority is narrow (it can only mutate `pkgrel=` lines under
+`packaging/` plus `VERSION` when chained behind a maintainer push), and
+because the alternative — making the maintainer manually bump pkgrel on
+every drift — was the kind of toil that erodes the discipline that
+makes signing useful in the first place.
+
+Alternatives rejected for the rest of the release path:
+
+- **CI-side signing key** — requires a second `~/.ssh/allowed_signers`
+  entry plus a private key in CI secrets.
+- **Bot tags or merges to `main` outside the pkgrel-bump scope** — the
+  whole point of signing every commit is that `git log --show-signature`
+  stays clean; a wider bot scope puts a gap in that chain.
 - **GitHub's built-in signed squash-merge** — signed by GitHub's key,
   not the maintainer's. "Verified" on the web UI but not by
   `allowed_signers`.
-
-If the weekly chore ever becomes annoying enough to justify the security
-tradeoff, revisit.
-
----
-
-## What's still deferred
-
-**Per-package automatic pkgrel bumps** on pushes to `main` are out of
-scope for now. When a change only touches one package's `tree/` and we
-want it to ship mid-week via gate 1 (not wait for Monday's pkgver
-bump), bump that package's `pkgrel` manually in the same commit:
-
-```sh
-sed -i 's/^pkgrel=.*/pkgrel='$((OLD+1))'/' packaging/shedos-<pkg>/PKGBUILD
-```
-
-Volume is low enough that this hasn't stung yet. Revisit if it does.

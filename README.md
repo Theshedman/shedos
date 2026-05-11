@@ -153,7 +153,7 @@ shedos/
 ├── docs/                 # Maintainer documentation
 ├── site/                 # Astro source for shedos.org
 ├── test/                 # Fixture-driven test suites
-├── .github/workflows/    # CI: build-packages, build-iso, release-weekly,
+├── .github/workflows/    # CI: build-packages, build-iso,
 │                         #     kernel-version-watcher, aur-cache-refresh, deploy-site
 ├── architecture.txt      # System architecture overview
 ├── Makefile
