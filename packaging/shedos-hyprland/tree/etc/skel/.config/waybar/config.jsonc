@@ -212,12 +212,6 @@
     "custom/power": {
         "format": "⏻ ",
         "tooltip": false,
-        "menu": "on-click",
-        "menu-file": "~/.config/waybar/power-menu.xml",
-        "menu-actions": {
-            "shutdown": "shedman power shutdown",
-            "reboot": "shedman power reboot",
-            "logout": "shedman power logout"
-        }
+        "on-click": "shedman power"
     }
 }
