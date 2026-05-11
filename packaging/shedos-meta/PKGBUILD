@@ -1293,6 +1293,7 @@ depends=(
     'elephant-unicode'
     'elephant-websearch'
     'hadolint-bin'
+    'hyprshade'
     'hyprshutdown'
     'impala'
     'lazydocker'
