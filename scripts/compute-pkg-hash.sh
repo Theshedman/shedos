@@ -55,6 +55,15 @@ cd "$root"
             packaging/*/.gitignore) continue ;;
         esac
         printf '%s\n' "$f"
-        cat "$f"
+        if [ -L "$f" ]; then
+            # Symlinks ship as-is (the link target string is the
+            # contract). Following them with `cat` would error in CI
+            # when the target points at an installed-system path
+            # (e.g. /usr/lib/systemd/user/foo.service) that doesn't
+            # exist in the checkout.
+            readlink "$f"
+        else
+            cat "$f"
+        fi
     done
 } | sha256sum | awk '{print $1}'
