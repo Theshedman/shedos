@@ -130,11 +130,6 @@ if command -v fd &> /dev/null; then
     alias find="fd"
 fi
 
-# ripgrep (better grep)
-if command -v rg &> /dev/null; then
-    alias grep="rg"
-fi
-
 # dust (better du)
 if command -v dust &> /dev/null; then
     alias du="dust"
