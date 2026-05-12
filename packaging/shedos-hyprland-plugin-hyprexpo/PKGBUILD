@@ -1,0 +1,54 @@
+# Maintainer: ShedOS <https://github.com/theshedman/shedos>
+#
+# Workspace overview plugin for Hyprland, built from upstream
+# hyprwm/hyprland-plugins at a pinned commit. The AUR package lags
+# every Hyprland minor release and refuses to load on ABI mismatch;
+# building it ourselves against the same Hyprland we ship keeps the
+# plugin loadable on every install.
+#
+# When ShedOS moves to a newer Hyprland, update _commit to the
+# upstream "all: update for <ver>" commit and bump pkgver to match.
+
+pkgname=shedos-hyprland-plugin-hyprexpo
+pkgver=0.55.0
+pkgrel=1
+pkgdesc='Workspace-overview plugin for Hyprland (hyprexpo), tracked against ShedOS-shipped Hyprland'
+arch=('x86_64')
+url='https://github.com/hyprwm/hyprland-plugins'
+license=('BSD-3-Clause')
+
+depends=(
+    'hyprland'
+    'gcc-libs'
+    'glibc'
+    'pixman'
+    'libdrm'
+    'pango'
+    'libinput'
+    'systemd-libs'
+    'wayland'
+    'libxkbcommon'
+)
+
+makedepends=(
+    'gcc'
+    'make'
+    'pkgconf'
+    'git'
+    'hyprland-protocols'
+)
+
+_commit='eaf18d55d51cef00818c5a4fdd4170f8cc2de4dc'
+
+source=("git+https://github.com/hyprwm/hyprland-plugins.git#commit=$_commit")
+sha256sums=('SKIP')
+
+build() {
+    cd "$srcdir/hyprland-plugins/hyprexpo"
+    make all
+}
+
+package() {
+    install -Dm644 "$srcdir/hyprland-plugins/hyprexpo/hyprexpo.so" \
+        "$pkgdir/usr/lib/hyprland/hyprexpo.so"
+}

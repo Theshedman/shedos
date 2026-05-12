@@ -39,6 +39,7 @@ depends=(
     'nwg-dock-hyprland'   # application dock; ExecStart for shedos-dock.service
     'nwg-drawer'          # full-screen app drawer (dock's default launcher)
     'shedos-power'        # Rust GUI overlay execd by `shedman power` (waybar power icon)
+    'shedos-hyprland-plugin-hyprexpo'   # workspace overview for the 3-finger swipe up gesture
 )
 optdepends=(
     'impala: network TUI launched from waybar network icon'
