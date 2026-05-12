@@ -1,23 +1,8 @@
---- a/src/main.cpp	2026-05-12 22:41:32.401792674 +0100
-+++ b/src/main.cpp	2026-05-12 22:29:46.977610131 +0100
-@@ -619,7 +619,14 @@
-     if (!pRenderLayer)
-         pRenderLayer = findFunctionBySymbol(pHandle, "renderLayer", "CHyprRenderer::renderLayer");
- 
-+    HyprlandAPI::addDispatcherV2(pHandle, "overview:toggle", ::dispatchToggleOverview);
-+    HyprlandAPI::addDispatcherV2(pHandle, "overview:open",   ::dispatchOpenOverview);
-+    HyprlandAPI::addDispatcherV2(pHandle, "overview:close",  ::dispatchCloseOverview);
-+
-     registerMonitors();
-+    g_pConfigReloadHook = Event::bus()->m_events.config.reloaded.listen([]() { reloadConfig(); });
-+    reloadConfig();
-+
-     g_pAddMonitorHook = Event::bus()->m_events.monitor.added.listen([](const PHLMONITOR&) { registerMonitors(); });
- 
-     return {"Hyprspace", "Workspace overview", "KZdkm", "0.1"};
---- a/src/Layout.cpp	2026-05-12 22:41:32.401792674 +0100
-+++ b/src/Layout.cpp	2026-05-12 22:26:08.940287190 +0100
-@@ -25,12 +25,6 @@
+diff --git a/src/Layout.cpp b/src/Layout.cpp
+index 00e9e6c..8d6801d 100644
+--- a/src/Layout.cpp
++++ b/src/Layout.cpp
+@@ -25,12 +25,6 @@ void CHyprspaceWidget::updateLayout() {
  
      const auto currentHeight = Config::panelHeight + Config::reservedArea;
  
@@ -30,7 +15,7 @@
      if (active) {
          if (!Config::onBottom)
              pMonitor->m_reservedArea = Desktop::CReservedArea(currentHeight, 0, 0, 0);
-@@ -42,54 +36,14 @@
+@@ -42,54 +36,14 @@ void CHyprspaceWidget::updateLayout() {
  
      g_pHyprRenderer->arrangeLayersForMonitor(ownerID);
  
@@ -93,3 +78,80 @@
  
      g_pHyprRenderer->damageMonitor(pMonitor);
  }
+diff --git a/src/Render.cpp b/src/Render.cpp
+index aeb8b5d..8d4c7a3 100644
+--- a/src/Render.cpp
++++ b/src/Render.cpp
+@@ -48,6 +48,10 @@ void renderWindowStub(PHLWINDOW pWindow, PHLMONITOR pMonitor, PHLWORKSPACE pWork
+     const auto oUseNearestNeighbor = pWindow->m_ruleApplicator->nearestNeighbor();
+     const auto oPinned = pWindow->m_pinned;
+     const auto oFloating = pWindow->m_isFloating;
++    const Vector2D oRealPosValue  = pWindow->m_realPosition->value();
++    const Vector2D oRealPosGoal   = pWindow->m_realPosition->goal();
++    const Vector2D oRealSizeValue = pWindow->m_realSize->value();
++    const Vector2D oRealSizeGoal  = pWindow->m_realSize->goal();
+ 
+     const float    logicalW = std::max((float)oSize.x, 5.F);
+     const float    scaleMod = rectOverride.w / std::max(logicalW * pMonitor->m_scale, 5.F);
+@@ -65,6 +69,15 @@ void renderWindowStub(PHLWINDOW pWindow, PHLMONITOR pMonitor, PHLWORKSPACE pWork
+     pWindow->m_pinned = true;
+     pWindow->m_ruleApplicator->rounding().set(pWindow->rounding() * scaleMod * pMonitor->m_scale, Desktop::Types::PRIORITY_SET_PROP);
+ 
++    // Pin m_realPosition/m_realSize to the logical m_position/m_size for the
++    // renderWindow call. Without this, the in-flight layout animation drives
++    // m_realSize toward its new target while Hyprland's renderer reads from
++    // it mid-tick — the texture renders at a size that doesn't match the
++    // scaleMod we computed above, the SurfacePassElement clips it, and the
++    // thumbnail appears transparent.
++    pWindow->m_realPosition->setValueAndWarp(pWindow->m_position);
++    pWindow->m_realSize->setValueAndWarp(pWindow->m_size);
++
+     g_pHyprRenderer->m_renderPass.add(makeUnique<CRendererHintsPassElement>(CRendererHintsPassElement::SData{.renderModif = renderModif}));
+     Hyprutils::Utils::CScopeGuard x([] {
+         g_pHyprRenderer->m_renderPass.add(makeUnique<CRendererHintsPassElement>(CRendererHintsPassElement::SData{.renderModif = Render::SRenderModifData{}}));
+@@ -72,7 +85,12 @@ void renderWindowStub(PHLWINDOW pWindow, PHLMONITOR pMonitor, PHLWORKSPACE pWork
+ 
+     g_pHyprRenderer->damageWindow(pWindow);
+ 
+-    (*(tRenderWindow)pRenderWindow)(g_pHyprRenderer.get(), pWindow, pMonitor, time, true, Render::RENDER_PASS_ALL, false, false);
++    // Last arg `standalone=true` makes the renderer force renderdata.alpha
++    // and renderdata.fadeAlpha to 1 (Renderer.cpp:587-590), bypassing every
++    // window/workspace alpha multiplier. Hyprland's own decorations and
++    // rounding are also skipped in standalone mode, which is fine — the
++    // overview draws its own selection border.
++    (*(tRenderWindow)pRenderWindow)(g_pHyprRenderer.get(), pWindow, pMonitor, time, true, Render::RENDER_PASS_ALL, false, true);
+ 
+     // restore values for normal window render
+     pWindow->m_workspace = oWorkspace;
+@@ -81,6 +99,12 @@ void renderWindowStub(PHLWINDOW pWindow, PHLMONITOR pMonitor, PHLWORKSPACE pWork
+     pWindow->m_isFloating = oFloating;
+     pWindow->m_pinned = oPinned;
+     pWindow->m_ruleApplicator->rounding().unset(Desktop::Types::PRIORITY_SET_PROP);
++    pWindow->m_realPosition->setValueAndWarp(oRealPosValue);
++    pWindow->m_realSize->setValueAndWarp(oRealSizeValue);
++    if (oRealPosValue != oRealPosGoal)
++        *pWindow->m_realPosition = oRealPosGoal;
++    if (oRealSizeValue != oRealSizeGoal)
++        *pWindow->m_realSize = oRealSizeGoal;
+ }
+ 
+ void renderLayerStub(PHLLS pLayer, PHLMONITOR pMonitor, CBox rectOverride, const Time::steady_tp& time) {
+diff --git a/src/main.cpp b/src/main.cpp
+index 7ca6ae0..42acbb4 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -619,7 +619,14 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE inHandle) {
+     if (!pRenderLayer)
+         pRenderLayer = findFunctionBySymbol(pHandle, "renderLayer", "CHyprRenderer::renderLayer");
+ 
++    HyprlandAPI::addDispatcherV2(pHandle, "overview:toggle", ::dispatchToggleOverview);
++    HyprlandAPI::addDispatcherV2(pHandle, "overview:open",   ::dispatchOpenOverview);
++    HyprlandAPI::addDispatcherV2(pHandle, "overview:close",  ::dispatchCloseOverview);
++
+     registerMonitors();
++    g_pConfigReloadHook = Event::bus()->m_events.config.reloaded.listen([]() { reloadConfig(); });
++    reloadConfig();
++
+     g_pAddMonitorHook = Event::bus()->m_events.monitor.added.listen([](const PHLMONITOR&) { registerMonitors(); });
+ 
+     return {"Hyprspace", "Workspace overview", "KZdkm", "0.1"};
