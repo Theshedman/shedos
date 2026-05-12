@@ -1,0 +1,268 @@
+#!/usr/bin/env python3
+"""shedman-dock — manage the ShedOS application dock.
+
+User-facing control surface for nwg-dock-hyprland, run under the
+shedos-dock.service systemd user unit. Wraps the dock's signal-based
+toggle and writes user intent to two places:
+
+    ~/.config/shedos/dock.toml             (position, icon_size, launcher)
+    ~/.config/nwg-dock-hyprland/pinned     (one app id per line)
+
+Mutating commands restart the user unit so the change takes effect
+immediately. The dock cold-starts in well under a second.
+
+Subcommands:
+
+    toggle                  show/hide the running dock (SIGRTMIN+1)
+    position {bottom,top,left,right}
+                            move dock to that edge of the screen
+    pin <app>               append <app> to the pinned list
+    unpin <app>             remove <app> from the pinned list
+    pinned                  print current pinned list
+    restart                 systemctl --user restart shedos-dock
+    status                  unit state + current position + pinned count
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import signal
+import subprocess
+import sys
+from pathlib import Path
+
+import tomlkit
+
+
+CONFIG_DIR = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+DOCK_TOML = CONFIG_DIR / "shedos" / "dock.toml"
+PINNED_FILE = CONFIG_DIR / "nwg-dock-hyprland" / "pinned"
+UNIT = "shedos-dock.service"
+
+VALID_POSITIONS = ("bottom", "top", "left", "right")
+
+DEFAULTS = {
+    "position": "bottom",
+    "icon_size": 48,
+    "launcher_cmd": "nwg-drawer",
+}
+
+
+def _help_summary() -> None:
+    print("manage the ShedOS application dock (position, pinned apps, toggle)")
+
+
+def _complete(words: list[str]) -> None:
+    prev = words[0] if words else ""
+    if prev in ("position",):
+        for p in VALID_POSITIONS:
+            print(p)
+        return
+    if prev in ("pin", "unpin"):
+        # No good universal completion source; tab is no-op here.
+        return
+    for sub in ("toggle", "position", "pin", "unpin", "pinned",
+                "restart", "status", "help", "--help", "-h"):
+        print(sub)
+
+
+def _complete_fish() -> None:
+    pairs = (
+        ("toggle", "show or hide the dock"),
+        ("position", "move dock to bottom/top/left/right"),
+        ("pin", "add an app to the pinned list"),
+        ("unpin", "remove an app from the pinned list"),
+        ("pinned", "list pinned apps"),
+        ("restart", "restart the dock service"),
+        ("status", "current dock state"),
+        ("help", "show usage"),
+        ("--help", "show usage"),
+        ("-h", "show usage"),
+    )
+    for name, desc in pairs:
+        print(f"{name}\t{desc}")
+
+
+def _load_toml() -> tomlkit.TOMLDocument:
+    if not DOCK_TOML.is_file():
+        doc = tomlkit.document()
+        doc.update(DEFAULTS)
+        return doc
+    try:
+        return tomlkit.parse(DOCK_TOML.read_text())
+    except (OSError, tomlkit.exceptions.TOMLKitError) as e:
+        sys.stderr.write(
+            f"shedman dock: {DOCK_TOML} unreadable ({e}); using defaults\n"
+        )
+        doc = tomlkit.document()
+        doc.update(DEFAULTS)
+        return doc
+
+
+def _save_toml(doc: tomlkit.TOMLDocument) -> None:
+    DOCK_TOML.parent.mkdir(parents=True, exist_ok=True)
+    DOCK_TOML.write_text(tomlkit.dumps(doc))
+
+
+def _read_pinned() -> list[str]:
+    if not PINNED_FILE.is_file():
+        return []
+    return [line.strip() for line in PINNED_FILE.read_text().splitlines()
+            if line.strip()]
+
+
+def _write_pinned(entries: list[str]) -> None:
+    PINNED_FILE.parent.mkdir(parents=True, exist_ok=True)
+    PINNED_FILE.write_text("\n".join(entries) + ("\n" if entries else ""))
+
+
+def _unit_active() -> bool:
+    r = subprocess.run(
+        ["systemctl", "--user", "is-active", "--quiet", UNIT],
+        check=False,
+    )
+    return r.returncode == 0
+
+
+def _restart_unit() -> int:
+    r = subprocess.run(
+        ["systemctl", "--user", "restart", UNIT],
+        capture_output=True, text=True, check=False,
+    )
+    if r.returncode != 0:
+        sys.stderr.write(
+            f"shedman dock: failed to restart {UNIT}: "
+            f"{(r.stderr or '').strip()}\n"
+        )
+    return r.returncode
+
+
+def _cmd_toggle() -> int:
+    if not _unit_active():
+        return subprocess.run(
+            ["systemctl", "--user", "start", UNIT], check=False
+        ).returncode
+    # SIGRTMIN+1 is signal 35 (SIGRTMIN is 34 on glibc). Send by PID
+    # via pkill — we don't want to depend on the dock writing a pidfile.
+    r = subprocess.run(
+        ["pkill", "-SIGRTMIN+1", "-x", "nwg-dock-hyprland"],
+        check=False,
+    )
+    return 0 if r.returncode in (0, 1) else r.returncode
+
+
+def _cmd_position(target: str) -> int:
+    if target not in VALID_POSITIONS:
+        sys.stderr.write(
+            f"shedman dock: position must be one of "
+            f"{', '.join(VALID_POSITIONS)}; got {target!r}\n"
+        )
+        return 2
+    doc = _load_toml()
+    doc["position"] = target
+    _save_toml(doc)
+    return _restart_unit()
+
+
+def _cmd_pin(app: str) -> int:
+    pinned = _read_pinned()
+    if app in pinned:
+        print(f"already pinned: {app}")
+        return 0
+    pinned.append(app)
+    _write_pinned(pinned)
+    return _restart_unit()
+
+
+def _cmd_unpin(app: str) -> int:
+    pinned = _read_pinned()
+    if app not in pinned:
+        sys.stderr.write(f"shedman dock: not pinned: {app}\n")
+        return 1
+    pinned.remove(app)
+    _write_pinned(pinned)
+    return _restart_unit()
+
+
+def _cmd_pinned() -> int:
+    for entry in _read_pinned():
+        print(entry)
+    return 0
+
+
+def _cmd_restart() -> int:
+    return _restart_unit()
+
+
+def _cmd_status() -> int:
+    doc = _load_toml()
+    pos = doc.get("position", DEFAULTS["position"])
+    pinned = _read_pinned()
+    active = _unit_active()
+    state = "running" if active else "stopped"
+    print(f"dock:     {state}")
+    print(f"unit:     {UNIT}")
+    print(f"position: {pos}")
+    print(f"pinned:   {len(pinned)} app(s)")
+    for entry in pinned:
+        print(f"  - {entry}")
+    return 0
+
+
+def main() -> int:
+    # Dispatcher protocol (handled before argparse so they always work).
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "--help-summary":
+            _help_summary()
+            return 0
+        if sys.argv[1] in ("--complete-bash", "--complete-zsh"):
+            _complete(sys.argv[2:])
+            return 0
+        if sys.argv[1] == "--complete-fish":
+            _complete_fish()
+            return 0
+
+    parser = argparse.ArgumentParser(
+        prog="shedman dock",
+        description="Manage the ShedOS application dock.",
+    )
+    sub = parser.add_subparsers(dest="cmd")
+    sub.add_parser("toggle", help="show or hide the dock")
+    p_pos = sub.add_parser("position", help="move dock to a screen edge")
+    p_pos.add_argument("edge", choices=VALID_POSITIONS)
+    p_pin = sub.add_parser("pin", help="add an app to the pinned list")
+    p_pin.add_argument("app")
+    p_unpin = sub.add_parser("unpin", help="remove an app from the pinned list")
+    p_unpin.add_argument("app")
+    sub.add_parser("pinned", help="list pinned apps")
+    sub.add_parser("restart", help="restart the dock service")
+    sub.add_parser("status", help="current dock state")
+    sub.add_parser("help", help="show this help message")
+
+    args = parser.parse_args()
+
+    if args.cmd is None or args.cmd == "status":
+        return _cmd_status()
+    if args.cmd == "help":
+        parser.print_help()
+        return 0
+    if args.cmd == "toggle":
+        return _cmd_toggle()
+    if args.cmd == "position":
+        return _cmd_position(args.edge)
+    if args.cmd == "pin":
+        return _cmd_pin(args.app)
+    if args.cmd == "unpin":
+        return _cmd_unpin(args.app)
+    if args.cmd == "pinned":
+        return _cmd_pinned()
+    if args.cmd == "restart":
+        return _cmd_restart()
+
+    parser.print_help()
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())
