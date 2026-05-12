@@ -77,6 +77,15 @@ package() {
     install -Dm644 tree/usr/lib/systemd/user/shedos-hypr-reload.service \
         "$pkgdir/usr/lib/systemd/user/shedos-hypr-reload.service"
 
+    # waybar launch wrapper + drop-in. The wrapper ensures LANG and
+    # locale archive are in a workable state before exec'ing waybar so
+    # the clock module's L (locale) format modifier doesn't disable
+    # the module on a session where the locale is missing.
+    install -Dm755 tree/usr/lib/shedos/waybar-launch.sh \
+        "$pkgdir/usr/lib/shedos/waybar-launch.sh"
+    install -Dm644 tree/usr/lib/systemd/user/waybar.service.d/shedos-locale.conf \
+        "$pkgdir/usr/lib/systemd/user/waybar.service.d/shedos-locale.conf"
+
     # Application dock: systemd user unit + python wrapper that reads
     # ~/.config/shedos/dock.toml, spawns one nwg-dock-hyprland per
     # monitor, and execs nwg-drawer for the launcher button. The unit
