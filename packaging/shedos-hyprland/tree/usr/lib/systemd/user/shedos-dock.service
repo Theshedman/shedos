@@ -1,0 +1,14 @@
+[Unit]
+Description=ShedOS application dock (nwg-dock-hyprland)
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/shedos/start-dock.py
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=5
+
+[Install]
+WantedBy=graphical-session.target

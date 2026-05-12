@@ -36,6 +36,8 @@ depends=(
     'pacman-contrib'
     'yad'
     'inotify-tools'
+    'nwg-dock-hyprland'   # application dock; ExecStart for shedos-dock.service
+    'nwg-drawer'          # full-screen app drawer (dock's default launcher)
 )
 optdepends=(
     'impala: network TUI launched from waybar network icon'
@@ -73,6 +75,40 @@ package() {
         "$pkgdir/usr/lib/systemd/user/shedos-hypr-reload.path"
     install -Dm644 tree/usr/lib/systemd/user/shedos-hypr-reload.service \
         "$pkgdir/usr/lib/systemd/user/shedos-hypr-reload.service"
+
+    # Application dock: systemd user unit + python wrapper that reads
+    # ~/.config/shedos/dock.toml, spawns one nwg-dock-hyprland per
+    # monitor, and execs nwg-drawer for the launcher button. The unit
+    # is auto-enabled per-user via the graphical-session.target.wants
+    # symlink shipped under /etc/skel/ (handled by the `cp -a tree/etc`
+    # above). The pinned-app seed under /usr/share/shedos/hyprland/ is
+    # what start-dock.py copies into ~/.cache/nwg-dock-hyprland/ on
+    # first run (cache dir is the dock's own pin-state location).
+    install -Dm644 tree/usr/lib/systemd/user/shedos-dock.service \
+        "$pkgdir/usr/lib/systemd/user/shedos-dock.service"
+    install -Dm755 tree/usr/lib/shedos/start-dock.py \
+        "$pkgdir/usr/lib/shedos/start-dock.py"
+    install -Dm644 tree/usr/share/shedos/hyprland/nwg-dock-pinned-default \
+        "$pkgdir/usr/share/shedos/hyprland/nwg-dock-pinned-default"
+
+    # nwg-drawer as a resident systemd user unit, plus the launcher-button
+    # wrapper that sends SIGUSR1 to toggle visibility. Same auto-enable
+    # mechanism as shedos-dock — symlink in /etc/skel/.config/systemd/...
+    install -Dm644 tree/usr/lib/systemd/user/shedos-drawer.service \
+        "$pkgdir/usr/lib/systemd/user/shedos-drawer.service"
+    install -Dm755 tree/usr/lib/shedos/toggle-drawer.sh \
+        "$pkgdir/usr/lib/shedos/toggle-drawer.sh"
+
+    # Click-outside-to-close catcher — invisible full-screen layer-shell
+    # surface on the `top` layer (one below the drawer's `overlay`).
+    # Clicks on the drawer hit the drawer; clicks anywhere else fall
+    # through to the catcher, which sends the drawer's hide signal.
+    # Visibility is gated on Hyprland openlayer/closelayer events so the
+    # catcher is inactive whenever the drawer is closed.
+    install -Dm644 tree/usr/lib/systemd/user/shedos-click-catcher.service \
+        "$pkgdir/usr/lib/systemd/user/shedos-click-catcher.service"
+    install -Dm755 tree/usr/lib/shedos/click-catcher.py \
+        "$pkgdir/usr/lib/shedos/click-catcher.py"
 
     install -Dm644 tree/usr/lib/systemd/user/shedos-lock-migration.service \
         "$pkgdir/usr/lib/systemd/user/shedos-lock-migration.service"

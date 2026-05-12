@@ -1,0 +1,19 @@
+[Unit]
+Description=ShedOS application drawer (nwg-drawer, resident)
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+# -r keeps the drawer resident so SIGUSR1 toggles visibility instantly
+# without re-launching the process. The dock's launcher button sends
+# that signal via /usr/lib/shedos/toggle-drawer.sh.
+# Margins frame the drawer as a panel rather than full-screen — gaps
+# on top and sides so the wallpaper and waybar remain visible.
+ExecStart=/usr/bin/nwg-drawer -r -k -is 40 -mt 40 -ml 280 -mr 280 -mb 0
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=5
+
+[Install]
+WantedBy=graphical-session.target

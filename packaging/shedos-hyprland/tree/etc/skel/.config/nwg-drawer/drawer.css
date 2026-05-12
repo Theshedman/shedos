@@ -1,0 +1,140 @@
+/* ShedOS app drawer — Catppuccin styling.
+ *
+ * GTK3 CSS limitations:
+ *   - no % units in margin/padding (parse-fatal)
+ *   - no `outline` shorthand
+ *   - no transform / calc()
+ *
+ * Selectors verified against /usr/share/nwg-drawer/drawer.css.
+ */
+
+@import url("file:///etc/shedos/themes/current/palette.css");
+
+/* Drawer panel — opaque so text reads cleanly against busy wallpaper.
+ * Margins set via -mt/-ml/-mr/-mb in the systemd unit. */
+window {
+    background-color: rgba(30, 30, 46, 0.97);
+    color: @text;
+    border-radius: 14px;
+}
+
+/* Search entry — small pill at top. */
+entry {
+    background-color: @surface0;
+    color: @text;
+    border: 1px solid @surface1;
+    border-radius: 9999px;
+    padding: 4px 14px;
+    margin: 12px 24px 8px 24px;
+    min-width: 240px;
+    font-size: 12px;
+}
+
+entry:focus {
+    border-color: @mauve;
+}
+
+/* Category-filter chips — text-only. ID specificity (#category-button)
+ * beats the generic `button:hover` rule below. Cover every state
+ * combination so no GTK default sneaks a highlight in. */
+#category-button,
+#category-button:hover,
+#category-button:focus,
+#category-button:active,
+#category-button:checked,
+#category-button:checked:hover,
+#category-button:checked:focus,
+#category-button:checked:active {
+    background: transparent;
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    box-shadow: none;
+    padding: 4px 12px;
+    margin: 8px 6px 12px 6px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+#category-button,
+#category-button:hover,
+#category-button:focus {
+    color: @subtext0;
+}
+
+#category-button:checked,
+#category-button:active,
+#category-button:checked:hover {
+    color: @mauve;
+    font-weight: 700;
+}
+
+/* Pinned-apps strip above the main grid. */
+#pinned-box {
+    padding: 10px 0 14px 0;
+    margin: 0 24px 8px 24px;
+    border-bottom: 1px solid @surface1;
+}
+
+/* Grid items — transparent button frame; icon is the visual. */
+button {
+    background: transparent;
+    border: none;
+    color: @text;
+    padding: 6px 4px;
+    margin: 4px;
+    border-radius: 12px;
+}
+
+button:hover {
+    background-color: @surface0;
+}
+
+/* App icon — circular clip via border-radius. min-width/min-height
+ * match the -is flag passed to nwg-drawer (40 px) so the clipped
+ * box is exactly square → border-radius 9999px renders a full circle. */
+button image {
+    background-color: transparent;
+    border-radius: 9999px;
+    min-width: 40px;
+    min-height: 40px;
+    margin: 4px 0 4px 0;
+    padding: 0;
+}
+
+button label {
+    color: @text;
+    font-size: 10px;
+    margin: 0;
+    padding: 0;
+}
+
+/* File-search result panel. */
+#files-box {
+    padding: 10px;
+    border: 1px solid @surface1;
+    border-radius: 12px;
+    background-color: @surface0;
+    margin: 0 24px;
+}
+
+/* Math-eval chip. */
+#math-label {
+    color: @mauve;
+    font-weight: bold;
+    font-size: 18px;
+    padding: 8px 14px;
+    background-color: @surface0;
+    border-radius: 12px;
+}
+
+scrollbar slider {
+    background-color: @overlay0;
+    border-radius: 6px;
+    min-width: 6px;
+    min-height: 6px;
+}
+
+scrollbar slider:hover {
+    background-color: @overlay1;
+}

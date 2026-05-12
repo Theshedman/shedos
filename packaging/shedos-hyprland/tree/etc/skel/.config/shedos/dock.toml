@@ -1,0 +1,17 @@
+# ShedOS dock configuration. Managed by `shedman dock`; hand-edits are
+# preserved (tomlkit-based, comments survive) but the CLI is the
+# easiest path.
+#
+# Dock edge: "bottom" | "top" | "left" | "right". Bottom/left/right are
+# the keybound options (Super+ALT+{B,L,R}); top is accepted but not
+# bound to a key by default.
+position = "bottom"
+
+# Icon edge length in px. Smaller value = shorter dock.
+icon_size = 32
+
+# Command run when the dock's launcher button is clicked. The drawer
+# runs as a resident systemd user unit (shedos-drawer.service); this
+# wrapper sends SIGUSR1 which is nwg-drawer's toggle-visibility signal.
+# Click once to open, click again to close — instant, no re-launch.
+launcher_cmd = "/usr/lib/shedos/toggle-drawer.sh"

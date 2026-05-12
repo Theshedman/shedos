@@ -1,0 +1,42 @@
+/* ShedOS dock styling. The palette comes from the active theme via the
+ * theme renderer (/etc/shedos/themes/current/palette.css) so `shedman
+ * theme set palette <name>` recolours the dock on next session. */
+
+@import url("file:///etc/shedos/themes/current/palette.css");
+
+window {
+    background: alpha(@base, 0.85);
+    border: 2px solid @surface0;
+    border-radius: 14px;
+    padding: 4px;
+}
+
+#box {
+    padding: 4px;
+}
+
+button, image {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    color: @text;
+}
+
+button {
+    padding: 6px;
+    margin: 0 3px;
+    border-radius: 10px;
+    transition: background 200ms ease;
+}
+
+button:hover {
+    background: @surface1;
+}
+
+/* Underline indicator under the focused-window's icon. Same accent as
+ * the workspace highlight pill in the waybar so the visual vocabulary
+ * stays consistent across the desktop. */
+#active {
+    border-bottom: 2px solid @mauve;
+    border-radius: 10px 10px 0 0;
+}

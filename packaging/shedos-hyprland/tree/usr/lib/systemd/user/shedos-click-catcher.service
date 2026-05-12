@@ -1,0 +1,14 @@
+[Unit]
+Description=ShedOS drawer click-outside-to-close catcher
+PartOf=graphical-session.target
+After=graphical-session.target shedos-drawer.service
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/shedos/click-catcher.py
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=5
+
+[Install]
+WantedBy=graphical-session.target
