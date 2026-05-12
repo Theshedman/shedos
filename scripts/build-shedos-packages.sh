@@ -34,7 +34,7 @@ BUILD_ORDER=(
     shedos-keyring
     shedos-system
     shedos-branding
-    shedos-hyprland-plugin-hyprexpo
+    shedos-hyprland-plugin-hyprspace
     shedos-hyprland
     shedos-nvim
     shedos-greeter
