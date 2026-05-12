@@ -10,7 +10,7 @@ Type=simple
 # that signal via /usr/lib/shedos/toggle-drawer.sh.
 # Margins frame the drawer as a panel rather than full-screen — gaps
 # on top and sides so the wallpaper and waybar remain visible.
-ExecStart=/usr/bin/nwg-drawer -r -k -is 40 -mt 40 -ml 280 -mr 280 -mb 0
+ExecStart=/usr/bin/nwg-drawer -r -k -ovl -is 40 -mt 70 -ml 280 -mr 280 -mb 50
 Restart=on-failure
 RestartSec=2
 TimeoutStopSec=5
