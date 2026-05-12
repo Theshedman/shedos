@@ -153,4 +153,15 @@ package() {
     # ship a parallel .desktop with Name=Terminal pointing at kitty.
     install -Dm644 tree/usr/share/applications/terminal.desktop \
         "$pkgdir/usr/share/applications/terminal.desktop"
+
+    # /usr/share/shedos-hyprland/ assets used by waybar and `shedman
+    # keybindings`. shedos-s.png is the logo painted in waybar's leftmost
+    # pill (#custom-shedos-logo background-image). keybindings-{dialog.css,
+    # meta.toml} feed the libexec keybindings dialog.
+    install -Dm644 tree/usr/share/shedos-hyprland/shedos-s.png \
+        "$pkgdir/usr/share/shedos-hyprland/shedos-s.png"
+    install -Dm644 tree/usr/share/shedos-hyprland/keybindings-dialog.css \
+        "$pkgdir/usr/share/shedos-hyprland/keybindings-dialog.css"
+    install -Dm644 tree/usr/share/shedos-hyprland/keybindings-meta.toml \
+        "$pkgdir/usr/share/shedos-hyprland/keybindings-meta.toml"
 }
