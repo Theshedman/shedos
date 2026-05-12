@@ -38,6 +38,7 @@ depends=(
     'inotify-tools'
     'nwg-dock-hyprland'   # application dock; ExecStart for shedos-dock.service
     'nwg-drawer'          # full-screen app drawer (dock's default launcher)
+    'shedos-power'        # Rust GUI overlay execd by `shedman power` (waybar power icon)
 )
 optdepends=(
     'impala: network TUI launched from waybar network icon'

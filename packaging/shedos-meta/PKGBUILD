@@ -28,6 +28,7 @@ depends=(
     'shedos-kernel-headers'
     'shedos-screensaver'
     'shedos-migrate-to-packaged'
+    'shedos-power'
     'a52dec'
     'aalib'
     'abseil-cpp'
