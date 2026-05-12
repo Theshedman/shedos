@@ -116,6 +116,20 @@ window#waybar>box {
     transition: all 0.2s ease;
 }
 
+/* Same hover effect as #workspaces button: surface1 background, mauve
+ * accent. #custom-power is omitted on purpose — it keeps its own red
+ * hover treatment defined further down. */
+#bluetooth:hover,
+#network:hover,
+#pulseaudio:hover,
+#cpu:hover,
+#custom-health:hover,
+#custom-conflicts:hover,
+#battery:hover {
+    background: @surface1;
+    color: @mauve;
+}
+
 #pulseaudio {
     color: @sapphire;
 }
@@ -347,5 +361,12 @@ separator {
     margin: 5px 2px;
     transition: all 0.2s ease;
     color: transparent;
+}
+
+/* Same hover as #workspaces button and the right-side pills. The logo
+ * label text is transparent (the PNG is in background-image) so only
+ * the surface change is visible. */
+#custom-shedos-logo:hover {
+    background-color: @surface1;
 }
 
