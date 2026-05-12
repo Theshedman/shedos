@@ -91,6 +91,7 @@ scrolledwindow.keybindings-list overshoot {
 .keybindings-section-chip.cat-screenshots   { background-color: @green; }
 .keybindings-section-chip.cat-system        { background-color: @red; color: @base; }
 .keybindings-section-chip.cat-audio         { background-color: @sky; }
+.keybindings-section-chip.cat-gestures      { background-color: @teal; }
 .keybindings-section-chip.cat-other         { background-color: @overlay0; }
 
 .keybindings-row {

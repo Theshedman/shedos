@@ -535,3 +535,82 @@ keys = "XF86MonBrightnessDown"
 category = "Audio & Media"
 name = "Brightness Down"
 description = "Lower screen brightness by 5%"
+
+# ---- Workspaces (overview keyboard parity) ---------------------------
+
+[[bind]]
+keys = "SUPER+Tab"
+category = "Workspaces"
+name = "Workspace Overview"
+description = "Open the workspace grid (keyboard parity with the 3-finger swipe up gesture)"
+
+# ---- Touchpad gestures -----------------------------------------------
+# 2-finger swipes and right-click stay on libinput defaults. Hyprland's
+# plain-text gesture parser has no cursorzoom action (Lua only), so
+# 2-finger pinch is omitted; 2-finger scroll continues to work.
+
+[[gesture]]
+gesture = "3:horizontal"
+category = "Touchpad gestures"
+name = "Switch workspace"
+description = "Slide between workspaces; carries any window held with Super+drag"
+
+[[gesture]]
+gesture = "3:up"
+category = "Touchpad gestures"
+name = "Workspace overview"
+description = "Open the workspace grid"
+
+[[gesture]]
+gesture = "3:down"
+category = "Touchpad gestures"
+name = "Close overview"
+description = "Close the workspace overview (opposite of 3-finger swipe up)"
+
+[[gesture]]
+gesture = "3:pinchin"
+category = "Touchpad gestures"
+name = "Toggle fullscreen"
+description = "Toggle fullscreen on the active window"
+
+[[gesture]]
+gesture = "3:pinchout"
+category = "Touchpad gestures"
+name = "Toggle floating"
+description = "Toggle floating mode on the active window"
+
+[[gesture]]
+gesture = "4:left"
+category = "Touchpad gestures"
+name = "Move window to previous workspace"
+description = "Move the active window one workspace to the left"
+
+[[gesture]]
+gesture = "4:right"
+category = "Touchpad gestures"
+name = "Move window to next workspace"
+description = "Move the active window one workspace to the right"
+
+[[gesture]]
+gesture = "4:up"
+category = "Touchpad gestures"
+name = "Workspace overview"
+description = "Open the workspace grid (alternative to 3-finger swipe up)"
+
+[[gesture]]
+gesture = "4:down"
+category = "Touchpad gestures"
+name = "Close overview"
+description = "Close the workspace overview (opposite of 4-finger swipe up)"
+
+[[gesture]]
+gesture = "4:pinchin"
+category = "Touchpad gestures"
+name = "Launcher"
+description = "Open the app launcher"
+
+[[gesture]]
+gesture = "4:pinchout"
+category = "Touchpad gestures"
+name = "Show desktop"
+description = "Toggle the minimized special workspace to clear the screen"
