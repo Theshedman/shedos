@@ -24,11 +24,12 @@ The dock reads two files:
 		*shedos-dock*(5) for the schema. Edits via this CLI
 		preserve hand-added comments.
 
-	~/.config/nwg-dock-hyprland/pinned
+	~/.cache/nwg-dock-pinned
 		One application id per line (matched against window
-		class names and _.desktop_ filenames). Manipulated by
-		*shedman dock pin* / *unpin*; the dock's own
-		right-click menu writes here too.
+		class names). Manipulated by *shedman dock pin* /
+		*unpin*; the dock's own right-click menu writes here
+		too. This is a cache-dir path because the dock treats
+		pinned state as runtime cache, not user configuration.
 
 # SUBCOMMANDS
 
@@ -84,8 +85,9 @@ The shipped Hyprland config binds:
 ~/.config/shedos/dock.toml
 	Dock configuration. See *shedos-dock*(5).
 
-~/.config/nwg-dock-hyprland/pinned
-	Pinned-app list, one entry per line.
+~/.cache/nwg-dock-pinned
+	Pinned-app list, one entry per line. Cache-dir path because
+	the dock owns this file as runtime state.
 
 ~/.config/nwg-dock-hyprland/style.css
 	GTK CSS for the dock surface. Imports the active palette from

@@ -36,8 +36,12 @@ import tomlkit
 
 
 CONFIG_DIR = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+CACHE_DIR = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
 DOCK_TOML = CONFIG_DIR / "shedos" / "dock.toml"
-PINNED_FILE = CONFIG_DIR / "nwg-dock-hyprland" / "pinned"
+# nwg-dock-hyprland reads pinned entries from this exact path. Verified
+# by strace against the live binary: it opens "$XDG_CACHE_HOME/nwg-dock-pinned"
+# (no subdirectory) on startup. One class-name per line.
+PINNED_FILE = CACHE_DIR / "nwg-dock-pinned"
 UNIT = "shedos-dock.service"
 
 VALID_POSITIONS = ("bottom", "top", "left", "right")
@@ -143,10 +147,11 @@ def _cmd_toggle() -> int:
         return subprocess.run(
             ["systemctl", "--user", "start", UNIT], check=False
         ).returncode
-    # SIGRTMIN+1 is signal 35 (SIGRTMIN is 34 on glibc). Send by PID
-    # via pkill — we don't want to depend on the dock writing a pidfile.
+    # SIGRTMIN+1 is signal 35 (SIGRTMIN is 34 on glibc). Match against
+    # the full cmdline with -f, NOT -x: Linux caps /proc/<pid>/comm at
+    # 15 chars, and "nwg-dock-hyprland" is 18, so -x finds nothing.
     r = subprocess.run(
-        ["pkill", "-SIGRTMIN+1", "-x", "nwg-dock-hyprland"],
+        ["pkill", "-f", "-SIGRTMIN+1", "nwg-dock-hyprland"],
         check=False,
     )
     return 0 if r.returncode in (0, 1) else r.returncode
