@@ -164,6 +164,12 @@ jobs:
           install -d -o builder -g builder /home/builder
           cat > /home/builder/.makepkg.conf <<'EOF'
           BUILDENV=(!distcc color !check !sign ccache)
+          # Override Arch's default OPTIONS to flip `debug` off. Without
+          # this, makepkg produces a sibling -debug pkg for every package
+          # carrying compiled artifacts (calamares, hyprspace, shedos-power
+          # …), which the publish step would then sign and upload to R2.
+          # We don't ship debug symbols; the disk + bandwidth cost is wasted.
+          OPTIONS=(strip docs !libtool !staticlibs emptydirs zipman purge !debug lto)
           MAKEFLAGS="-j$(nproc)"
           EOF
           chown builder:builder /home/builder/.makepkg.conf
@@ -403,11 +409,22 @@ jobs:
                   packages/installer-only.txt
           )
 
+          # Belt-and-suspenders: even with !debug in builder's makepkg.conf
+          # above, a cache-restored -debug pkg from before that flag landed
+          # could still be present. Drop them before the loop sees them.
+          rm -f archiso/shedos-repo/*-debug-*.pkg.tar.zst \
+                archiso/shedos-repo/*-debug-*.pkg.tar.zst.sig
+
           staged=0 reused=0 skipped=0
           for pkg in archiso/shedos-repo/*.pkg.tar.zst; do
               [[ -f $pkg ]] || continue
               base=$(basename "$pkg")
               pkgname=${base%-*-*-*.pkg.tar.zst}
+              if [[ $pkgname == *-debug ]]; then
+                  echo "skip  $pkgname (debug)"
+                  skipped=$((skipped+1))
+                  continue
+              fi
               skip=0
               for n in "${norepublish[@]}"; do
                   if [[ $pkgname == "$n" ]]; then skip=1; break; fi
