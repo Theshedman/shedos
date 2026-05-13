@@ -1,0 +1,6 @@
+PKG=hypr
+RELPATH=.config/hypr/hyprland.conf
+
+EXPECT_SAVED=1
+EXPECT_ARGV_LINES=1
+EXPECT_ARGV_PANES=3

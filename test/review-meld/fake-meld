@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# fake-meld — drop-in replacement for `meld` used by the Meld backend
+# integration tests. Records argv to $SHEDOS_FAKE_MELD_ARGV_FILE (one
+# invocation per line) so the test can assert on the staging tree
+# layout. If $SHEDOS_FAKE_MELD_ACTION is set and points to a readable
+# script, sources it with YOURS_DIR, BASE_DIR, THEIRS_DIR exported so
+# the fixture can simulate a real user editing yours/ files.
+
+set -uo pipefail
+
+if [[ -n "${SHEDOS_FAKE_MELD_ARGV_FILE:-}" ]]; then
+    printf '%s\n' "$*" >> "$SHEDOS_FAKE_MELD_ARGV_FILE"
+fi
+
+if [[ -n "${SHEDOS_FAKE_MELD_ACTION:-}" && -r "$SHEDOS_FAKE_MELD_ACTION" ]]; then
+    YOURS_DIR=$1
+    if [[ $# -eq 3 ]]; then
+        BASE_DIR=$2
+        THEIRS_DIR=$3
+    else
+        BASE_DIR=""
+        THEIRS_DIR=$2
+    fi
+    export YOURS_DIR BASE_DIR THEIRS_DIR
+    bash "$SHEDOS_FAKE_MELD_ACTION"
+fi
+exit 0
