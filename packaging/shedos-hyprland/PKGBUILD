@@ -174,12 +174,4 @@ package() {
         "$pkgdir/usr/share/shedos-hyprland/keybindings-dialog.css"
     install -Dm644 tree/usr/share/shedos-hyprland/keybindings-meta.toml \
         "$pkgdir/usr/share/shedos-hyprland/keybindings-meta.toml"
-
-    # Meld theming: a Catppuccin Mocha GtkSourceView style scheme used
-    # inside Meld's editor panes, plus a GSettings override pointing
-    # Meld at it. glib-compile-schemas is run from the .install hook.
-    install -Dm644 tree/usr/share/gtksourceview-4/styles/catppuccin-mocha.xml \
-        "$pkgdir/usr/share/gtksourceview-4/styles/catppuccin-mocha.xml"
-    install -Dm644 tree/usr/share/glib-2.0/schemas/10-meld-catppuccin.gschema.override \
-        "$pkgdir/usr/share/glib-2.0/schemas/10-meld-catppuccin.gschema.override"
 }
