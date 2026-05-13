@@ -1,0 +1,124 @@
+# Maintainer: ShedOS <https://github.com/theshedman/shedos>
+#
+# Distribution-independent installer framework, with one ShedOS patch on
+# top of upstream's v3.4.2: an optional "Developer setup" group on the
+# user-creation page collects an email address and an SSH-keygen consent
+# checkbox. Both values land in globalstorage as devinfoEmail (string)
+# and devinfoSsh (bool); installer/calamares/modules-src/shedos_gitconfig
+# reads them in chroot to write the new user's .gitconfig and (if
+# consent was given) generate an ed25519 SSH key.
+#
+# Source of the patched tree: github.com/Theshedman/calamares, branch
+# `shedos`, pinned by SHA below. That repo is a standalone mirror of
+# Calamares' actual upstream at codeberg.org/Calamares/calamares (the
+# project moved off GitHub in 2024; github.com/calamares/calamares is
+# an archived stale mirror frozen at 3.3.15 and is intentionally NOT
+# used here).
+#
+# Updating to a newer upstream release:
+#   1. cd /tmp && git clone https://codeberg.org/Calamares/calamares.git calamares-new
+#   2. cd calamares-new && git checkout vX.Y.Z
+#   3. Re-mirror to the GitHub repo (push new tags + the updated
+#      `calamares` branch via SSH, since HTTPS-via-gh tokens lack
+#      the `workflow` scope needed for .github/workflows/* files).
+#   4. Rebase our shedos branch on top of vX.Y.Z, resolve any
+#      users-module conflicts, push it back to the GitHub repo.
+#   5. Update pkgver + _commit below; refresh _skip_modules to match
+#      the new upstream AUR recipe.
+
+pkgname=calamares
+pkgver=3.4.2
+pkgrel=1
+pkgdesc='Distribution-independent installer framework (ShedOS patched)'
+url='https://github.com/Theshedman/calamares'
+license=('GPL-3.0-or-later')
+arch=('x86_64')
+
+depends=(
+    'kcoreaddons'
+    'kpmcore'
+    'libpwquality'
+    'qt6-declarative'
+    'qt6-svg'
+    'yaml-cpp'
+)
+
+makedepends=(
+    'extra-cmake-modules'
+    'git'
+    'libglvnd'
+    'ninja'
+    'qt6-tools'
+    'qt6-translations'
+)
+
+provides=("calamares=$pkgver")
+conflicts=('calamares')
+
+# Skip the calamares-debug split package — 60 MB of symbols nobody
+# will use, and the publish step would otherwise sign + upload it.
+options=('!debug')
+
+# Pinned SHA on Theshedman/calamares `shedos` branch. When bumping,
+# update this AND verify `git log --oneline v$pkgver..$_commit` on the
+# repo shows only the ShedOS patch commits (no stray drift).
+_commit='09a8ff53a89cbf81adfba57db67ad2f4b795ba46'
+
+source=("git+https://github.com/Theshedman/calamares.git#commit=$_commit")
+sha256sums=('SKIP')
+
+build() {
+    # Skip Debian/dracut/OpenRC tooling and dummy-* test scaffolding.
+    # List mirrors the AUR recipe; bump in lockstep with upstream so
+    # we don't accidentally start shipping disabled module surface.
+    local _skip_modules=(
+        dracut
+        dracutlukscfg
+        dummycpp
+        dummyprocess
+        dummypython
+        dummypythonqt
+        initramfs
+        initramfscfg
+        interactiveterminal
+        packagechooser
+        packagechooserq
+        services-openrc
+    )
+
+    local _cmake_options=(
+        -B build
+        -S "$srcdir/calamares"
+        -G Ninja
+        -DCMAKE_BUILD_TYPE=Release
+        -DCMAKE_INSTALL_PREFIX='/usr'
+        -DCMAKE_INSTALL_LIBDIR='lib'
+        -DWITH_QT6=ON
+        -DINSTALL_CONFIG=ON
+        -DSKIP_MODULES="${_skip_modules[*]}"
+        -DBUILD_TESTING=OFF
+
+        -DKDE_INSTALL_BINDIR=/usr/bin
+        -DKDE_INSTALL_SBINDIR=/usr/sbin
+        -DKDE_INSTALL_LIBDIR=/usr/lib
+        -DKDE_INSTALL_LIBEXECDIR=/usr/libexec
+        -DKDE_INSTALL_INCLUDEDIR=/usr/include
+        -DKDE_INSTALL_LOCALSTATEDIR=/var
+        -DKDE_INSTALL_SHAREDSTATEDIR=/usr/share
+        -DKDE_INSTALL_DATAROOTDIR=/usr/share
+        -DKDE_INSTALL_DATADIR=/usr/share
+        -DKDE_INSTALL_LOCALEDIR=/usr/share/locale
+        -DKDE_INSTALL_MANDIR=/usr/share/man
+        -DKDE_INSTALL_INFODIR=/usr/share/info
+        -DKDE_INSTALL_SYSCONFDIR=/etc
+
+        -Wno-dev
+    )
+
+    cmake "${_cmake_options[@]}"
+    cmake --build build
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+}
