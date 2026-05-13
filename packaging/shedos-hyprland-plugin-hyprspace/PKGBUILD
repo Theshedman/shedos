@@ -4,23 +4,23 @@
 # horizontal workspace strip at the top of the screen, with live
 # window previews and drag-to-move-between-workspaces support.
 #
-# Source: Petar546's fork of KZDKM/Hyprspace, pinned to the commit
-# whose porting work to Hyprland 0.55 we validated.
-# Patch: ShedOS-local fixes that complete Petar546's mid-port:
-#   - register the overview:toggle / overview:open / overview:close
-#     dispatchers (Petar546 wrote the functions but never wired them)
-#   - subscribe reloadConfig() to config.reloaded events (similarly
-#     defined-but-not-wired) so user-set plugin:overview:* config
-#     keys actually apply
-#   - drop the gap-rule override block in updateLayout() that hits a
-#     static-CConfigValue null-deref on 0.55
+# Source: theshedman/Hyprspace — our fork of Petar546/Hyprspace, in turn
+# a fork of KZdkm/Hyprspace ported to Hyprland 0.55. Each ShedOS fix is
+# a separate commit on the fork; see `git log` on the fork for the full
+# story. Two fixes carried at time of writing:
+#   - wire reloadConfig() to the config.reloaded event so user-set
+#     plugin:overview:* keys actually apply
+#   - rewrite renderWindowStub to pin m_realPosition/m_realSize to the
+#     thumbnail rect directly (ElementRenderer.cpp:318 culled the
+#     renderModif-relocated pixels because damage stayed at the
+#     un-modif'd box)
 
 pkgname=shedos-hyprland-plugin-hyprspace
 pkgver=0.55.0
 pkgrel=1
-pkgdesc='Workspace-overview plugin for Hyprland (Hyprspace), patched against ShedOS-shipped Hyprland'
+pkgdesc='Workspace-overview plugin for Hyprland (Hyprspace), forked for ShedOS'
 arch=('x86_64')
-url='https://github.com/Petar546/Hyprspace'
+url='https://github.com/theshedman/Hyprspace'
 license=('BSD-3-Clause')
 
 depends=(
@@ -44,19 +44,10 @@ makedepends=(
     'hyprland-protocols'
 )
 
-_commit='73d3e25c4bc32dfba351a2b4614ab007eee2cee7'
+_commit='b1fcc2a6f386185a439a1990454bc808a5f4b59f'
 
-source=(
-    "git+https://github.com/Petar546/Hyprspace.git#commit=$_commit"
-    '0001-shedos-fixes.patch'
-)
-sha256sums=('SKIP'
-            'SKIP')
-
-prepare() {
-    cd "$srcdir/Hyprspace"
-    patch -p1 < ../0001-shedos-fixes.patch
-}
+source=("git+https://github.com/theshedman/Hyprspace.git#commit=$_commit")
+sha256sums=('SKIP')
 
 build() {
     cd "$srcdir/Hyprspace"
