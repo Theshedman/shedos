@@ -39,8 +39,15 @@ _strip_live_artifacts() {
     fi
 }
 
+_compile_schemas() {
+    # Bake the Catppuccin Meld override into the compiled schemas db so
+    # Meld picks up our defaults without each user touching dconf.
+    glib-compile-schemas /usr/share/glib-2.0/schemas/ 2>/dev/null || true
+}
+
 post_install() {
     _strip_live_artifacts
+    _compile_schemas
     systemctl --global enable shedos-hypr-reload.path 2>/dev/null || true
     systemctl --global enable shedos-lock-migration.service 2>/dev/null || true
     systemctl --global enable shedos-wallpaper.service 2>/dev/null || true
@@ -59,8 +66,13 @@ EOF
 
 post_upgrade() {
     _strip_live_artifacts
+    _compile_schemas
     systemctl --global enable shedos-hypr-reload.path 2>/dev/null || true
     systemctl --global enable shedos-lock-migration.service 2>/dev/null || true
     systemctl --global enable shedos-wallpaper.service 2>/dev/null || true
     systemctl --global enable hypridle.service waybar.service mako.service 2>/dev/null || true
+}
+
+post_remove() {
+    _compile_schemas
 }

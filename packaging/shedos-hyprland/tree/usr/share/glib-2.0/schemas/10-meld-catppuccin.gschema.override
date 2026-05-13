@@ -1,0 +1,9 @@
+# Meld defaults — match the shedman config --review TUI's Catppuccin Mocha
+# palette. Applied at install time via glib-compile-schemas (called from
+# shedos-hyprland's post_install / post_upgrade hook). Users can still
+# override individual keys per-profile via dconf-editor.
+
+[org.gnome.meld]
+style-scheme='catppuccin-mocha'
+prefer-dark-theme=true
+highlight-syntax=true
