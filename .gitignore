@@ -31,6 +31,10 @@ packaging/*/src/
 !packaging/shedos-power/src/
 packaging/*/*.pkg.tar.zst
 packaging/*/*.pkg.tar.zst.sig
+# makepkg keeps a sibling clone cache for git+ VCS sources so subsequent
+# rebuilds can `git fetch` rather than re-clone from scratch. The
+# directory name matches the upstream repo basename.
+packaging/shedos-hyprland-plugin-hyprspace/Hyprspace/
 
 # Python
 __pycache__/

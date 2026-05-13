@@ -41,7 +41,6 @@ makedepends=(
     'make'
     'pkgconf'
     'git'
-    'hyprland-protocols'
 )
 
 _commit='b1fcc2a6f386185a439a1990454bc808a5f4b59f'
