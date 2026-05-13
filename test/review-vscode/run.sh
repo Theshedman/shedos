@@ -1,19 +1,18 @@
 #!/usr/bin/env bash
-# run.sh — integration tests for the Meld backend (--gui) in
+# run.sh — integration tests for the VS Code backend (--gui) in
 # _config-review.
 #
-# Each fixture under fixtures/<name>/ holds a Meld scenario:
+# Each fixture under fixtures/<name>/ holds a merge scenario:
 #
 #   fixture.sh        shell vars: PKG=<pkg-name>  RELPATH=<path> (single
 #                     file), or PKGS=(...) RELPATHS=(...) for multi-file
 #                     fixtures. May also set:
 #
-#                       EXPECT_SAVED=1            yours updated, .shedosnew gone
-#                       EXPECT_UNCHANGED=1        yours kept, .shedosnew kept
-#                       EXPECT_MARKER_SKIPPED=1   marker detected, .shedosnew kept
-#                       EXPECT_ARGV_LINES=N       fake-meld invoked N times
-#                       EXPECT_ARGV_PANES=3|2     each invocation has N pane args
-#                       EXPECT_STDERR_PATTERN=…   grep -E pattern that must match
+#                       EXPECT_SAVED=1               result updated, .shedosnew gone
+#                       EXPECT_UNCHANGED=1           result kept, .shedosnew kept
+#                       EXPECT_MARKER_SKIPPED=1      marker detected, .shedosnew kept
+#                       EXPECT_WAIT_INVOCATIONS=N    fake-code receives N --wait calls
+#                       EXPECT_STDERR_PATTERN=…      grep -E pattern that must match
 #
 #   src               pristine default shipped by the package
 #   base              last-seen BASE snapshot (3-way; omit for 2-way)
@@ -21,14 +20,14 @@
 #   theirs            the upstream .shedosnew content
 #   expected          (only if EXPECT_SAVED=1) expected merged content after
 #                     copy-back
-#   action.sh         (optional) bash snippet sourced by fake-meld with
-#                     YOURS_DIR / BASE_DIR / THEIRS_DIR set; simulates
-#                     the user editing files in the yours/ staging tree
+#   action.sh         (optional) bash snippet sourced by fake-code with
+#                     YOURS_FILE / THEIRS_FILE / BASE_FILE / RESULT_FILE
+#                     set; simulates the user editing the result file
 #
 # Multi-file fixtures use {src,base,yours,theirs,expected}.<idx> files
 # keyed off PKGS[i]/RELPATHS[i].
 #
-# Usage: test/review-meld/run.sh [fixture-name ...]
+# Usage: test/review-vscode/run.sh [fixture-name ...]
 # Exit:  0 all pass, 1 any failure.
 
 set -uo pipefail
@@ -36,14 +35,14 @@ set -uo pipefail
 here=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 repo_root=$(cd -- "$here/../.." && pwd)
 tool=$repo_root/packaging/shedos-system/tree/usr/libexec/shedman/_config-review
-fake_meld=$here/fake-meld
+fake_code=$here/fake-code
 
 if [[ ! -x $tool ]]; then
     echo "FATAL: $tool not executable" >&2
     exit 2
 fi
-if [[ ! -x $fake_meld ]]; then
-    echo "FATAL: $fake_meld not executable" >&2
+if [[ ! -x $fake_code ]]; then
+    echo "FATAL: $fake_code not executable" >&2
     exit 2
 fi
 
@@ -82,16 +81,14 @@ _run_one() {
     [[ -d $fdir ]] || { echo "skip $name (no such fixture)"; return; }
     [[ -f $fdir/fixture.sh ]] || { echo "skip $name (no fixture.sh)"; return; }
 
-    # Defaults
     local PKG="" RELPATH=""
     local PKGS=() RELPATHS=()
     local EXPECT_SAVED="" EXPECT_UNCHANGED="" EXPECT_MARKER_SKIPPED=""
-    local EXPECT_ARGV_LINES="" EXPECT_ARGV_PANES=""
+    local EXPECT_WAIT_INVOCATIONS=""
     local EXPECT_STDERR_PATTERN=""
     # shellcheck disable=SC1090
     source "$fdir/fixture.sh"
 
-    # Single-file fixtures populate PKG/RELPATH; multi-file use arrays.
     if [[ -n $PKG && -n $RELPATH && ${#PKGS[@]} -eq 0 ]]; then
         PKGS=("$PKG")
         RELPATHS=("$RELPATH")
@@ -102,7 +99,7 @@ _run_one() {
     fi
 
     local tmp
-    tmp=$(mktemp -d -t shedos-review-meld-test.XXXXXX)
+    tmp=$(mktemp -d -t shedos-review-vscode-test.XXXXXX)
     trap 'rm -rf -- "$tmp"' RETURN
 
     local home=$tmp/home
@@ -126,15 +123,15 @@ _run_one() {
 
     local extra_action=()
     if [[ -f $fdir/action.sh ]]; then
-        extra_action=("SHEDOS_FAKE_MELD_ACTION=$fdir/action.sh")
+        extra_action=("SHEDOS_FAKE_CODE_ACTION=$fdir/action.sh")
     fi
 
     local stderr_file=$tmp/stderr
     if ! HOME=$home \
         XDG_STATE_HOME=$state \
         SHEDOS_DEFAULTS_ROOT=$defaults \
-        SHEDOS_MELD_BIN=$fake_meld \
-        SHEDOS_FAKE_MELD_ARGV_FILE=$argv_log \
+        SHEDOS_VSCODE_BIN=$fake_code \
+        SHEDOS_FAKE_CODE_ARGV_FILE=$argv_log \
         env "${extra_action[@]}" \
         "$tool" --gui 2> "$stderr_file" > /dev/null
     then
@@ -143,7 +140,6 @@ _run_one() {
         failures+=("$name"); ((fail++)); return
     fi
 
-    # Per-file assertions.
     for ((i=0; i<count; i++)); do
         local suffix=""
         (( count > 1 )) && suffix=".$i"
@@ -190,27 +186,14 @@ _run_one() {
         fi
     done
 
-    if [[ -n $EXPECT_ARGV_LINES ]]; then
-        local actual_lines
-        actual_lines=$(wc -l < "$argv_log")
-        if (( actual_lines != EXPECT_ARGV_LINES )); then
-            echo "FAIL $name: argv lines expected=$EXPECT_ARGV_LINES got=$actual_lines"
+    if [[ -n $EXPECT_WAIT_INVOCATIONS ]]; then
+        local wait_lines
+        wait_lines=$(grep -c -- '--wait' "$argv_log" || true)
+        if (( wait_lines != EXPECT_WAIT_INVOCATIONS )); then
+            echo "FAIL $name: --wait invocations expected=$EXPECT_WAIT_INVOCATIONS got=$wait_lines"
             sed 's/^/    /' "$argv_log"
             failures+=("$name"); ((fail++)); return
         fi
-    fi
-
-    if [[ -n $EXPECT_ARGV_PANES ]]; then
-        # Each line of argv_log is "yours base theirs" or "yours theirs";
-        # word count = pane count.
-        while IFS= read -r line; do
-            local panes
-            panes=$(echo "$line" | wc -w)
-            if (( panes != EXPECT_ARGV_PANES )); then
-                echo "FAIL $name: argv panes expected=$EXPECT_ARGV_PANES got=$panes line='$line'"
-                failures+=("$name"); ((fail++)); return
-            fi
-        done < "$argv_log"
     fi
 
     if [[ -n $EXPECT_STDERR_PATTERN ]]; then
