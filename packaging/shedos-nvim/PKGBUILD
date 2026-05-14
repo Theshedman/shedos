@@ -47,12 +47,8 @@ package() {
     install -Dm644 tree/usr/share/shedos/nvim/sync-policy \
         "$pkgdir/usr/share/shedos/nvim/sync-policy"
 
-    # /etc/xdg/nvim → the same defaults tree. nvim's config-discovery
-    # order is $XDG_CONFIG_HOME/nvim → /etc/xdg/nvim → /usr/share/nvim.
-    # Symlinking here means root (or any user without ~/.config/nvim/)
-    # falls through to the ShedOS config instead of starting vanilla;
-    # `sudo nvim` therefore retains the same UI as the user's session.
-    install -d "$pkgdir/etc/xdg"
-    ln -sf /usr/share/shedos/nvim/defaults/.config/nvim \
-        "$pkgdir/etc/xdg/nvim"
+    # Preserve XDG_CONFIG_HOME across sudo so `sudo nvim` reads the
+    # invoking user's ~/.config/nvim/. Mode 0440 is what sudo demands.
+    install -Dm0440 tree/etc/sudoers.d/shedos-nvim \
+        "$pkgdir/etc/sudoers.d/shedos-nvim"
 }

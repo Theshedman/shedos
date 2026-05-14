@@ -1,0 +1,5 @@
+# Preserve XDG_CONFIG_HOME across sudo so `sudo nvim` reads the
+# invoking user's ~/.config/nvim/ instead of falling back to /etc.
+# HOME stays /root, so nvim's write paths (data/cache/state)
+# remain in /root/ and don't pollute the user's home.
+Defaults env_keep += "XDG_CONFIG_HOME"
