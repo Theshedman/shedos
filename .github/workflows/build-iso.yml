@@ -462,7 +462,20 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch origin --tags --force --no-recurse-submodules 2>/dev/null || true
-          prev_tag=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)
+
+          # rc releases span back to the previous tag (rc or stable) so each
+          # rc shows what's new since the last one. Stable releases span back
+          # to the previous STABLE tag so all rc notes between roll up — the
+          # stable Release page is the source of truth for "what shipped in
+          # this CalVer", not the rc pages.
+          if [[ "$GITHUB_REF_NAME" == *-rc* ]]; then
+              prev_tag=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)
+          else
+              prev_tag=$(git tag --list --sort=-version:refname --merged HEAD^ \
+                  'v[0-9][0-9][0-9][0-9].[0-9][0-9].[0-9][0-9]' \
+                  | head -1)
+          fi
+
           if [[ -z $prev_tag ]]; then
               range=HEAD
               since="initial commit"
