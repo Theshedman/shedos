@@ -1,0 +1,58 @@
+diff --git a/meson.build b/meson.build
+index 586e999..a626264 100644
+--- a/meson.build
++++ b/meson.build
+@@ -38,6 +38,7 @@ endif
+ wlroots        = dependency('wlroots-0.20', fallback: ['wlroots', 'wlroots'])
+ wayland_server = dependency('wayland-server')
+ xkbcommon      = dependency('xkbcommon')
++libinput       = dependency('libinput')
+ math           = cc.find_library('m')
+ 
+ have_xwayland = wlroots.get_variable(pkgconfig: 'have_xwayland', internal: 'have_xwayland') == 'true'
+@@ -109,6 +110,7 @@ executable(
+     wayland_server,
+     wlroots,
+     xkbcommon,
++    libinput,
+     math,
+   ],
+   install: true,
+diff --git a/seat.c b/seat.c
+index 5f659a4..63adc5f 100644
+--- a/seat.c
++++ b/seat.c
+@@ -11,11 +11,13 @@
+ #include "config.h"
+ 
+ #include <assert.h>
++#include <libinput.h>
+ #include <linux/input-event-codes.h>
+ #include <stdlib.h>
+ #include <string.h>
+ #include <wayland-server-core.h>
+ #include <wlr/backend.h>
++#include <wlr/backend/libinput.h>
+ #include <wlr/backend/multi.h>
+ #include <wlr/backend/session.h>
+ #include <wlr/types/wlr_cursor.h>
+@@ -216,6 +218,19 @@ handle_new_pointer(struct cg_seat *seat, struct wlr_pointer *wlr_pointer)
+ 	pointer->pointer = wlr_pointer;
+ 	wlr_cursor_attach_input_device(seat->cursor, &wlr_pointer->base);
+ 
++	/* Enable tap-to-click on touchpads. cage has no input config
++	 * surface, so we apply this unconditionally; non-touchpad
++	 * pointers (mice, trackpoints) report finger_count == 0 here
++	 * and stay untouched. */
++	if (wlr_input_device_is_libinput(&wlr_pointer->base)) {
++		struct libinput_device *libinput_dev =
++			wlr_libinput_get_device_handle(&wlr_pointer->base);
++		if (libinput_device_config_tap_get_finger_count(libinput_dev) > 0) {
++			libinput_device_config_tap_set_enabled(libinput_dev,
++				LIBINPUT_CONFIG_TAP_ENABLED);
++		}
++	}
++
+ 	wl_list_insert(&seat->pointers, &pointer->link);
+ 	pointer->destroy.notify = handle_pointer_destroy;
+ 	wl_signal_add(&wlr_pointer->base.events.destroy, &pointer->destroy);
