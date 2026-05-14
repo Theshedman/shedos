@@ -352,6 +352,17 @@ jobs:
               repo-add -n -p shedos-repo.db.tar.gz "${pkgs[@]}"
           fi
 
+      - name: Refresh pacman cache with locally-built packages
+        # AUR pre-build can leave a stale shedos-built package in
+        # /var/cache/pacman/pkg/ whose sha256 no longer matches the
+        # freshly-rebuilt shedos-repo.db entry; mkarchiso trips on
+        # that as "invalid or corrupted package". Overwrite until
+        # builds are byte-deterministic.
+        run: |
+          if [[ -d /var/cache/pacman/pkg ]]; then
+              cp -fv archiso/shedos-repo/*.pkg.tar.zst /var/cache/pacman/pkg/ 2>/dev/null || true
+          fi
+
       - name: Build ISO
         env:
           # Strip the leading "v" from the tag so the ISO filename is
