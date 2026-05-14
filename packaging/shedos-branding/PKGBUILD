@@ -5,8 +5,8 @@
 # fastfetch).
 
 pkgname=shedos-branding
-pkgver=2026.05.08
-pkgrel=3
+pkgver=2026.05.14
+pkgrel=1
 pkgdesc='ShedOS visual identity: Plymouth theme, wallpapers, ASCII logo'
 arch=('any')
 url='https://github.com/Theshedman/shedos'
