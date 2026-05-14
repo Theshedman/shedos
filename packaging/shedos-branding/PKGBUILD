@@ -1,4 +1,4 @@
-# Maintainer: ShedOS <https://github.com/theshedman/shedos>
+# Maintainer: ShedOS <https://github.com/Theshedman/shedos>
 #
 # Visual identity: Plymouth boot splash, wallpapers (incl. dusk.png shared
 # by both desktop and the greetd greeter), /etc/shedos-ascii.txt (used by
@@ -9,7 +9,7 @@ pkgver=2026.05.08
 pkgrel=3
 pkgdesc='ShedOS visual identity: Plymouth theme, wallpapers, ASCII logo'
 arch=('any')
-url='https://github.com/theshedman/shedos'
+url='https://github.com/Theshedman/shedos'
 license=('GPL-3.0-or-later')
 depends=(
     'plymouth'

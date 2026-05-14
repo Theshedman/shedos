@@ -1,4 +1,4 @@
-# Maintainer: ShedOS <https://github.com/theshedman/shedos>
+# Maintainer: ShedOS <https://github.com/Theshedman/shedos>
 #
 # The ShedOS Hyprland desktop profile: every dotfile under /etc/skel/ that a
 # new shedos user gets on first login, plus the walker/waybar/hyprsunset
@@ -14,7 +14,7 @@ pkgver=2026.05.14
 pkgrel=2
 pkgdesc='ShedOS Hyprland desktop profile (dotfiles + DE helpers)'
 arch=('any')
-url='https://github.com/theshedman/shedos'
+url='https://github.com/Theshedman/shedos'
 license=('GPL-3.0-or-later')
 install=shedos-hyprland.install
 depends=(

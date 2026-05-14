@@ -1,4 +1,4 @@
-# Maintainer: ShedOS <https://github.com/theshedman/shedos>
+# Maintainer: ShedOS <https://github.com/Theshedman/shedos>
 #
 # One-shot retrofit tool for installs dated before the April 2026
 # packaging cut-over (commit 2148ff0). Such installs were laid down by
@@ -16,7 +16,7 @@ pkgver=2026.05.08
 pkgrel=1
 pkgdesc='One-shot retrofit: bootstrap a pre-packaging ShedOS install onto the packaged model'
 arch=('any')
-url='https://github.com/theshedman/shedos'
+url='https://github.com/Theshedman/shedos'
 license=('GPL-3.0-or-later')
 depends=(
     'bash'

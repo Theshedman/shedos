@@ -1,4 +1,4 @@
-# Maintainer: ShedOS <https://github.com/theshedman/shedos>
+# Maintainer: ShedOS <https://github.com/Theshedman/shedos>
 #
 # ShedOS default Neovim config. Split off from shedos-hyprland because:
 #   1. nvim config is heavily user-modified; conservative sync is mandatory.
@@ -17,7 +17,7 @@ pkgver=2026.05.14
 pkgrel=2
 pkgdesc='ShedOS default Neovim configuration (LazyVim-based)'
 arch=('any')
-url='https://github.com/theshedman/shedos'
+url='https://github.com/Theshedman/shedos'
 license=('GPL-3.0-or-later')
 depends=(
     'neovim'

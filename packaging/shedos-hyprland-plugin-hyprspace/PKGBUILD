@@ -1,10 +1,10 @@
-# Maintainer: ShedOS <https://github.com/theshedman/shedos>
+# Maintainer: ShedOS <https://github.com/Theshedman/shedos>
 #
 # Workspace overview plugin for Hyprland — Mission-Control-style
 # horizontal workspace strip at the top of the screen, with live
 # window previews and drag-to-move-between-workspaces support.
 #
-# Source: theshedman/Hyprspace — our fork of Petar546/Hyprspace, in turn
+# Source: Theshedman/Hyprspace — our fork of Petar546/Hyprspace, in turn
 # a fork of KZdkm/Hyprspace ported to Hyprland 0.55. Each ShedOS fix is
 # a separate commit on the fork; see `git log` on the fork for the full
 # story. Two fixes carried at time of writing:
@@ -20,7 +20,7 @@ pkgver=2026.05.14
 pkgrel=1
 pkgdesc='Workspace-overview plugin for Hyprland (Hyprspace), forked for ShedOS'
 arch=('x86_64')
-url='https://github.com/theshedman/Hyprspace'
+url='https://github.com/Theshedman/Hyprspace'
 license=('BSD-3-Clause')
 
 depends=(
@@ -45,7 +45,7 @@ makedepends=(
 
 _commit='a181f4a5eb44f1700f5f9455d491b1ea67ead899'
 
-source=("git+https://github.com/theshedman/Hyprspace.git#commit=$_commit")
+source=("git+https://github.com/Theshedman/Hyprspace.git#commit=$_commit")
 sha256sums=('SKIP')
 
 build() {

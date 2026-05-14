@@ -1,4 +1,4 @@
-# Maintainer: ShedOS <https://github.com/theshedman/shedos>
+# Maintainer: ShedOS <https://github.com/Theshedman/shedos>
 #
 # Adapted from Arch's linux-zen package
 # (https://gitlab.archlinux.org/archlinux/packaging/packages/linux-zen).
@@ -18,7 +18,7 @@ pkgbase=shedos-kernel
 pkgver=7.0.5.zen1
 pkgrel=1
 pkgdesc='ShedOS kernel'
-url='https://github.com/theshedman/shedos'
+url='https://github.com/Theshedman/shedos'
 arch=(x86_64)
 license=(GPL-2.0-only)
 makedepends=(

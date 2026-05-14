@@ -83,4 +83,4 @@ ln -sf /usr/share/shedos/wallpapers/shedos-default.png ~/.config/hypr/wallpaper.
 
 ## License
 
-Part of ShedOS - https://github.com/theshedman/shedos
+Part of ShedOS - https://github.com/Theshedman/shedos

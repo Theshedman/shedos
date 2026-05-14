@@ -1,6 +1,6 @@
 [Unit]
 Description=Trust the ShedOS signing key in pacman's keyring
-Documentation=https://github.com/theshedman/shedos
+Documentation=https://github.com/Theshedman/shedos
 # Sentinel gates the unit so it runs exactly once per key rotation. trust-keys.sh
 # writes the signed fingerprints into /var/lib/shedos-keyring/trusted; if the
 # committed shedos-trusted ever changes (key rotation), the package's

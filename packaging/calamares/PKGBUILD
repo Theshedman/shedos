@@ -1,4 +1,4 @@
-# Maintainer: ShedOS <https://github.com/theshedman/shedos>
+# Maintainer: ShedOS <https://github.com/Theshedman/shedos>
 #
 # Distribution-independent installer framework, with one ShedOS patch on
 # top of upstream's v3.4.2: an optional "Developer setup" group on the

@@ -1,4 +1,4 @@
-# Maintainer: ShedOS <https://github.com/theshedman/shedos>
+# Maintainer: ShedOS <https://github.com/Theshedman/shedos>
 #
 # Repository keyring for [shedos]. This is the *trust anchor*; every other
 # ShedOS package is verified against the key this package installs. Do not
@@ -12,7 +12,7 @@ pkgver=2026.05.08
 pkgrel=1
 pkgdesc='ShedOS repository keyring — trust anchor for [shedos]'
 arch=('any')
-url='https://github.com/theshedman/shedos'
+url='https://github.com/Theshedman/shedos'
 license=('GPL-3.0-or-later')
 install=shedos-keyring.install
 
