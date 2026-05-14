@@ -76,10 +76,21 @@ entry:focus {
     border-bottom: 1px solid @surface1;
 }
 
-/* Grid items — transparent button frame; icon is the visual. */
-button {
+/* Grid items — fully transparent frame; icon is the only visual.
+ * The GTK theme's generic `button` rule sets a low-alpha overlay
+ * background plus box-shadow rims on every state, so we override
+ * every state combination explicitly (same pattern as
+ * #category-button above). */
+button,
+button:focus,
+button:active,
+button:checked {
     background: transparent;
+    background-color: transparent;
+    background-image: none;
     border: none;
+    box-shadow: none;
+    outline: none;
     color: @text;
     padding: 6px 4px;
     margin: 4px;
@@ -88,6 +99,23 @@ button {
 
 button:hover {
     background-color: @surface0;
+    background-image: none;
+    border: none;
+    box-shadow: none;
+    outline: none;
+}
+
+/* flowboxchild — the per-cell wrapper nwg-drawer puts around each
+ * button. Themes occasionally style this too. */
+flowboxchild,
+flowboxchild:focus,
+flowboxchild:selected {
+    background: transparent;
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    box-shadow: none;
+    outline: none;
 }
 
 /* App icon — circular clip via border-radius. min-width/min-height

@@ -107,6 +107,12 @@ def _dock_argv(cfg: dict, output: str | None) -> list[str]:
         "-l", "overlay",
         "-i", str(cfg["icon_size"]),
         "-c", cfg["launcher_cmd"],
+        # ShedOS-branded launcher button: a Catppuccin-lavender 9-circle
+        # grid SVG shipped by this package, in place of the icon-theme
+        # default which inherits whatever Papirus-Dark assigns. -ico
+        # takes an absolute path; -lp (which sounds similar) is the
+        # launcher *position* and would silently drop the button.
+        "-ico", "/usr/share/shedos-hyprland/launcher.svg",
     ]
     if output:
         argv += ["-o", output]

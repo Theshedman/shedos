@@ -174,4 +174,6 @@ package() {
         "$pkgdir/usr/share/shedos-hyprland/keybindings-dialog.css"
     install -Dm644 tree/usr/share/shedos-hyprland/keybindings-meta.toml \
         "$pkgdir/usr/share/shedos-hyprland/keybindings-meta.toml"
+    install -Dm644 tree/usr/share/shedos-hyprland/launcher.svg \
+        "$pkgdir/usr/share/shedos-hyprland/launcher.svg"
 }
