@@ -270,11 +270,6 @@ done
 
 [[ $EUID -eq 0 ]] && chown -R builduser:builduser "$BUILD_ROOT"
 
-# Cache pre-flight below matches by pkgver-pkgrel only; for the
-# git-source calamares PKGBUILD that misses _commit drift between
-# rebases. Force a rebuild by purging any stale cached pkg.
-rm -f "$REPO_DIR"/calamares-*.pkg.tar.zst 2>/dev/null || true
-
 BUILT_PKGS=()
 for dir in "${PKG_DIRS[@]}"; do
     pkgname=$(basename "$dir")
