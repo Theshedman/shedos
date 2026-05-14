@@ -43,7 +43,7 @@ makedepends=(
     'git'
 )
 
-_commit='b1fcc2a6f386185a439a1990454bc808a5f4b59f'
+_commit='a181f4a5eb44f1700f5f9455d491b1ea67ead899'
 
 source=("git+https://github.com/theshedman/Hyprspace.git#commit=$_commit")
 sha256sums=('SKIP')
