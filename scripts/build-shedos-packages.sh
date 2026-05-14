@@ -322,7 +322,7 @@ for dir in "${PKG_DIRS[@]}"; do
         shedos-greeter|shedos-power)
             mk_flags=(--syncdeps --noconfirm --force)
             ;;
-        shedos-kernel|shedos-screensaver|calamares|shedos-hyprland-plugin-hyprspace)
+        shedos-kernel|shedos-screensaver|calamares|shedos-hyprland-plugin-hyprspace|cage)
             mk_flags=(--syncdeps --noconfirm --force --cleanbuild)
             ;;
         *)

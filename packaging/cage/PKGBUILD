@@ -54,7 +54,21 @@ prepare() {
 }
 
 build() {
-    arch-meson "$srcdir/cage-$pkgver" build
+    # Inlined arch-meson flags (mirror /usr/bin/arch-meson from the meson
+    # package) rather than calling the wrapper directly. arch-meson is
+    # owned by the `meson` package but the wrapper isn't always on PATH
+    # in stripped CI containers; spelling the flags out here makes the
+    # build self-sufficient as long as plain `meson` is installed.
+    meson setup \
+        --prefix=/usr \
+        --libexecdir=lib \
+        --sbindir=bin \
+        --buildtype=plain \
+        --auto-features=enabled \
+        --wrap-mode=nodownload \
+        -D b_pie=true \
+        -D python.bytecompile=1 \
+        "$srcdir/cage-$pkgver" build
     meson compile -C build
 }
 
