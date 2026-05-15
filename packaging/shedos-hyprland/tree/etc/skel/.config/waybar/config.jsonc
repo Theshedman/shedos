@@ -179,7 +179,7 @@
         "interval": 3600,
         "return-type": "json",
         "hide-empty-text": true,
-        "on-click": "/usr/bin/kitty --class shedos-update -e /usr/bin/shedman update",
+        "on-click": "/usr/bin/kitty --class shedos-update -e /usr/lib/shedos/run-with-pause.sh /usr/bin/shedman update",
         "signal": 8
     },
     "custom/conflicts": {
@@ -187,7 +187,7 @@
         "interval": 3600,
         "return-type": "json",
         "hide-empty-text": true,
-        "on-click": "/usr/bin/kitty --class shedos-review -e /usr/bin/shedman config --review",
+        "on-click": "/usr/bin/kitty --class shedos-review -e /usr/lib/shedos/run-with-pause.sh /usr/bin/shedman config --review",
         "signal": 9
     },
     "custom/health": {
