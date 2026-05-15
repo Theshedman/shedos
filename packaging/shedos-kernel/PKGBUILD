@@ -16,7 +16,7 @@
 
 pkgbase=shedos-kernel
 pkgver=7.0.5.zen1
-pkgrel=1
+pkgrel=2
 pkgdesc='ShedOS kernel'
 url='https://github.com/Theshedman/shedos'
 arch=(x86_64)
@@ -134,12 +134,17 @@ _package() {
         VIRTUALBOX-GUEST-MODULES
         WIREGUARD-MODULE
     )
+    install=shedos-kernel.install
 
     cd $_srcname
     local modulesdir="$pkgdir/usr/lib/modules/$(<version)"
 
     echo "Installing boot image..."
     install -Dm644 "$(make -s image_name)" "$modulesdir/vmlinuz"
+    # /boot/vmlinuz under pacman ownership; mkinitcpio's install hook
+    # then skips its own copy step (is_kernelcopy() returns false when
+    # pacman -Qoq matches) and lets the transaction handle it.
+    install -Dm644 "$(make -s image_name)" "$pkgdir/boot/vmlinuz-$pkgbase"
 
     # mkinitcpio reads this to name the generated images
     # (initramfs-shedos-kernel.img etc.).
