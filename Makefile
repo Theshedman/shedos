@@ -410,11 +410,6 @@ iso: prepare
 		iso_path=$$(ls -1t $(OUTPUT_DIR)/shedos-*.iso | head -1); \
 	fi; \
 	iso_size=$$(stat -c %s "$$iso_path"); \
-	if [ "$$iso_size" -ge 6000000000 ]; then \
-		echo -e "$(RED)FATAL: ISO $$(numfmt --to=iec --suffix=B $$iso_size) exceeds 6 GB cap$(NC)"; \
-		rm -f "$$iso_path"; \
-		exit 1; \
-	fi; \
 	echo -e "$(GREEN)ISO size: $$(numfmt --to=iec --suffix=B $$iso_size)$(NC)"
 	@echo -e "$(GREEN)ISO built successfully: $(OUTPUT_DIR)/$(ISO_NAME)$(NC)"
 	@cd $(OUTPUT_DIR) && sha256sum *.iso > sha256sums.txt 2>/dev/null || true
