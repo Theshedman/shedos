@@ -121,6 +121,9 @@ package() {
     install -Dm755 tree/usr/lib/shedos/click-catcher.py \
         "$pkgdir/usr/lib/shedos/click-catcher.py"
 
+    install -Dm755 tree/usr/lib/shedos/hyprland-position-fixer \
+        "$pkgdir/usr/lib/shedos/hyprland-position-fixer"
+
     install -Dm644 tree/usr/lib/systemd/user/shedos-lock-migration.service \
         "$pkgdir/usr/lib/systemd/user/shedos-lock-migration.service"
     install -Dm755 tree/usr/libexec/shedos-hyprland/lock-migration \

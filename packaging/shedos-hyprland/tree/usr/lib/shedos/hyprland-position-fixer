@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+"""shedos-hyprland-position-fixer — force the position of X11/Xwayland
+windows that ignore Hyprland's `windowrule move` directive.
+
+Xwayland clients call XMoveWindow after Hyprland's initial placement,
+silently winning the race against any `move = ...` rule and parking
+themselves wherever they remember from last time (in JetBrains
+Toolbox's case, hugging the tray icon — inside the waybar strip).
+
+This daemon subscribes to Hyprland's IPC event socket. On each
+``openwindow>>`` event whose class is in CLASS_RULES, it computes the
+intended absolute pixel position from the window's current monitor +
+size and fires ``hyprctl dispatch movewindowpixel`` in a retry burst
+to outlast Xwayland's late repositioning.
+
+Add a new entry to CLASS_RULES for any future X11 app that ignores the
+windowrule. The tuple is (x_from_right_px, y_below_reserved_px); the
+daemon snaps the window's right edge to
+``monitor_right - x_from_right_px`` and its top edge to
+``monitor_top + reserved_top + y_below_reserved_px`` — i.e. it sits
+``y_below_reserved_px`` pixels under whatever the waybar reserves.
+12 / 12 matches the position other tiled apps take under the default
+``general:gaps_out`` config.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import socket
+import subprocess
+import sys
+import time
+
+CLASS_RULES = {
+    "jetbrains-toolbox": (12, 12),
+}
+
+RETRY_DELAYS = (0.05, 0.15, 0.3, 0.6, 1.0)
+
+
+def main() -> int:
+    sig = os.environ.get("HYPRLAND_INSTANCE_SIGNATURE")
+    runtime = os.environ.get("XDG_RUNTIME_DIR")
+    if not sig or not runtime:
+        print("hyprland-position-fixer: HYPRLAND_INSTANCE_SIGNATURE / "
+              "XDG_RUNTIME_DIR not set", file=sys.stderr)
+        return 1
+    sock_path = f"{runtime}/hypr/{sig}/.socket2.sock"
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    try:
+        sock.connect(sock_path)
+    except OSError as e:
+        print(f"hyprland-position-fixer: connect {sock_path}: {e}",
+              file=sys.stderr)
+        return 1
+    f = sock.makefile("rb")
+    for raw in f:
+        line = raw.decode("utf-8", errors="replace").rstrip("\n")
+        if line.startswith("openwindow>>"):
+            handle(line[len("openwindow>>"):])
+    return 0
+
+
+def handle(payload: str) -> None:
+    parts = payload.split(",", 3)
+    if len(parts) < 3:
+        return
+    cls = parts[2]
+    rule = CLASS_RULES.get(cls)
+    if rule is None:
+        return
+    x_from_right, y_below_reserved = rule
+    for delay in RETRY_DELAYS:
+        time.sleep(delay)
+        try:
+            move_to(cls, x_from_right, y_below_reserved)
+        except Exception as e:
+            print(f"hyprland-position-fixer: {cls}: {e}", file=sys.stderr)
+
+
+def move_to(cls: str, x_from_right: int, y_below_reserved: int) -> None:
+    win = next((c for c in _hyprctl_json("clients")
+                if c.get("class") == cls), None)
+    if win is None:
+        return
+    mon = next((m for m in _hyprctl_json("monitors")
+                if m["id"] == win["monitor"]), None)
+    if mon is None:
+        return
+    win_w, _ = win["size"]
+    reserved_top = mon.get("reserved", [0, 0, 0, 0])[1]
+    target_x = mon["x"] + mon["width"] - win_w - x_from_right
+    target_y = mon["y"] + reserved_top + y_below_reserved
+    subprocess.run(
+        ["hyprctl", "dispatch", "movewindowpixel",
+         f"exact {target_x} {target_y},class:^({cls})$"],
+        check=False, capture_output=True, timeout=2,
+    )
+
+
+def _hyprctl_json(verb: str) -> list:
+    r = subprocess.run(
+        ["hyprctl", "-j", verb],
+        capture_output=True, text=True, timeout=2,
+    )
+    return json.loads(r.stdout or "[]")
+
+
+if __name__ == "__main__":
+    sys.exit(main())
