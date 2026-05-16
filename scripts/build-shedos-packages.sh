@@ -341,6 +341,24 @@ for dir in "${PKG_DIRS[@]}"; do
         h="$REPO_DIR/${pkgname}-headers-${pkgver}-${pkgrel}-x86_64.pkg.tar.zst"
         [[ -f $h ]] && cached+=("$h") || cached=()
     fi
+    if (( ${#cached[@]} > 0 )) && [[ $pkgname == shedos-system ]]; then
+        staged_bundle="$work/tree/usr/share/shedos/aur-pkgs"
+        if [[ -d $staged_bundle ]]; then
+            staged_list=$(cd "$staged_bundle" && ls *.pkg.tar.zst 2>/dev/null | LC_ALL=C sort)
+            cached_list=$(bsdtar -tf "${cached[0]}" 2>/dev/null \
+                | sed -n 's|^usr/share/shedos/aur-pkgs/\(.\+\.pkg\.tar\.zst\)$|\1|p' \
+                | LC_ALL=C sort)
+            if [[ $staged_list != "$cached_list" ]]; then
+                echo "✗ $pkgname: bundled AUR set drifted; busting cache"
+                diff <(echo "$cached_list") <(echo "$staged_list") | sed 's/^/    /'
+                for c in "${cached[@]}"; do
+                    rm -f "$c" "$c.sig"
+                done
+                cached=()
+            fi
+        fi
+    fi
+
     if (( ${#cached[@]} > 0 )); then
         echo "✓ $pkgname $pkgver-$pkgrel cached; skipping rebuild"
         printf '    %s\n' "${cached[@]##*/}"

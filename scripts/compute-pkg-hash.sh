@@ -43,6 +43,10 @@ if compgen -G "$dir/Cargo.toml" >/dev/null; then
     )
 fi
 
+if [[ $pkg == shedos-system && -f $root/packages/aur-bundled.txt ]]; then
+    sibling_paths+=("packages/aur-bundled.txt")
+fi
+
 cd "$root"
 {
     # Hash the package itself plus any workspace path-dep siblings.
