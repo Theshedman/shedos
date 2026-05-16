@@ -41,13 +41,12 @@ packaging/*/*.tar.gz
 packaging/shedos-hyprland-plugin-hyprspace/Hyprspace/
 packaging/calamares/calamares/
 
-# Bundled AUR .pkg.tar.zst files staged into shedos-migrate-to-packaged
-# at build time by scripts/build-shedos-packages.sh, copied from
-# archiso/shedos-repo/ for each entry in packages/aur-bundled.txt. The
-# directory only exists inside the harness's BUILD_ROOT copy of the
-# package; this rule keeps stray local-makepkg leftovers from getting
-# tracked.
-packaging/shedos-migrate-to-packaged/tree/usr/share/shedos/aur-pkgs/
+# Bundled AUR .pkg.tar.zst files staged into shedos-system at build time
+# by scripts/build-shedos-packages.sh, copied from archiso/shedos-repo/
+# for each entry in packages/aur-bundled.txt. The directory only exists
+# inside the harness's BUILD_ROOT copy of the package; this rule keeps
+# stray local-makepkg leftovers from getting tracked.
+packaging/shedos-system/tree/usr/share/shedos/aur-pkgs/
 
 # Dev-only convenience: symlinked from /usr/share/calamares/qml so
 # `calamares -c installer/calamares/` works without copying the QML

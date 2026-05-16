@@ -37,17 +37,4 @@ package() {
     # placeholder.
     install -Dm755 tree/usr/bin/shedos-migrate-to-packaged \
         "$pkgdir/usr/bin/shedos-migrate-to-packaged"
-
-    # Bundled fingerprint TOD .pkg.tar.zst files (the set listed in
-    # packages/aur-bundled.txt). scripts/build-shedos-packages.sh stages
-    # them into tree/usr/share/shedos/aur-pkgs/ from archiso/shedos-repo/
-    # at build time; shedman migrate installs them via pacman -U on user
-    # systems. Bundling third-party .pkg.tar.zst as inert payload inside
-    # this package is the legal post-ISO install path for AUR-norepublish
-    # entries (the vendor licenses forbid resigning them as separate
-    # shedos-repo.db entries; carrying their own .pkg.tar.zst unchanged
-    # as data is fine).
-    install -d "$pkgdir/usr/share/shedos/aur-pkgs"
-    install -m644 tree/usr/share/shedos/aur-pkgs/*.pkg.tar.zst \
-        "$pkgdir/usr/share/shedos/aur-pkgs/"
 }

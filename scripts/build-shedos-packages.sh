@@ -252,9 +252,9 @@ for dir in "${PKG_DIRS[@]}"; do
     cp -a "$dir" "$work"
 done
 
-# Bundle AUR builds into shedos-migrate-to-packaged so user systems can
-# pacman -U them at migrate/update time without an internet-fetching
-# yay round-trip. The bundled set is listed in packages/aur-bundled.txt
+# Bundle AUR builds into shedos-system so user systems can pacman -U
+# them at migrate/update time without an internet-fetching yay round-
+# trip. The bundled set is listed in packages/aur-bundled.txt
 # (currently the fingerprint TOD stack — vendor-licensed AUR packages
 # that ship on the ISO but cannot be republished as signed entries in
 # shedos-repo.db, so pacman -Syu shedos-meta can't pull them).
@@ -268,10 +268,10 @@ done
 # copy it into the package tree. Build aborts if any entry resolves to
 # zero or more than one file, so a stale-version cache or a silently-
 # failed AUR build can't ship the wrong binary.
-migrate_pkg="$BUILD_ROOT/shedos-migrate-to-packaged"
+system_pkg="$BUILD_ROOT/shedos-system"
 bundled_list="$PROJECT_ROOT/packages/aur-bundled.txt"
-if [[ -d $migrate_pkg && -f $bundled_list ]]; then
-    aur_pkgs_dir="$migrate_pkg/tree/usr/share/shedos/aur-pkgs"
+if [[ -d $system_pkg && -f $bundled_list ]]; then
+    aur_pkgs_dir="$system_pkg/tree/usr/share/shedos/aur-pkgs"
     rm -rf "$aur_pkgs_dir"
     mkdir -p "$aur_pkgs_dir"
     bundle_errors=()
