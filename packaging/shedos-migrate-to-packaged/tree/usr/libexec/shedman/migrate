@@ -135,6 +135,20 @@ EOF
     log "appended [shedos] fence to $conf"
 }
 
+_remove_legacy_hyprlock() {
+    local dry=$1
+    if ! pacman -Qq hyprlock >/dev/null 2>&1; then
+        return 0
+    fi
+    if (( dry )); then
+        log "(dry-run) pacman -Rdd --noconfirm hyprlock"
+        return 0
+    fi
+    log "removing hyprlock (superseded by shedos-screensaver)"
+    pacman -Rdd --noconfirm hyprlock \
+        || warn "pacman -Rdd hyprlock exited non-zero; continuing"
+}
+
 _refresh_mirrorlist() {
     local dry=$1
     local script="$ROOT/usr/lib/shedos/refresh-mirrorlist.sh"
@@ -291,6 +305,7 @@ fi
 _snapshot "$dry"
 _fence_pacman_conf "$dry"
 _refresh_mirrorlist "$dry"
+_remove_legacy_hyprlock "$dry"
 _pacman_install_meta "$dry"
 _install_aur_norepublish "$dry"
 _seed_sync_state "$dry"
