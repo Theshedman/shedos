@@ -299,16 +299,19 @@ jobs:
           key: shedos-kernel-pkg-${{ runner.os }}-${{ hashFiles('packaging/shedos-kernel/PKGBUILD', 'packaging/shedos-kernel/config.x86_64') }}
 
       - name: Stage shedos packages for cache save
-        # Mirror non-kernel shedos-*.pkg.tar.zst into the cache path so
-        # the next run's pre-flight can skip unchanged packages. Kernel
-        # files belong to the dedicated kernel cache; skip them here.
-        # Prune stale versions first so the cache doesn't accumulate
-        # every old pkgrel ever built.
+        id: shedos-pkgs-stage
         if: always()
         run: |
           mkdir -p /tmp/shedos-pkg-cache
           shopt -s nullglob
-          for dir in packaging/shedos-*/; do
+          declare -A keep_pkgs=()
+          for dir in packaging/*/; do
+              [[ -f "$dir/PKGBUILD" ]] || continue
+              name=$(basename "$dir")
+              [[ "$name" == "shedos-kernel" ]] && continue
+              keep_pkgs[$name]=1
+          done
+          for dir in packaging/*/; do
               pkgname=$(basename "$dir")
               [[ -f "$dir/PKGBUILD" ]] || continue
               [[ "$pkgname" == "shedos-kernel" ]] && continue
@@ -317,21 +320,28 @@ jobs:
               for stale in /tmp/shedos-pkg-cache/${pkgname}-*.pkg.tar.zst; do
                   base=$(basename "$stale")
                   [[ "$base" == "${pkgname}-${pkgver}-${pkgrel}-"*.pkg.tar.zst ]] && continue
+                  [[ "$base" == "${pkgname}-debug-${pkgver}-${pkgrel}-"*.pkg.tar.zst ]] && continue
                   echo "  cache prune: $base"
                   rm -f "$stale" "${stale}.sig"
               done
           done
-          for f in archiso/shedos-repo/shedos-*.pkg.tar.zst; do
-              case "$(basename "$f")" in
-                  shedos-kernel-*) continue ;;
-              esac
+          has_files=0
+          for f in archiso/shedos-repo/*.pkg.tar.zst; do
+              base=$(basename "$f")
+              pkgname=${base%-*-*-*.pkg.tar.zst}
+              parent=${pkgname%-debug}
+              [[ -n ${keep_pkgs[$parent]:-} ]] || continue
               cp -v "$f" /tmp/shedos-pkg-cache/
               [[ -f "${f}.sig" ]] && cp -v "${f}.sig" /tmp/shedos-pkg-cache/
+              has_files=1
           done
           ls -la /tmp/shedos-pkg-cache/ | head -20
+          echo "has_files=$has_files" >> "$GITHUB_OUTPUT"
 
       - name: Save shedos-pkgs cache
-        if: always()
+        # has_files gate: empty caches from early failures would otherwise
+        # shadow healthy prior caches via the restore-keys prefix match.
+        if: always() && steps.shedos-pkgs-stage.outputs.has_files == '1'
         uses: actions/cache/save@v4
         with:
           path: /tmp/shedos-pkg-cache
