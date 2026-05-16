@@ -135,6 +135,32 @@ EOF
     log "appended [shedos] fence to $conf"
 }
 
+_refresh_mirrorlist() {
+    local dry=$1
+    local script="$ROOT/usr/lib/shedos/refresh-mirrorlist.sh"
+    if [[ ! -x $script ]]; then
+        # Pre-cutover systems may not have the helper yet; reflector
+        # alone is enough for the first pacman run.
+        script=""
+    fi
+    if ! command -v reflector >/dev/null 2>&1; then
+        warn "reflector not on PATH; using whatever mirrorlist is already there"
+        return 0
+    fi
+    if (( dry )); then
+        log "(dry-run) refresh /etc/pacman.d/mirrorlist via reflector"
+        return 0
+    fi
+    log "refreshing /etc/pacman.d/mirrorlist (reflector)"
+    if [[ -n $script ]]; then
+        "$script" || warn "reflector exited non-zero; continuing"
+    else
+        reflector --save /etc/pacman.d/mirrorlist --sort rate \
+                  --latest 20 --protocol https --age 12 --threads 5 \
+            || warn "reflector exited non-zero; continuing"
+    fi
+}
+
 _pacman_install_meta() {
     local dry=$1
     if (( dry )); then
@@ -264,6 +290,7 @@ fi
 
 _snapshot "$dry"
 _fence_pacman_conf "$dry"
+_refresh_mirrorlist "$dry"
 _pacman_install_meta "$dry"
 _install_aur_norepublish "$dry"
 _seed_sync_state "$dry"
