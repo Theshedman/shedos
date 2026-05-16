@@ -37,4 +37,11 @@ package() {
     # placeholder.
     install -Dm755 tree/usr/bin/shedos-migrate-to-packaged \
         "$pkgdir/usr/bin/shedos-migrate-to-packaged"
+
+    # Proprietary AUR list. ISO builds pacstrap these; their licenses
+    # forbid republishing to repo.shedos.org so they can't live in
+    # shedos-meta.depends. migrate reads this file and installs the
+    # listed packages via yay after pacman -Syu shedos-meta.
+    install -Dm644 ../../packages/aur-norepublish.txt \
+        "$pkgdir/usr/share/shedos/aur-norepublish.txt"
 }

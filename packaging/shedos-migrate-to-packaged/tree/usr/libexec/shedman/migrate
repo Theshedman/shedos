@@ -146,6 +146,52 @@ _pacman_install_meta() {
     log "installed shedos-meta"
 }
 
+_install_aur_norepublish() {
+    local dry=$1
+    local list="$ROOT/usr/share/shedos/aur-norepublish.txt"
+    if [[ ! -f $list ]]; then
+        warn "$list not found; skipping proprietary AUR install"
+        return 0
+    fi
+    local pkgs
+    pkgs=$(grep -vE '^[[:space:]]*(#|$)' "$list" | xargs)
+    if [[ -z $pkgs ]]; then
+        log "$list is empty; nothing to install via AUR"
+        return 0
+    fi
+
+    # yay refuses to run as root and pacman wraps it that way during a
+    # migration, so drop to the invoking user. SUDO_USER is the
+    # original (unprivileged) account; without it we have no safe user
+    # to drop to and the AUR step is skipped with a warning.
+    local invoker=${SUDO_USER:-}
+    if [[ -z $invoker && $(id -u) -ne 0 ]]; then
+        invoker=$USER
+    fi
+    if [[ -z $invoker ]]; then
+        warn "migration ran as root without SUDO_USER; skipping AUR install"
+        warn "  rerun later with: shedman install \$(grep -vE '^[[:space:]]*(#|\$)' $list | xargs)"
+        return 0
+    fi
+
+    if ! command -v yay >/dev/null 2>&1; then
+        warn "yay not on PATH; skipping proprietary AUR install"
+        return 0
+    fi
+
+    if (( dry )); then
+        log "(dry-run) sudo -u $invoker yay -S --needed --noconfirm $pkgs"
+        return 0
+    fi
+    log "installing proprietary AUR packages (TOD fingerprint drivers, etc.)"
+    log "  → $pkgs"
+    if ! sudo -u "$invoker" yay -S --needed --noconfirm $pkgs 2>&1 \
+            | sed 's/^/shedman migrate: /'; then
+        warn "yay -S --needed exited non-zero; some AUR packages may be missing"
+        warn "  rerun later with: shedman install \$(grep -vE '^[[:space:]]*(#|\$)' $list | xargs)"
+    fi
+}
+
 _seed_sync_state() {
     local dry=$1
     if (( dry )); then
@@ -219,6 +265,7 @@ fi
 _snapshot "$dry"
 _fence_pacman_conf "$dry"
 _pacman_install_meta "$dry"
+_install_aur_norepublish "$dry"
 _seed_sync_state "$dry"
 _verify_with_doctor "$dry"
 
