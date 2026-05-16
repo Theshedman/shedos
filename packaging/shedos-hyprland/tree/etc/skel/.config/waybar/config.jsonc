@@ -60,8 +60,8 @@
     },
     "clock": {
         "format": "{:%A %I:%M %p}",
-        "format-alt": "{:L%d %B W%V %Y}",
         "tooltip-format": "<tt><small>{calendar}</small></tt>",
+        "on-click": "/usr/bin/kitty --class shedos-datetime -e /usr/lib/shedos/run-with-pause.sh /usr/bin/shedman datetime",
         "calendar": {
             "mode": "year",
             "mode-mon-col": 3,
