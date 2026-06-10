@@ -16,6 +16,12 @@ pkgdesc='ShedOS Hyprland desktop profile (dotfiles + DE helpers)'
 arch=('any')
 url='https://github.com/Theshedman/shedos'
 license=('GPL-3.0-or-later')
+# Retire blueman: the desktop ships overskride for Bluetooth now, so let
+# pacman drop blueman transactionally on upgrade. Existing installs only
+# had it orphaned by the meta swap, leaving its applet to keep firing the
+# connect/disconnect popups; replaces= removes it (and its autostart) for
+# good on the next update.
+replaces=('blueman')
 install=shedos-hyprland.install
 depends=(
     'shedos-system'
