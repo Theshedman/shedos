@@ -2,14 +2,14 @@
 # content hash of packaging/<pkgname>/ as of the most recent release.
 # Compared against current hashes on every run to decide what to bump.
 
-shedos-branding = "dd935165553aacd0744a60640c29ae8eb7d4750ae931f183b6e8eb60861ed804"
+shedos-branding = "c11322824388fad5fc72d46abf66a70f8e434ddbd20f4e200f662df550fd5152"
 shedos-greeter = "3aa4285a601c0f5f0f16dc59eaf3c4cc6fd1fb197c04f7f13102598c480f5f30"
-shedos-hyprland = "12a5b9366bdda07d237676ac1da973f1ffcbbbc1d3827658247b7c7ed9b31e6f"
+shedos-hyprland = "341c45d1f47d76a644f3811fb4d4f1b0d8641ee1d599ddfdbcdfffec949c4181"
 shedos-hyprland-plugin-hyprspace = "82ef205d9dcfb7ebf0533f7c54014c9d2593ffa3503758c89997208e1a172845"
-shedos-keyring = "24294f3eae52a3186f9972066531c330e7fbcc6d2b8d2ddfabdb372cba1658fc"
+shedos-keyring = "6a45a6e25882d7666bb46f618fb14ebc158a2a96fd4a62aaae7705974e54c3b1"
 shedos-meta = "ee358c6961079a1dbc52ea2fc7756d95ecd1971f07adb1af95476cbe0f8eb662"
 shedos-migrate-to-packaged = "e1c3e97b0a1f7d469c55842c1eea0583172c8254784397aa03a7cd2712ed64a3"
-shedos-nvim = "5621f41f7a4d5ebbdcc4d195a235555a90d18b2a84058b1bde260ebd230d8eae"
+shedos-nvim = "c53a8e3315b5a445e5af77fcf11f168ad93dee5b16e3736428506646d5cbc526"
 shedos-power = "ca462704ee9b25b8e4a3696339e7623555acc8329f00de471d7482e584999ed7"
-shedos-screensaver = "ba45e4e074c0bf7a5a9178740e8fcbec60cbb2e45f86e94dd4a1d59aa5d5772b"
-shedos-system = "5b014a6ed877f4eb7abb99355924ff31ec5f8d04647dffa0d3bba458ae51432d"
+shedos-screensaver = "0fa1cfa4f684550d7644dd277ad73b93f581cf2bcc591b904c23e16990e55901"
+shedos-system = "4edff196f0ebda6ddb1ed6a3749f6fbac3e209a0ec186fa84461859580cbeeda"

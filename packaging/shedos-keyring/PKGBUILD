@@ -8,7 +8,7 @@
 # Key rotation procedure: packaging/shedos-keyring/README.md
 
 pkgname=shedos-keyring
-pkgver=2026.05.14
+pkgver=2026.05.17
 pkgrel=1
 pkgdesc='ShedOS repository keyring — trust anchor for [shedos]'
 arch=('any')
