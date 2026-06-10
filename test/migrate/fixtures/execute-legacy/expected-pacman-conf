@@ -5,7 +5,7 @@ HoldPkg = pacman glibc
 Include = /etc/pacman.d/mirrorlist
 
 # >>> shedos <<<
-# Managed by shedos-system — do not edit between these markers.
+# Managed by shedos-system; do not edit between these markers.
 # Run `pacman -R shedos-system` to remove automatically.
 [shedos]
 SigLevel = Required DatabaseRequired
