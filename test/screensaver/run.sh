@@ -81,7 +81,7 @@ done
 # T4: --list-logos
 out=$("$BIN" --list-logos 2>&1); code=$?
 expect_exit "T4 --list-logos exits 0" 0 "$code" "$out"
-for variant in block ansi-shadow slant big small doom outline mini; do
+for variant in block slim ansi-shadow big boxed gradient checker shadow-cast mirror-flip; do
     expect_contains "T4 --list-logos contains $variant" "$variant" "$out"
 done
 
