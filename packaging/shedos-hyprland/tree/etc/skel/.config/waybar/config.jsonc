@@ -142,7 +142,7 @@
         "format-connected": "󰂱",
         "format-no-controller": "",
         "tooltip-format": "Devices connected: {num_connections}",
-        "on-click": "blueman-manager"
+        "on-click": "overskride"
     },
     "pulseaudio": {
         "format": "{icon}",

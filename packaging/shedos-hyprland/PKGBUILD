@@ -44,7 +44,7 @@ depends=(
 optdepends=(
     'impala: network TUI launched from waybar network icon'
     'pavucontrol: volume mixer launched from waybar pulseaudio icon'
-    'blueman: bluetooth manager launched from waybar'
+    'overskride: bluetooth manager launched from waybar'
     'btop: system monitor launched from waybar cpu icon'
     'wf-recorder: required for `shedman screenrecord` (Super+R / waybar pill)'
     'slurp: region selection for `shedman screenrecord --region`'
