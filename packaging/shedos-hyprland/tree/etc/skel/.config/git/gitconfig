@@ -1,5 +1,4 @@
-# ShedOS Git Configuration Template
-# Copy to ~/.gitconfig and customize
+# ShedOS Git configuration — lives at ~/.config/git/gitconfig; edit in place.
 
 [user]
     # Set your name and email
@@ -59,7 +58,6 @@
     # Checkout
     co = checkout
     cb = checkout -b
-    cm = checkout main
     cd = checkout develop
 
     # Branch
