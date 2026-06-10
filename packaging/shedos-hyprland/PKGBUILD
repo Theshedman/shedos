@@ -93,6 +93,13 @@ package() {
     install -Dm644 tree/usr/lib/systemd/user/waybar.service.d/shedos-locale.conf \
         "$pkgdir/usr/lib/systemd/user/waybar.service.d/shedos-locale.conf"
 
+    # Keybind helpers: volume/brightness/DND feedback popups and the
+    # screenshot wrapper (save-dir creation, slurp-cancel guard, saved
+    # notification).
+    install -Dm755 tree/usr/lib/shedos/osd "$pkgdir/usr/lib/shedos/osd"
+    install -Dm755 tree/usr/lib/shedos/screenshot \
+        "$pkgdir/usr/lib/shedos/screenshot"
+
     # Point Hyprland's lock-dead asset at the current lock background; the
     # hook re-applies it after a hyprland upgrade restores the original.
     install -Dm755 tree/usr/lib/shedos/sync-lockdead \

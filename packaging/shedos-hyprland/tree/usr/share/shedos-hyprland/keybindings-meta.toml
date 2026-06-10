@@ -474,6 +474,12 @@ category = "System"
 name = "Night Light"
 description = "Toggle the blue-light filter on the active display"
 
+[[bind]]
+keys = "SUPER+SHIFT+N"
+category = "System"
+name = "Do Not Disturb"
+description = "Toggle notifications; critical alerts still show"
+
 # ---- Audio & Media ---------------------------------------------------
 
 [[bind]]

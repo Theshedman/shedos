@@ -96,6 +96,12 @@ default-timeout=1500
 [mode=dnd]
 invisible=1
 
+# Critical alerts pierce DND, and the osd helper sends its
+# "Do not disturb on" confirmation as critical so toggling always
+# gives visible feedback.
+[mode=dnd urgency=critical]
+invisible=0
+
 # Blueman is retired in favour of overskride; suppress its connect/
 # disconnect popups entirely so a stray one can never block the screen.
 [app-name=blueman]
