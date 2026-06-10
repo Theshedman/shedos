@@ -130,7 +130,7 @@
         "tooltip-format-discharging": "{power:>1.0f}W↓ {capacity}%",
         "tooltip-format-charging": "{power:>1.0f}W↑ {capacity}%",
         "interval": 5,
-        "on-click": "wlogout",
+        "on-click": "shedman power",
         "states": {
             "warning": 20,
             "critical": 10
@@ -202,7 +202,7 @@
         "on-click": "/usr/bin/shedman screenrecord",
         "exec": "/usr/bin/shedman screenrecord --waybar",
         "interval": 5,
-        "signal": 8,
+        "signal": 11,
         "return-type": "json"
     },
     "tray": {

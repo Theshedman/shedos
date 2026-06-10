@@ -118,10 +118,9 @@ _cmd_waybar() {
 }
 
 _refresh_waybar() {
-    # Custom/screenrecording-indicator uses signal 8; same as custom/updates.
-    # Both modules re-poll on that signal, which is harmless: each runs its
-    # own exec command. Keep the kick best-effort; missing waybar is fine.
-    pkill -RTMIN+8 waybar 2>/dev/null || true
+    # custom/screenrecording-indicator listens on signal 11 (8/9/10 belong to
+    # updates/conflicts/health). Best-effort; missing waybar is fine.
+    pkill -RTMIN+11 waybar 2>/dev/null || true
 }
 
 _cmd_start() {
@@ -151,7 +150,8 @@ _cmd_start() {
         echo "$PROG: cannot create $rec_dir" >&2
         return 1
     }
-    local outfile="$rec_dir/recording_$(date +%Y-%m-%d_%H-%M-%S).mp4"
+    local outfile
+    outfile="$rec_dir/recording_$(date +%Y-%m-%d_%H-%M-%S).mp4"
 
     # Prepare args. --region selects an area via slurp; failure to select
     # (user cancels with Escape, or slurp not installed) aborts cleanly.
@@ -202,8 +202,7 @@ _cmd_stop() {
         # Wait briefly for the process to flush + exit. wf-recorder usually
         # finalizes within a second; cap the wait so a hung process doesn't
         # leave the user staring at a frozen pill.
-        local i
-        for i in 1 2 3 4 5; do
+        for _ in 1 2 3 4 5; do
             kill -0 "$pid" 2>/dev/null || break
             sleep 0.4
         done
