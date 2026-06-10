@@ -17,7 +17,8 @@ jobs:
           pacman -Syu --noconfirm
           pacman -S --needed --noconfirm \
             base-devel git sudo \
-            python python-textual jq scdoc zsh fish man-db rust
+            python python-textual python-tomlkit jq scdoc zsh fish man-db \
+            rust clang wayland libxkbcommon alsa-lib pam
 
       - uses: actions/checkout@v4
 
