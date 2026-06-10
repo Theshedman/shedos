@@ -80,9 +80,7 @@ export XDG_DATA_HOME="$HOME/.local/share"
 export XDG_STATE_HOME="$HOME/.local/state"
 export XDG_CACHE_HOME="$HOME/.cache"
 
-# Language
-export LANG="en_US.UTF-8"
-export LC_ALL="en_US.UTF-8"
+# Locale comes from /etc/locale.conf; not forced here.
 
 # Path additions (typeset -U keeps PATH deduplicated when .zshrc is re-sourced)
 typeset -U path PATH
@@ -217,19 +215,8 @@ alias mv="mv -iv"
 alias rm="rm -iv"
 alias ports="ss -tulpn"
 
-# Pacman aliases
-alias pac="sudo pacman"
-alias pacs="sudo pacman -S"
-alias pacr="sudo pacman -Rns"
-alias pacu="sudo pacman -Syu"
-alias pacq="pacman -Qs"
-alias pacss="pacman -Ss"
-
-# Yay aliases
-alias yas="yay -S"
-alias yar="yay -Rns"
-alias yau="yay -Syu"
-alias yasr="yay -Ss"
+# Package management goes through shedman (snapshots + review flow):
+#   shedman install / update / uninstall
 
 # ─────────────────────────────────────────────────────────────
 # FZF Configuration
