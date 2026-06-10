@@ -14,9 +14,11 @@ doesn't already have one. Subsequent right-click pin/unpin in the
 dock UI (or `shedman dock pin/unpin`) overwrites that file —
 we never clobber an existing list.
 
-The wrapper supervises the spawned child processes and waits on
-them. If any exits, we propagate the worst exit code so systemd
-treats it as a failure and Restart=on-failure kicks the unit.
+The wrapper supervises the spawned child processes. Docks are
+long-lived: any child exit — clean or not — leaves a monitor
+dockless, so the first exit outside a systemd stop tears down the
+rest and fails the unit; Restart=on-failure brings the full set
+back on every monitor.
 """
 
 from __future__ import annotations
@@ -129,48 +131,57 @@ def _spawn_all(cfg: dict, monitors: list[str]) -> list[subprocess.Popen]:
     return children
 
 
+# Set by the SIGTERM/SIGINT handler: child exits during a systemd stop
+# are expected and must not fail the unit.
+_stopping = False
+
+
+def _terminate_all(children: list[subprocess.Popen]) -> None:
+    for child in children:
+        try:
+            child.terminate()
+        except ProcessLookupError:
+            pass
+
+
 def _wait_supervised(children: list[subprocess.Popen]) -> int:
-    """Wait on every child. If any exits non-zero, terminate the rest
-    and return that exit code so systemd treats the unit as failed."""
-    worst = 0
-    try:
+    """Block until ANY child exits (os.waitpid(-1) — not just the
+    first in the list, which left sibling crashes unnoticed). A dock
+    exiting for any reason leaves its monitor dockless, so outside a
+    stop the whole set is torn down and the unit fails; systemd's
+    Restart=on-failure respawns a dock on every monitor."""
+    while children:
+        try:
+            pid, status = os.waitpid(-1, 0)
+        except ChildProcessError:
+            return 0
+        exited = next((c for c in children if c.pid == pid), None)
+        if exited is None:
+            continue
+        children.remove(exited)
+        if _stopping:
+            continue
+        rc = os.waitstatus_to_exitcode(status)
+        print(f"shedos-start-dock: child pid={pid} exited rc={rc}; "
+              f"restarting the dock set", file=sys.stderr)
+        _terminate_all(children)
         while children:
-            for child in list(children):
-                rc = child.poll()
-                if rc is None:
-                    continue
-                children.remove(child)
-                if rc != 0:
-                    worst = max(worst, rc)
-                    print(f"shedos-start-dock: child pid={child.pid} exited "
-                          f"rc={rc}; tearing down siblings", file=sys.stderr)
-                    for other in children:
-                        try:
-                            other.terminate()
-                        except ProcessLookupError:
-                            pass
-            # Block on the first remaining child to avoid busy-looping.
-            if children:
-                children[0].wait()
-    except KeyboardInterrupt:
-        for child in children:
             try:
-                child.terminate()
-            except ProcessLookupError:
-                pass
-        return 130
-    return worst
+                pid2, _ = os.waitpid(-1, 0)
+            except ChildProcessError:
+                break
+            children[:] = [c for c in children if c.pid != pid2]
+        return rc if rc != 0 else 1
+    return 0
 
 
 def _install_signal_passthrough(children: list[subprocess.Popen]) -> None:
     """Forward SIGTERM / SIGRTMIN+1 to every child so systemd-stop
     and `shedman dock toggle` work even with multiple dock instances."""
     def _term(_sig, _frame):
-        for c in children:
-            try:
-                c.terminate()
-            except ProcessLookupError:
-                pass
+        global _stopping
+        _stopping = True
+        _terminate_all(children)
 
     def _toggle(_sig, _frame):
         for c in children:
