@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # shedos-hyprland install scriptlet
 
 _strip_live_artifacts() {

@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # shedos-keyring install scriptlet
 #
 # Runs as root in the target install root. For a normal `pacman -S` this is
