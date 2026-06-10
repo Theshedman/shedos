@@ -7,7 +7,7 @@ set -euo pipefail
 action="${1:-}"
 
 if [[ "$action" == "--help-summary" ]]; then
-    echo "open the power menu (lock/reboot/shutdown)"
+    echo "open the power menu (lock/sleep/reboot/shutdown)"
     exit 0
 fi
 
@@ -15,9 +15,19 @@ case "$action" in
     "")        exec /usr/bin/shedos-power ;;
     shutdown)  exec systemctl poweroff ;;
     reboot)    exec systemctl reboot ;;
-    logout)    exec loginctl lock-session ;;
+    suspend)   exec systemctl suspend ;;
+    logout)
+        # End the session the same way the SUPER+SHIFT+E bind does.
+        if command -v uwsm >/dev/null 2>&1; then
+            exec uwsm stop
+        elif command -v hyprshutdown >/dev/null 2>&1; then
+            exec hyprshutdown
+        else
+            exec hyprctl dispatch exit
+        fi
+        ;;
     *)
-        echo "usage: shedman power [shutdown|reboot|logout]" >&2
+        echo "usage: shedman power [shutdown|reboot|suspend|logout]" >&2
         exit 2
         ;;
 esac
