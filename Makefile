@@ -66,7 +66,7 @@ help:
 	@echo "  test-migrate       Run shedman migrate retrofit-tool tests"
 	@echo "  test-man           Run shedman man-page sanity tests"
 	@echo "  test-screenrecord  Run shedman screenrecord fixture tests"
-	@echo "  test-kernel        Run shedos-kernel storage + build-infra contract tests"
+	@echo "  test-kernel        Run kernel (linux-zen) migration-wiring contract tests"
 	@echo "  test-installer     Run installer pytest suite (LUKS, disk, BTRFS, hardware parsers)"
 	@echo "  test-config        Run shedman config umbrella tests"
 	@echo "  test-rollback      Run shedman rollback smoke tests"
@@ -551,7 +551,7 @@ test-screenrecord:
 	@bash $(TEST_DIR)/screenrecord/run.sh
 
 test-kernel:
-	@echo -e "$(GREEN)Running shedos-kernel storage + build-infra contract tests...$(NC)"
+	@echo -e "$(GREEN)Running kernel (linux-zen) migration-wiring contract tests...$(NC)"
 	@bash $(TEST_DIR)/kernel/run.sh
 
 test-installer:

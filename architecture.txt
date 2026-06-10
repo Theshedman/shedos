@@ -62,8 +62,8 @@ Calamares' sequence:
 
 unpackfs copies the airootfs squashfs onto /target. copykernel walks
 /usr/lib/modules/*/pkgbase to find every installed kernel and writes
-vmlinuz + initramfs to /target/boot — ShedOS only ships shedos-kernel,
-so this step writes one kernel. The shedos_* modules then configure
+vmlinuz + initramfs to /target/boot — ShedOS ships linux-zen plus a
+stock linux fallback, so this step writes both. The shedos_* modules then configure
 mkinitcpio, install Limine, deploy /etc/skel into the new user's home,
 seed the shedos-sync-configs manifest, persist any WiFi profile the
 user joined during the live session, and enable the runtime services.
