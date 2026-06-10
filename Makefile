@@ -353,23 +353,6 @@ prepare: check-root check-deps generate-packages
 	@# Ensure npm-cache is copied inside packages (it should be automatic if inside packages/, but explicit check helps)
 	@mkdir -p $(BUILD_DIR)/airootfs/opt/shedos-installer/branding
 	@cp -r branding/wallpapers $(BUILD_DIR)/airootfs/opt/shedos-installer/branding/
-	@# Copy user configs for Calamares deployment
-	@mkdir -p $(BUILD_DIR)/airootfs/opt/shedos-installer/configs
-	@cp -r archiso/airootfs/etc/skel/.config/hypr $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/hyprland 2>/dev/null || true
-	@cp -r archiso/airootfs/etc/skel/.config/waybar $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/waybar 2>/dev/null || true
-	@cp -r archiso/airootfs/etc/skel/.config/kitty $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/kitty 2>/dev/null || true
-	@cp -r archiso/airootfs/etc/skel/.config/mako $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/mako 2>/dev/null || true
-	@cp -r archiso/airootfs/etc/skel/.config/walker $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/walker 2>/dev/null || true
-	@cp -r archiso/airootfs/etc/skel/.config/rofi $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/rofi 2>/dev/null || true
-	@cp -r archiso/airootfs/etc/skel/.config/nvim $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/nvim 2>/dev/null || true
-	@cp -r archiso/airootfs/etc/skel/.config/git $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/git 2>/dev/null || true
-	@cp -r archiso/airootfs/etc/skel/.config/mise $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/mise 2>/dev/null || true
-	@mkdir -p $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/starship
-	@cp archiso/airootfs/etc/skel/.config/starship.toml $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/starship/starship.toml 2>/dev/null || true
-	@mkdir -p $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/zsh
-	@cp archiso/airootfs/etc/skel/.zshrc $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/zsh/.zshrc 2>/dev/null || true
-	@cp archiso/airootfs/etc/skel/.p10k.zsh $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/zsh/.p10k.zsh 2>/dev/null || true
-	@cp -r archiso/airootfs/etc/skel/.config/fastfetch $(BUILD_DIR)/airootfs/opt/shedos-installer/configs/fastfetch 2>/dev/null || true
 	@# Copy ShedOS branding files. Note: /etc/os-release and /etc/shedos-ascii.txt
 	@# are now owned by shedos-system / shedos-branding packages respectively — do
 	@# not copy them here or pacstrap will fail with "exists in filesystem".
