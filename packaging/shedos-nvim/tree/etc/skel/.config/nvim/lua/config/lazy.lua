@@ -16,20 +16,24 @@ vim.opt.rtp:prepend(lazypath)
 
 require("lazy").setup({
   spec = {
+    -- LazyVim core and its default plugins
     { "LazyVim/LazyVim", import = "lazyvim.plugins" },
+    -- ShedOS overrides + the C/C++/Go/Rust language extras (see lazyvim.json)
     { import = "plugins" },
   },
   defaults = {
-    lazy = true,
+    -- LazyVim handles lazy-loading for its own plugins; user specs load on
+    -- startup unless they opt into an event/cmd/ft.
+    lazy = false,
+    -- always use the latest git commit; lazy-lock.json pins the versions
     version = false,
   },
   install = { colorscheme = { "catppuccin", "habamax" } },
   checker = {
-    enabled = true,
+    enabled = true, -- periodically check for plugin updates
     notify = false,
   },
   performance = {
-    cache = { enabled = true },
     rtp = {
       disabled_plugins = {
         "gzip",
@@ -39,8 +43,5 @@ require("lazy").setup({
         "zipPlugin",
       },
     },
-  },
-  ui = {
-    border = "rounded",
   },
 })
