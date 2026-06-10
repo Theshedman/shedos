@@ -1,0 +1,37 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  shell-suites:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    steps:
+      - name: Install test dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --needed --noconfirm \
+            base-devel git sudo \
+            python python-textual jq scdoc zsh fish man-db rust
+
+      - uses: actions/checkout@v4
+
+      - name: Trust workspace for git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      # The suites run unprivileged — the tools refuse root, and each suite
+      # stubs the privileged surface (pacman/systemctl/snapper/ufw/yad) and
+      # redirects its surface roots, so nothing touches the container.
+      - name: Build the screensaver (its suite tests the real binary)
+        run: |
+          useradd -m tester
+          chown -R tester:tester .
+          sudo -u tester bash -c 'cd packaging/shedos-screensaver && cargo build'
+
+      - name: Run shell test suites
+        run: sudo -u tester bash scripts/run-shell-tests.sh

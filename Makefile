@@ -498,6 +498,9 @@ test-apply:
 	@echo -e "$(GREEN)Running shedos-apply fixture tests...$(NC)"
 	@bash $(TEST_DIR)/apply/run.sh
 
+check:
+	@bash scripts/run-shell-tests.sh
+
 test-apply-checkpoint:
 	@echo -e "$(GREEN)Running apply_core StateCheckpoint tests...$(NC)"
 	@bash $(TEST_DIR)/apply-checkpoint/run.sh
@@ -571,4 +574,4 @@ dev-install:
 	@echo -e "$(GREEN)Installing development dependencies...$(NC)"
 	@cd installer && pip install -e ".[dev]"
 
-.PHONY: dev-install lint test test-bios
+.PHONY: dev-install lint test test-bios check
