@@ -98,7 +98,7 @@ check-deps:
 	@command -v mkarchiso >/dev/null 2>&1 || { echo -e "$(RED)Error: archiso is not installed. Run: pacman -S archiso$(NC)"; exit 1; }
 	@command -v repo-add >/dev/null 2>&1 || { echo -e "$(RED)Error: repo-add is not installed. Run: pacman -S pacman$(NC)"; exit 1; }
 	@command -v git >/dev/null 2>&1 || { echo -e "$(RED)Error: git is not installed. Run: pacman -S git$(NC)"; exit 1; }
-	@command -v python >/dev/null 2>&1 || echo -e "$(YELLOW)Warning: python not installed (needed by bump-kernel.sh + installer tests). Run: pacman -S python$(NC)"
+	@command -v python >/dev/null 2>&1 || echo -e "$(YELLOW)Warning: python not installed (needed by installer tests). Run: pacman -S python$(NC)"
 	@command -v ruff >/dev/null 2>&1 || echo -e "$(YELLOW)Warning: ruff not installed (needed for 'make lint'). Run: cd installer && pip install -e .[dev]$(NC)"
 	@command -v mypy >/dev/null 2>&1 || echo -e "$(YELLOW)Warning: mypy not installed (needed for 'make lint'). Run: cd installer && pip install -e .[dev]$(NC)"
 	@command -v qemu-system-x86_64 >/dev/null 2>&1 || echo -e "$(YELLOW)Warning: qemu not installed (needed for 'make test')$(NC)"

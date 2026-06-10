@@ -149,12 +149,12 @@ shedos/
 │   └── aur-norepublish.txt  # Proprietary AUR (bundled into ISO, never republished)
 ├── installer/            # Calamares branding + custom Python modules + shared library
 ├── branding/             # Wallpapers, ASCII logos, /etc/issue, /etc/motd, os-release
-├── scripts/              # Build, release, package-list, kernel-bump helpers
+├── scripts/              # Build, release, and package-list helpers
 ├── docs/                 # Maintainer documentation
 ├── site/                 # Astro source for shedos.org
 ├── test/                 # Fixture-driven test suites
 ├── .github/workflows/    # CI: build-packages, build-iso,
-│                         #     kernel-version-watcher, aur-cache-refresh, deploy-site
+│                         #     aur-cache-refresh, deploy-site
 ├── architecture.txt      # System architecture overview
 ├── Makefile
 ├── LICENSE

@@ -38,10 +38,9 @@ jobs:
       image: archlinux:latest
       options: --privileged
       # Mount the host root so we can free disk space before makepkg
-      # pulls down kernel sources + builds. ubuntu-latest ships ~30 GB
-      # of preinstalled toolchains (dotnet, android-sdk, ghc, …) we
-      # don't need; trim them up front to keep the workspace from
-      # filling on a cold cache.
+      # builds. ubuntu-latest ships ~30 GB of preinstalled toolchains
+      # (dotnet, android-sdk, ghc, …) we don't need; trim them up front
+      # to keep the workspace from filling on a cold cache.
       volumes:
         - /:/host
 
@@ -52,8 +51,8 @@ jobs:
     steps:
       - name: Free host disk space
         # Strip preinstalled toolchains we don't use so makepkg has room
-        # to extract kernel sources + build a fresh shedos-kernel on a
-        # cold cache. Cheap when the cache hits (no-op).
+        # to build the AUR + shedos packages on a cold cache. Cheap when
+        # the cache hits (no-op).
         run: |
           df -h /__w || true
           rm -rf \
@@ -73,12 +72,9 @@ jobs:
         run: |
           pacman -Syu --noconfirm
           # scdoc is a makedep of shedos-system (renders man/*.scd → *.1).
-          # ccache is wired into makepkg via the build user's ~/.makepkg.conf
-          # below; it cuts shedos-kernel rebuilds from ~40 min to ~5 min on
-          # warm cache.
           # makepkg runs with --nodeps for the pure-copy shedos-* packages,
           # so makedeps can't be left to --syncdeps; install them directly.
-          pacman -S --needed --noconfirm base-devel git sudo gnupg rclone pacman-contrib scdoc ccache python
+          pacman -S --needed --noconfirm base-devel git sudo gnupg rclone pacman-contrib scdoc python
           # archlinux:latest ships an empty pacman keyring. Initialize + populate
           # the archlinux trust chain so makepkg --syncdeps can verify signed
           # packages from core/extra during dependency resolution.
@@ -141,29 +137,11 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         run: bash scripts/bump-version.sh --check
 
-      - name: Restore ccache
-        # ccache survives across runs, keyed on the kernel PKGBUILD +
-        # config so an upstream-zen bump or a config edit invalidates the
-        # cache (real source change), but a CI re-run on the same sources
-        # warm-hits and trims ~2 h off the build. Restore-keys falls back
-        # to any prior cache for partial reuse. Same key shape as
-        # build-iso.yml; both workflows populate / consume one cache.
-        uses: actions/cache@v4
-        with:
-          path: /home/builder/.ccache
-          key: ccache-${{ runner.os }}-${{ hashFiles('packaging/shedos-kernel/PKGBUILD', 'packaging/shedos-kernel/config.x86_64') }}
-          restore-keys: |
-            ccache-${{ runner.os }}-
-
-      - name: Wire ccache into makepkg
+      - name: Wire makepkg config
         run: |
-          install -d -o builder -g builder /home/builder/.ccache
-          # Prepend ccache to PATH inside builder's makepkg invocations.
-          # ccache transparently fronts /usr/bin/{gcc,cc,g++}; binutils
-          # untouched.
           install -d -o builder -g builder /home/builder
           cat > /home/builder/.makepkg.conf <<'EOF'
-          BUILDENV=(!distcc color !check !sign ccache)
+          BUILDENV=(!distcc color !check !sign)
           # Override Arch's default OPTIONS to flip `debug` off. Without
           # this, makepkg produces a sibling -debug pkg for every package
           # carrying compiled artifacts (calamares, hyprspace, shedos-power
@@ -274,45 +252,6 @@ jobs:
           path: archiso/shedos-repo
           key: aur-${{ runner.os }}-${{ hashFiles('packages/aur.txt') }}
 
-      - name: Restore shedos-kernel package cache
-        # Whole-package cache keyed on the kernel PKGBUILD + config. When
-        # upstream linux-zen pkgver hasn't bumped (scripts/bump-kernel.sh
-        # rewrites the PKGBUILD on bumps) and the config is unchanged,
-        # the last successful run's shedos-kernel-*.pkg.tar.zst is
-        # restored here. The pre-flight in scripts/build-shedos-packages.sh
-        # sees the file already in archiso/shedos-repo/ and skips makepkg
-        # entirely (~30 s cache copy vs ~40 min ccache rebuild).
-        id: kernel-pkg-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: /tmp/shedos-kernel-pkg-cache
-          key: shedos-kernel-pkg-${{ runner.os }}-${{ hashFiles('packaging/shedos-kernel/PKGBUILD', 'packaging/shedos-kernel/config.x86_64') }}
-
-      - name: Stage cached shedos-kernel package (or clear stale)
-        # AUR-cache restore above may carry a stale kernel from a prior
-        # run on different kernel sources (its key is aur.txt-only,
-        # orthogonal to the kernel state). The dedicated kernel-pkg-cache
-        # is the authoritative gate:
-        #   * hit AND non-empty → wipe AUR-restored kernel, lay down the cached one
-        #   * miss OR empty     → wipe AUR-restored kernel so the script's pre-flight
-        #                         file-exists check fails and triggers a real rebuild
-        # An empty hit is possible: a prior run's earlier-step failure left
-        # /tmp/shedos-kernel-pkg-cache empty before the save step ran.
-        # Treat that as a miss so the kernel rebuilds from source.
-        run: |
-          mkdir -p archiso/shedos-repo
-          rm -f archiso/shedos-repo/shedos-kernel-*.pkg.tar.zst
-          shopt -s nullglob
-          cached=( /tmp/shedos-kernel-pkg-cache/*.pkg.tar.zst )
-          shopt -u nullglob
-          if [[ "${{ steps.kernel-pkg-cache.outputs.cache-hit }}" == "true" && ${#cached[@]} -gt 0 ]]; then
-              cp -v "${cached[@]}" archiso/shedos-repo/
-              chown -R builder:builder archiso/shedos-repo
-              echo "Cached kernel staged; build-shedos-packages.sh pre-flight will skip rebuild."
-          else
-              echo "Kernel cache miss or empty; build-shedos-packages.sh will rebuild from source."
-          fi
-
       - name: Restore shedos-pkgs cache
         # Per-build incremental cache for non-kernel shedos-* packages.
         # github.sha makes the key always-miss on a fresh push;
@@ -352,41 +291,6 @@ jobs:
         # After this runs, archiso/shedos-repo/ holds every package we want
         # published (shedos-* + OSS AUR + unsigned proprietary AUR).
         run: scripts/build-shedos-packages.sh
-
-      - name: Stage shedos-kernel package for cache save
-        # If we just rebuilt the kernel (cache miss), mirror the resulting
-        # pkg.tar.zst into the dedicated cache path so the save step below
-        # pushes it to GHA cache. No-op on hit (same files staged in
-        # archiso/shedos-repo would be copied to themselves).
-        # has_files output gates the save step so a build-shedos-packages.sh
-        # failure that aborts before the kernel is built doesn't poison the
-        # cache slot with an empty entry that future runs would hit.
-        id: kernel-cache-stage
-        if: always() && steps.kernel-pkg-cache.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p /tmp/shedos-kernel-pkg-cache
-          cp -v archiso/shedos-repo/shedos-kernel-*.pkg.tar.zst \
-              /tmp/shedos-kernel-pkg-cache/ 2>/dev/null || true
-          ls -la /tmp/shedos-kernel-pkg-cache/
-          shopt -s nullglob
-          files=( /tmp/shedos-kernel-pkg-cache/*.pkg.tar.zst )
-          if (( ${#files[@]} > 0 )); then
-              echo "has_files=1" >> "$GITHUB_OUTPUT"
-          else
-              echo "has_files=0" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Save shedos-kernel package cache
-        # Persist the freshly-built kernel for the next run. Only saves on
-        # cache miss with files actually staged; `if: always()` so a
-        # downstream failure (signing, publish) doesn't discard the build,
-        # but has_files=='1' prevents an empty cache from clobbering the
-        # slot if the build itself failed before producing the kernel.
-        if: always() && steps.kernel-pkg-cache.outputs.cache-hit != 'true' && steps.kernel-cache-stage.outputs.has_files == '1'
-        uses: actions/cache/save@v4
-        with:
-          path: /tmp/shedos-kernel-pkg-cache
-          key: shedos-kernel-pkg-${{ runner.os }}-${{ hashFiles('packaging/shedos-kernel/PKGBUILD', 'packaging/shedos-kernel/config.x86_64') }}
 
       - name: Sign + stage packages for publication
         # Walk archiso/shedos-repo/, sign each .pkg.tar.zst with the ShedOS
@@ -540,7 +444,6 @@ jobs:
           for dir in packaging/*/; do
               [[ -f "$dir/PKGBUILD" ]] || continue
               name=$(basename "$dir")
-              [[ "$name" == "shedos-kernel" ]] && continue
               keep_pkgs[$name]=1
           done
           for f in /tmp/shedos-pkg-cache/*.pkg.tar.zst; do
@@ -555,7 +458,6 @@ jobs:
           for dir in packaging/*/; do
               pkgname=$(basename "$dir")
               [[ -f "$dir/PKGBUILD" ]] || continue
-              [[ "$pkgname" == "shedos-kernel" ]] && continue
               pkgver=$(awk -F= '/^pkgver=/ {print $2; exit}' "$dir/PKGBUILD")
               pkgrel=$(awk -F= '/^pkgrel=/ {print $2; exit}' "$dir/PKGBUILD")
               for stale in /tmp/shedos-pkg-cache/${pkgname}-*.pkg.tar.zst; do

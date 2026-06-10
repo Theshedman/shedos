@@ -40,7 +40,6 @@ BUILD_ORDER=(
     shedos-greeter
     shedos-screensaver
     shedos-migrate-to-packaged
-    shedos-kernel
     shedos-meta
 )
 
@@ -198,7 +197,6 @@ for d in "$PACKAGING_DIR"/*/; do
     [[ -f "$d/PKGBUILD" ]] || continue
     keep_shedos[$(basename "$d")]=1
 done
-[[ -n ${keep_shedos[shedos-kernel]:-} ]] && keep_shedos[shedos-kernel-headers]=1
 phantom_count=0
 shopt -s nullglob
 for f in "$REPO_DIR"/shedos-*.pkg.tar.zst; do
@@ -223,7 +221,6 @@ fi
 for dir in "$PACKAGING_DIR"/shedos-*/; do
     pkgname=$(basename "$dir")
     [[ -f "$dir/PKGBUILD" ]] || continue
-    [[ "$pkgname" == "shedos-kernel" ]] && continue   # dedicated kernel cache
     pkgver=$(awk -F= '/^pkgver=/ {print $2; exit}' "$dir/PKGBUILD")
     pkgrel=$(awk -F= '/^pkgrel=/ {print $2; exit}' "$dir/PKGBUILD")
     shopt -s nullglob
@@ -337,10 +334,6 @@ for dir in "${PKG_DIRS[@]}"; do
         f="$REPO_DIR/${pkgname}-${pkgver}-${pkgrel}-${a}.pkg.tar.zst"
         [[ -f $f ]] && cached+=("$f")
     done
-    if [[ $pkgname == shedos-kernel ]]; then
-        h="$REPO_DIR/${pkgname}-headers-${pkgver}-${pkgrel}-x86_64.pkg.tar.zst"
-        [[ -f $h ]] && cached+=("$h") || cached=()
-    fi
     if (( ${#cached[@]} > 0 )) && [[ $pkgname == shedos-system ]]; then
         staged_bundle="$work/tree/usr/share/shedos/aur-pkgs"
         if [[ -d $staged_bundle ]]; then
@@ -366,17 +359,17 @@ for dir in "${PKG_DIRS[@]}"; do
         continue
     fi
 
-    # Every shedos-* package except shedos-kernel is a pure-copy package: no
-    # compile step, no makedepends, just `cp -a tree/… $pkgdir`. Runtime
-    # depends=() are needed on the INSTALLED system, not on the build host.
-    # Using --syncdeps for those installs runtime deps into the build
-    # container for no benefit; and is actively harmful when the installed
-    # dep mutates build-host state via its .install scriptlet
-    # (shedos-system's post_install appends [shedos] to /etc/pacman.conf;
-    # the next `pacman -Sy` then 404s because the prod repo doesn't exist
-    # yet inside CI). --nodeps sidesteps the whole problem.
+    # Most shedos-* packages are pure-copy: no compile step, no
+    # makedepends, just `cp -a tree/… $pkgdir`. Runtime depends=() are
+    # needed on the INSTALLED system, not on the build host. Using
+    # --syncdeps for those installs runtime deps into the build container
+    # for no benefit; and is actively harmful when the installed dep
+    # mutates build-host state via its .install scriptlet (shedos-system's
+    # post_install appends [shedos] to /etc/pacman.conf; the next
+    # `pacman -Sy` then 404s because the prod repo doesn't exist yet inside
+    # CI). --nodeps sidesteps the whole problem.
     #
-    # shedos-kernel + shedos-screensaver + shedos-greeter actually compile
+    # shedos-screensaver + shedos-greeter + shedos-power actually compile
     # code and need their makedepends + depends pulled in. Everything else
     # is pure cp -a payload; --nodeps avoids running runtime install
     # scriptlets (e.g. shedos-system's pacman.conf rewrite) inside the
@@ -392,43 +385,13 @@ for dir in "${PKG_DIRS[@]}"; do
         shedos-greeter|shedos-power)
             mk_flags=(--syncdeps --noconfirm --force)
             ;;
-        shedos-kernel|shedos-screensaver|calamares|shedos-hyprland-plugin-hyprspace|cage)
+        shedos-screensaver|calamares|shedos-hyprland-plugin-hyprspace|cage)
             mk_flags=(--syncdeps --noconfirm --force --cleanbuild)
             ;;
         *)
             mk_flags=(--nodeps --noconfirm --force --cleanbuild)
             ;;
     esac
-
-    # validpgpkeys=() only whitelists trust; it doesn't fetch keys, so
-    # on a fresh CI runner the kernel source-sig check fails. Pull fp
-    # list from the PKGBUILD itself to track bump-kernel.sh updates.
-    if [[ $pkgname == shedos-kernel ]]; then
-        mapfile -t kfps < <(awk '
-            /^validpgpkeys=\(/ { seen=1; next }
-            seen && /^\)/      { exit }
-            seen               { sub(/#.*/, ""); for (i=1;i<=NF;i++) if ($i ~ /^[A-F0-9]{40}$/) print $i }
-        ' "$dir/PKGBUILD")
-        if (( ${#kfps[@]} == 0 )); then
-            echo "FATAL: shedos-kernel PKGBUILD has no parseable validpgpkeys" >&2
-            exit 1
-        fi
-        echo "→ Importing ${#kfps[@]} kernel-source signing key(s) into builduser keyring..."
-        _recv_kernel_keys() {
-            local user_prefix=()
-            [[ $EUID -eq 0 ]] && user_prefix=(sudo -u builduser)
-            "${user_prefix[@]}" gpg --batch --keyserver hkps://keyserver.ubuntu.com \
-                --recv-keys "${kfps[@]}" 2>&1 \
-                || "${user_prefix[@]}" gpg --batch --keyserver hkps://keys.openpgp.org \
-                    --recv-keys "${kfps[@]}" 2>&1 \
-                || "${user_prefix[@]}" gpg --batch --keyserver hkps://pgp.mit.edu \
-                    --recv-keys "${kfps[@]}" 2>&1
-        }
-        if ! _recv_kernel_keys; then
-            echo "FATAL: could not retrieve kernel signing keys from any keyserver" >&2
-            exit 1
-        fi
-    fi
 
     if [[ $EUID -eq 0 ]]; then
         chown -R builduser:builduser "$work"

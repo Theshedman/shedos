@@ -10,11 +10,6 @@
 #                                Writes nothing; exits non-zero on drift.
 #                                CI uses this to refuse pushes with a stale
 #                                manifest.
-#
-# Special handling for shedos-kernel: pkgver/pkgrel are owned by
-# bump-kernel.sh (which tracks upstream linux-zen). bump-version.sh
-# refreshes its manifest hash so drift detection still covers it, but
-# never edits its PKGBUILD.
 
 set -euo pipefail
 
@@ -65,12 +60,6 @@ if [[ $mode == bump ]]; then
     fi
 fi
 
-# Packages whose pkgver/pkgrel are owned by another tool. Their hash is
-# still recorded in the manifest so drift detection covers them.
-declare -A skip_bump=(
-    [shedos-kernel]=1
-)
-
 # Robust PKGBUILD field reader.
 #   - Handles `field=value`, `field='value'`, `field="value"`,
 #     with optional trailing `# comment`.
@@ -120,28 +109,12 @@ declare -A new_hash=()
 declare -A drifted=()
 changed=0
 unchanged=0
-skipped=0
 
 for pkgbuild in "$root"/packaging/shedos-*/PKGBUILD; do
     pkg=$(basename "$(dirname "$pkgbuild")")
     bash "$here/refresh-local-hashes.sh" "$pkgbuild"
     h=$("$here/compute-pkg-hash.sh" "$pkg")
     prev=${last_hash[$pkg]:-}
-
-    if [[ -n ${skip_bump[$pkg]:-} ]]; then
-        new_hash[$pkg]=$h
-        if [[ -z $prev ]]; then
-            echo "  $pkg: tracked (first manifest entry)"
-            drifted[$pkg]=new
-        elif [[ $prev != "$h" ]]; then
-            echo "  $pkg: tracked (content changed; refreshing manifest only)"
-            drifted[$pkg]=upstream
-        else
-            echo "  $pkg: tracked (unchanged)"
-        fi
-        skipped=$((skipped + 1))
-        continue
-    fi
 
     current_ver=$(_read_pkgbuild_field "$pkgbuild" pkgver)
     current_rel=$(_read_pkgbuild_field "$pkgbuild" pkgrel)
@@ -206,7 +179,7 @@ EOF
 } > "$manifest"
 
 echo
-echo "Updated $changed PKGBUILD(s); unchanged $unchanged; skipped $skipped."
+echo "Updated $changed PKGBUILD(s); unchanged $unchanged."
 echo "Manifest: $manifest"
 echo
 echo "Next:"

@@ -6,7 +6,6 @@ shedos-branding = "89e26402cdd31c538fccd9d5c2e8f8f6b18b92fdd07379a278774cc4781f5
 shedos-greeter = "3aa4285a601c0f5f0f16dc59eaf3c4cc6fd1fb197c04f7f13102598c480f5f30"
 shedos-hyprland = "7989cd07190f8e8a6b03dafa8446427dfbe473edd36f5e81736efd013fcbcffc"
 shedos-hyprland-plugin-hyprspace = "82ef205d9dcfb7ebf0533f7c54014c9d2593ffa3503758c89997208e1a172845"
-shedos-kernel = "32695e6bc8ea96e637b54d06709892d4ed49f067a5ccacda1ee9d899ced419b8"
 shedos-keyring = "24294f3eae52a3186f9972066531c330e7fbcc6d2b8d2ddfabdb372cba1658fc"
 shedos-meta = "ee358c6961079a1dbc52ea2fc7756d95ecd1971f07adb1af95476cbe0f8eb662"
 shedos-migrate-to-packaged = "e1c3e97b0a1f7d469c55842c1eea0583172c8254784397aa03a7cd2712ed64a3"
