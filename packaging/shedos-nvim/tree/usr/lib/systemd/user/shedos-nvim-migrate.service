@@ -1,0 +1,12 @@
+[Unit]
+Description=Migrate an old ShedOS Neovim config to the rebuilt LazyVim setup
+# Skip entirely once migrated; the script self-gates on the same marker.
+ConditionPathExists=!%h/.local/state/shedos/.nvim-lazyvim-migrated
+ConditionPathExists=/usr/share/shedos/nvim/defaults/.config/nvim
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/shedos/migrate-nvim-config
+
+[Install]
+WantedBy=default.target

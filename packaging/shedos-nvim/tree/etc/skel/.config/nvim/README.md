@@ -1,22 +1,26 @@
 # ShedOS Neovim
 
-A minimal [LazyVim](https://www.lazyvim.org/) configuration, focused on the
-four languages ShedOS targets: **C, C++, Go, and Rust**. Nothing else is
-pre-wired — LazyVim's defaults handle the rest, and per-project settings
-(`.editorconfig`, `.clang-format`, `.golangci.yml`, `rustfmt.toml`, …) win
-over any global config.
+A [LazyVim](https://www.lazyvim.org/) configuration that works out of the box
+for the languages ShedOS engineers reach for: **C, C++, Go, Rust, Python,
+TypeScript/JavaScript, Lua, Bash/sh, Zig**, plus **JSON, YAML, TOML and
+Markdown**. Per-project settings (`.editorconfig`, `.clang-format`,
+`rustfmt.toml`, `pyproject.toml`, …) always win over the defaults.
 
 ## What's included
 
-- **LazyVim core** + the `lang.clangd`, `lang.go`, `lang.rust` and `dap.core`
-  extras (LSP, treesitter, formatting, and debugging for the four languages).
+- **LazyVim core** + language extras for each of the above (LSP, treesitter,
+  formatting, debugging). Every language server is enabled by default — see
+  below.
 - **Claude Code** (`<leader>a…`) via `claudecode.nvim`, driving the `claude`
   CLI that ships with ShedOS.
 - **Catppuccin Mocha** to match the desktop.
-- **Mason** installs the toolchain on first launch via the language extras —
-  `clangd`, `gopls`, `codelldb`, `delve`, the Go/C formatters and
-  `golangci-lint`. `rust-analyzer` is used from the system package on `PATH`.
-  Update tools any time with `:Mason` (press `U`).
+- **Language servers** all come from ShedOS system packages on `PATH`
+  (`clangd`, `gopls`, `rust-analyzer`, `lua-language-server`,
+  `bash-language-server`), so every language has a working LSP on first
+  launch — offline, and matching the system toolchain. `shfmt`, `shellcheck`
+  and `stylua` are system tools too. **Mason** fetches only what ShedOS
+  doesn't package: the Go helpers (`gofumpt`, `goimports`, `golangci-lint`)
+  and debuggers (`codelldb`, `delve`). Update Mason tools with `:Mason`.
 
 ## First launch
 

@@ -19,11 +19,17 @@ pkgdesc='ShedOS default Neovim configuration (LazyVim-based)'
 arch=('any')
 url='https://github.com/Theshedman/shedos'
 license=('GPL-3.0-or-later')
+# Ships a per-user one-shot (shedos-nvim-migrate.service) that swaps an old
+# ShedOS nvim config for the rebuilt LazyVim one on first login, backing the
+# old one up — the conservative 3-way sync can't handle a wholesale rewrite.
+install=shedos-nvim.install
 depends=(
     'neovim'
     'git'
 )
 optdepends=(
+    'clang: C/C++ language server (clangd), used from the system'
+    'rust: rust-analyzer language server, used from the system'
     'nodejs: required by many LSPs and LazyVim plugins'
     'ripgrep: telescope live_grep'
     'fd: telescope file finder'
@@ -46,6 +52,14 @@ package() {
     # Per-package sync policy.
     install -Dm644 tree/usr/share/shedos/nvim/sync-policy \
         "$pkgdir/usr/share/shedos/nvim/sync-policy"
+
+    # Per-user migration one-shot: cleanly swap an old ShedOS nvim config
+    # for the rebuilt LazyVim one (the 3-way sync can't handle the 79->12
+    # file restructure). Enabled --global by shedos-nvim.install.
+    install -Dm755 tree/usr/lib/shedos/migrate-nvim-config \
+        "$pkgdir/usr/lib/shedos/migrate-nvim-config"
+    install -Dm644 tree/usr/lib/systemd/user/shedos-nvim-migrate.service \
+        "$pkgdir/usr/lib/systemd/user/shedos-nvim-migrate.service"
 
     # Preserve XDG_CONFIG_HOME across sudo so `sudo nvim` reads the
     # invoking user's ~/.config/nvim/. Mode 0440 is what sudo demands.

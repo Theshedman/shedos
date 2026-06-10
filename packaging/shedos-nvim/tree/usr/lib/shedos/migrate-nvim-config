@@ -1,0 +1,67 @@
+#!/bin/bash
+# Per-user migration to the rebuilt LazyVim Neovim config (C/C++/Go/Rust).
+#
+# shedos-nvim was rebuilt from scratch: ~80 files collapsed to a dozen, with
+# 67 files (Java/JPA/OpenAPI/TS sprawl) deleted outright. The 3-way config
+# sync can't smoothly handle that — it never removes vanished files and only
+# drops `.shedosnew` copies, so an upgraded user would be left with obsolete
+# files that reference deleted plugins and break nvim on launch.
+#
+# So on the first session after the upgrade this one-shot cleanly swaps an
+# existing OLD ShedOS nvim config for the new one, preserving the old config
+# AND the old plugin state in dated backups. It is:
+#   * safe        — never deletes without a backup; nothing is lost.
+#   * gated       — only acts on a config that looks like the old ShedOS
+#                   default; a user's own config (or the already-new one) is
+#                   left untouched.
+#   * idempotent  — no-ops once a marker is written.
+set -uo pipefail
+
+cfg="${XDG_CONFIG_HOME:-$HOME/.config}/nvim"
+data="${XDG_DATA_HOME:-$HOME/.local/share}/nvim"
+defaults=/usr/share/shedos/nvim/defaults/.config/nvim
+marker="${XDG_STATE_HOME:-$HOME/.local/state}/shedos/.nvim-lazyvim-migrated"
+
+# Already migrated.
+[[ -f $marker ]] && exit 0
+# Defaults not in place yet (package mid-install); retry next login.
+[[ -d $defaults ]] || exit 0
+
+# Identify the pre-rebuild ShedOS default. The rebuild dropped the
+# distinctive feature modules and the Java/TypeScript extras; their presence
+# reliably marks the old config and won't match a user's own config or the
+# new one.
+is_old=0
+[[ -e $cfg/lua/config/features ]] && is_old=1
+if [[ -f $cfg/lazyvim.json ]] && grep -qE 'lang\.(java|typescript)' "$cfg/lazyvim.json" 2>/dev/null; then
+    is_old=1
+fi
+
+if (( ! is_old )); then
+    # Fresh install, already-new, a user-owned config, or no config at all —
+    # leave it alone and stop re-checking on every login.
+    mkdir -p "$(dirname "$marker")"
+    : > "$marker"
+    exit 0
+fi
+
+ts=$(date +%Y%m%d-%H%M%S)
+
+# Preserve the old config and its plugin state, then deploy the new config.
+# mv is atomic on the same filesystem; the data dir is moved aside so lazy
+# does a clean install against the new lazy-lock.json.
+mv "$cfg" "$cfg.shedos-bak-$ts"
+[[ -e $data ]] && mv "$data" "$data.shedos-bak-$ts"
+cp -a "$defaults" "$cfg"
+
+mkdir -p "$(dirname "$marker")"
+: > "$marker"
+
+echo "migrate-nvim-config: migrated to the rebuilt LazyVim config; old config backed up to $cfg.shedos-bak-$ts"
+
+# Best-effort desktop notification (needs a running session + daemon).
+if command -v notify-send >/dev/null 2>&1; then
+    notify-send -a "ShedOS" "Neovim config updated" \
+        "Rebuilt on LazyVim for C/C++/Go/Rust. Your previous config is saved at ~/.config/nvim.shedos-bak-$ts. Launch nvim to install plugins." \
+        2>/dev/null || true
+fi

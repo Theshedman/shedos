@@ -1,0 +1,15 @@
+# shellcheck shell=bash
+# shedos-nvim install scriptlet
+
+post_install() {
+    # Enable the per-user migration one-shot for every user. On the first
+    # login after this lands, it swaps an old ShedOS nvim config for the
+    # rebuilt LazyVim one (backing the old one up), then no-ops via its
+    # marker. --global writes the user-scope wants symlink, which works even
+    # during pacstrap (no running systemd needed).
+    systemctl --global enable shedos-nvim-migrate.service 2>/dev/null || true
+}
+
+post_upgrade() {
+    post_install
+}
