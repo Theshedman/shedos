@@ -149,6 +149,12 @@ def _write_gsettings_sh(tmp, ctx):
         'gsettings set org.gnome.desktop.interface cursor-theme "Adwaita"\n'
         'gsettings set org.gnome.desktop.interface color-scheme "prefer-dark"\n'
         f'gsettings set org.gnome.desktop.interface font-name "{ctx["font_ui"]}"\n'
+        # Point nautilus-open-any-terminal at kitty (its default is
+        # gnome-terminal); guarded — the schema ships only with the extension.
+        "gsettings list-schemas 2>/dev/null"
+        " | grep -qx com.github.stunkymonkey.nautilus-open-any-terminal"
+        " && gsettings set com.github.stunkymonkey.nautilus-open-any-terminal"
+        ' terminal "kitty"\n'
         "\n"
         '# libadwaita ignores gtk-theme-name; importing the theme\'s\n'
         '# gtk-4.0 stylesheet here pulls the Catppuccin overrides into\n'
