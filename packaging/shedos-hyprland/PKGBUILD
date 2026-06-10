@@ -46,6 +46,22 @@ depends=(
     'nwg-drawer'          # full-screen app drawer (dock's default launcher)
     'shedos-power'        # Rust GUI overlay execd by `shedman power` (waybar power icon)
     'shedos-hyprland-plugin-hyprspace'   # workspace overview (macOS Mission Control style) for the 3-finger swipe up gesture
+    # Binaries the shipped configs exec directly (keybinds, autostart,
+    # hypridle). Previously these rode in via the meta world list only.
+    'grim'                # screenshots (Print binds)
+    'slurp'               # region selection for screenshots + screenrecord
+    'swappy'              # screenshot annotation editor
+    'hyprpicker'          # color picker (Super+Shift+P)
+    'cliphist'            # clipboard history store (autostart + Super+C)
+    'wl-clipboard'        # wl-paste watchers feeding cliphist
+    'pamixer'             # volume keys via /usr/lib/shedos/osd
+    'brightnessctl'       # brightness keys via /usr/lib/shedos/osd + hypridle kbd backlight
+    'playerctl'           # media keys
+    'libnotify'           # notify-send in the osd + screenshot helpers
+    'xdg-user-dirs'       # resolves the Pictures dir for screenshot saves
+    'polkit-gnome'        # authentication agent (autostart)
+    'hyprshade'           # idle dim shader (hypridle)
+    'nautilus'            # file manager (Super+N)
 )
 optdepends=(
     'impala: network TUI launched from waybar network icon'
@@ -53,7 +69,6 @@ optdepends=(
     'overskride: bluetooth manager launched from waybar'
     'btop: system monitor launched from waybar cpu icon'
     'wf-recorder: required for `shedman screenrecord` (Super+R / waybar pill)'
-    'slurp: region selection for `shedman screenrecord --region`'
 )
 
 package() {
