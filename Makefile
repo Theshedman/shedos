@@ -328,15 +328,15 @@ prepare: check-root check-deps generate-packages
 	@# in archiso/packages.x86_64. Removed-from-packages/* entries with
 	@# old cached binaries cannot leak into pacstrap.
 	@awk '!/^#/ && NF {print $$1}' archiso/packages.x86_64 \
-		| sort -u > $(BUILD_DIR)/_keep_pkgs.txt
+		| sort -u > $(abspath $(BUILD_DIR))/_keep_pkgs.txt
 	@cd $(BUILD_DIR)/pkg-cache && \
 	for f in *.pkg.tar.zst; do \
 		[ -f "$$f" ] || continue; \
 		base=$$(basename "$$f"); \
 		pkgname=$${base%-*-*-*.pkg.tar.zst}; \
-		grep -Fxq "$$pkgname" $(BUILD_DIR)/_keep_pkgs.txt || rm -f "$$f"; \
+		grep -Fxq "$$pkgname" $(abspath $(BUILD_DIR))/_keep_pkgs.txt || rm -f "$$f"; \
 	done
-	@rm -f $(BUILD_DIR)/_keep_pkgs.txt
+	@rm -f $(abspath $(BUILD_DIR))/_keep_pkgs.txt
 	@echo -e "$(GREEN)Cached packages copied (AUR packages excluded; stale entries pruned)$(NC)"
 	@echo -e "$(GREEN)Configuring pacman for offline build...$(NC)"
 	@# Copy smart download wrapper
