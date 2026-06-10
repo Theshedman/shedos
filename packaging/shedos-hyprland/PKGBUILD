@@ -87,6 +87,13 @@ package() {
     install -Dm644 tree/usr/lib/systemd/user/waybar.service.d/shedos-locale.conf \
         "$pkgdir/usr/lib/systemd/user/waybar.service.d/shedos-locale.conf"
 
+    # Point Hyprland's lock-dead asset at the current lock background; the
+    # hook re-applies it after a hyprland upgrade restores the original.
+    install -Dm755 tree/usr/lib/shedos/sync-lockdead \
+        "$pkgdir/usr/lib/shedos/sync-lockdead"
+    install -Dm644 tree/usr/share/libalpm/hooks/zz-shedos-lockdead.hook \
+        "$pkgdir/usr/share/libalpm/hooks/zz-shedos-lockdead.hook"
+
     # Application dock: systemd user unit + python wrapper that reads
     # ~/.config/shedos/dock.toml, spawns one nwg-dock-hyprland per
     # monitor, and execs nwg-drawer for the launcher button. The unit

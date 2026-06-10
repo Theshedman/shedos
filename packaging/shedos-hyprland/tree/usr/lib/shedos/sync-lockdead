@@ -1,0 +1,15 @@
+#!/bin/bash
+# Point Hyprland's lock-dead assets at the current lock-screen background
+# so a lock-client death shows the wallpaper, not Hyprland's crash png.
+set -u
+
+src=/etc/shedos/themes/current/wallpaper-blurred.png
+dst=/usr/share/hypr
+
+# Symlink, not copy, so the lock-dead image follows theme/wallpaper
+# changes automatically (Hyprland re-reads the file on each lock).
+[[ -e $src && -d $dst ]] || exit 0
+
+for f in lockdead.png lockdead2.png; do
+    [[ -e "$dst/$f" || -L "$dst/$f" ]] && ln -sfn "$src" "$dst/$f"
+done
