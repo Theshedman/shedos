@@ -1,0 +1,175 @@
+---
+title: FAQ
+description: What ShedOS is, what makes it different, and the questions switchers actually ask.
+order: 40
+section: Guide
+---
+import CalloutBox from "~/components/CalloutBox.astro";
+
+## What is ShedOS, in one paragraph?
+
+A developer workstation OS built on Arch Linux. You boot the
+installer; ten minutes later you have a tuned Hyprland desktop, a
+complete development toolchain (Neovim/LazyVim, VS Code, zsh, Docker
+and Kubernetes tools, per-user PostgreSQL, language runtimes, Claude
+Code), and — this is the part nobody else ships — an update system
+with snapshots, rollback, a testing channel, and config merges, so
+the machine stays good for years, not weeks.
+
+## Is it really Arch? Can I use the AUR and the wiki?
+
+Yes, genuinely. pacman is pacman, the official repos are untouched,
+`shedman install <pkg>` reaches the AUR through yay, and the Arch
+wiki applies verbatim. ShedOS adds one signed repository for its own
+packages and the `shedman` CLI on top — it removes nothing. If you
+can do it on Arch, you can do it here.
+
+## Can I try it without installing?
+
+Yes — the ISO boots a full live desktop: the real Hyprland setup,
+the real toolchain, even Claude Code, running from the USB stick.
+Kick the tires for an hour; the installer is one click on the
+desktop whenever you're convinced.
+
+## Will an update break my system?
+
+This is the question ShedOS is *built around*, so the answer has
+three layers:
+
+1. **Tested before you get it** — every ShedOS package lands on a
+   testing channel first; the stable channel only ever receives a
+   release-candidate snapshot that survived a real soak.
+2. **Snapshot before every upgrade** — `shedman update` takes a
+   BTRFS snapshot automatically, every time.
+3. **One-command undo** — `shedman rollback` returns the system to
+   any pre-upgrade state; `shedman upgrade-history` shows every past
+   upgrade with what changed and lets you roll back from a TUI.
+
+No other Arch-based distribution has all three.
+
+## What happens to my config edits when ShedOS updates a default?
+
+The flagship feature. ShedOS ships configured dotfiles (Hyprland,
+terminal, shell, editor…) and keeps improving them — but it never
+overwrites a file you've touched. Updates are merged three-way: if
+only the shipped default changed, you get it automatically; if you
+edited the file too, the new default lands *beside* yours as a
+`.shedosnew` sidecar, a waybar pill tells you, and
+`shedman config --review` opens a per-hunk merge TUI (or VS Code with
+`--gui`). You keep your customizations *and* their improvements.
+
+## Can I bring my existing dotfiles?
+
+Yes — your `$HOME` is yours. Drop in your dotfiles and they simply
+win: ShedOS treats an edited file as user-owned and routes future
+default changes through the review flow above. A `$HOME`-level git
+repo for dotfiles works fine; the conflict scanner skips git working
+trees.
+
+## What exactly ships for development?
+
+Neovim on LazyVim and VS Code, both configured. zsh with
+powerlevel10k. Docker + docker-compose, kubectl, minikube, helm,
+lazydocker. PostgreSQL with a role and database already created for
+your user. mise for per-project language runtimes (Python, Node, Go,
+Rust, and friends). git configured with your identity from the
+installer. Claude Code preinstalled. A GPU-accelerated terminal
+(kitty), `fzf`, `ripgrep`, `fd`, `eza`, and the modern CLI staples.
+The first `git clone` of your day is the first command that isn't
+already done.
+
+## What's the AI story?
+
+Claude Code ships preinstalled — terminal-native AI that reads your
+repo, writes code, runs commands, and is there on first boot (and on
+the live USB). ShedOS treats AI tooling as part of the developer
+baseline, the same as git or a compiler, and the roadmap leans
+further in. You bring your own account; nothing runs without you
+starting it.
+
+## Why Hyprland?
+
+Because for keyboard-driven development work, a tiling Wayland
+compositor is simply faster — and Hyprland is the best of them.
+ShedOS ships it fully assembled: 90+ keybindings in a searchable
+dialog (`Super+Alt+K`), macOS-grade 3/4-finger touchpad gestures, a
+workspace overview, themed lock/greeter/power surfaces, screen
+recording, and a dock. You get the productivity without the
+three-weekend rice.
+
+## I don't like something it ships. Can I remove it?
+
+Yes — it's your machine and it's still pacman.
+`shedman uninstall <pkg>` removes anything (with a confirmation and
+the dependency closure shown first). Swap the browser, the editor,
+the launcher; the system doesn't fight you.
+
+## How does theming work?
+
+`shedman theme set palette <name>` recolors the *entire* desktop
+live — window borders, terminal, notifications, launcher, bar, lock
+screen, greeter, GTK apps — no logout. Wallpaper and fonts are one
+command each. Palettes are plain TOML files; adding your own is
+trivial.
+
+## What's the security story?
+
+Defaults you'd have to build yourself elsewhere: sudo requires your
+password (no silent wheel group), AppArmor is enforcing from the
+first boot, LUKS2 full-disk encryption is a checkbox in the
+installer, the lock screen fails closed (a crash locks, never
+unlocks), and a fingerprint enrolled once (`shedman fingerprint
+enroll`) works at the greeter, the lock screen, and sudo. Every
+ShedOS package is GPG-signed and pacman verifies it.
+
+## Is there telemetry?
+
+No. Nothing phones home, ever. The installer is fully offline and
+doesn't geo-probe (you pick your timezone on a map). The only
+self-initiated network traffic is package updates from mirrors
+listed in plain text in `/etc/pacman.d/mirrorlist`.
+
+## How is it different from Omarchy / Garuda / EndeavourOS / Manjaro?
+
+Short version: Omarchy curates a similar desktop but has no
+snapshot, rollback, testing-channel, or config-merge story; Garuda
+has snapshots but is a gaming-first KDE distro, not a dev
+workstation; EndeavourOS is deliberately near-vanilla (you build
+everything); Manjaro trades update delay for stability and breaks
+AUR assumptions doing it. The full breakdown with a feature matrix
+is on the [compare page](/compare).
+
+## What about gaming?
+
+ShedOS is a developer workstation first. Steam and friends install
+normally from the repos (`shedman install steam`) and run fine on
+the same Mesa/NVIDIA stack — but nothing gaming-specific is
+preinstalled or tuned. If gaming is the primary use, Garuda or
+CachyOS optimize for that out of the box.
+
+## What hardware do I need?
+
+6 GB RAM and 20 GB disk minimum (installer-enforced), UEFI or legacy
+BIOS, and WiFi works on first boot on virtually all laptops — the
+firmware for Atheros, Realtek, Mediatek, Marvell, Broadcom and Intel
+ships in base. Details, including the GPU and fingerprint-reader
+story, on the [hardware page](/docs/hardware).
+
+## How often are releases? Do I reinstall?
+
+Never reinstall — it's a rolling release. `shedman update` (or the
+waybar pill) brings everything current whenever you choose. Stable
+releases are cut after their release candidates survive a soak;
+the [changelog](/changelog) shows exactly what shipped in each.
+
+## Is it free?
+
+Free and open source, GPL-3.0, developed in one repository —
+packages, installer, desktop, and this site. No paid tier, no
+account, no strings.
+
+## Something's broken / I have an idea
+
+[Community page](/community) — bug reports with `shedman status`
+output and your version (`pacman -Qi shedos-meta`) get fixed
+fastest. Ideas and questions live in GitHub Discussions.

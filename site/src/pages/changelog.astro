@@ -1,0 +1,49 @@
+---
+import BaseLayout from "~/layouts/BaseLayout.astro";
+import { RELEASES } from "~/generated/changelog";
+---
+<BaseLayout
+    title="Changelog"
+    description="What shipped in each ShedOS release."
+>
+    <article class="mx-auto max-w-3xl px-4 py-16 sm:px-6">
+        <h1 class="text-3xl font-bold">Changelog</h1>
+        <p class="mt-3 text-[color:var(--color-muted)]">
+            One entry per stable release; release candidates roll up into
+            the stable that follows them. The same notes appear on each
+            <a class="underline" href="https://github.com/Theshedman/shedos/releases">GitHub Release</a>.
+        </p>
+
+        {RELEASES.length === 0 && (
+            <p class="mt-10 text-[color:var(--color-muted)]">
+                No release history available in this build.
+            </p>
+        )}
+
+        {RELEASES.map((r) => (
+            <section class="mt-12">
+                <div class="flex items-baseline gap-3">
+                    <h2 class="text-xl font-semibold">v{r.version}</h2>
+                    <span class="text-sm text-[color:var(--color-muted)]">{r.date}</span>
+                </div>
+                {r.groups.map((g) => (
+                    <div class="mt-4">
+                        <h3 class="text-sm font-semibold uppercase tracking-[0.1em] text-[color:var(--color-primary)]">
+                            {g.label}
+                        </h3>
+                        <ul class="mt-2 space-y-1 text-sm">
+                            {g.items.map((i) => (
+                                <li class="text-[color:var(--color-muted)]">
+                                    {i.scope && (
+                                        <code class="mr-1 rounded bg-[var(--color-surface)] px-1 font-mono text-xs text-[color:var(--color-text)]">{i.scope}</code>
+                                    )}
+                                    {i.text}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                ))}
+            </section>
+        ))}
+    </article>
+</BaseLayout>

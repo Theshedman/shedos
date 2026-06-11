@@ -1,0 +1,62 @@
+---
+import BaseLayout from "~/layouts/BaseLayout.astro";
+
+const cards = [
+    {
+        title: "Report a bug",
+        body: "Something broken? Open an issue with your ShedOS version (pacman -Qi shedos-meta), `shedman status` output, and what you expected.",
+        href: "https://github.com/Theshedman/shedos/issues/new",
+        cta: "Open an issue",
+    },
+    {
+        title: "Discuss & ask",
+        body: "Questions, ideas, setups, and 'is this normal?' — GitHub Discussions is the long-form home.",
+        href: "https://github.com/Theshedman/shedos/discussions",
+        cta: "Join the discussion",
+    },
+    {
+        title: "Contribute",
+        body: "The whole OS is one repository: packages, installer, desktop, this site. Changes to packaging/ ship through CI to every machine.",
+        href: "https://github.com/Theshedman/shedos",
+        cta: "Read the source",
+    },
+    {
+        title: "Test the next release",
+        body: "Run the testing ISO during release-candidate windows and you're soaking the next stable before it ships. RC builds appear on the download page.",
+        href: "/download",
+        cta: "Get the testing build",
+    },
+];
+---
+<BaseLayout
+    title="Community"
+    description="Where ShedOS is discussed, debugged, and built."
+>
+    <article class="mx-auto max-w-4xl px-4 py-16 sm:px-6">
+        <h1 class="text-3xl font-bold">Community</h1>
+        <p class="mt-3 max-w-2xl text-[color:var(--color-muted)]">
+            ShedOS lives on GitHub — issues, discussions, and the full
+            source. Chat spaces will be added as the community grows.
+        </p>
+
+        <div class="mt-10 grid gap-4 sm:grid-cols-2">
+            {cards.map((c) => (
+                <div class="flex flex-col rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+                    <h2 class="font-semibold">{c.title}</h2>
+                    <p class="mt-2 flex-1 text-sm text-[color:var(--color-muted)]">{c.body}</p>
+                    <a class="mt-4 text-sm font-medium text-[color:var(--color-primary)] underline" href={c.href}>
+                        {c.cta} →
+                    </a>
+                </div>
+            ))}
+        </div>
+
+        <h2 class="mt-14 text-xl font-semibold">Good bug reports</h2>
+        <ul class="mt-4 list-disc space-y-1 pl-5 text-sm text-[color:var(--color-muted)]">
+            <li>ShedOS version: <code class="font-mono">pacman -Qi shedos-meta</code></li>
+            <li>The aggregated state: <code class="font-mono">shedman status --json</code></li>
+            <li>For desktop issues: <code class="font-mono">hyprctl version</code> and which keybinding/gesture misbehaved</li>
+            <li>For update issues: the last entries of <code class="font-mono">shedman upgrade-history --list</code></li>
+        </ul>
+    </article>
+</BaseLayout>

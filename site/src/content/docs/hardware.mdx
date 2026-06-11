@@ -1,0 +1,65 @@
+---
+title: Hardware
+description: System requirements and hardware compatibility.
+order: 50
+section: Reference
+---
+import CalloutBox from "~/components/CalloutBox.astro";
+
+## Requirements
+
+| | Minimum | Recommended |
+|---|---|---|
+| CPU | any x86_64 | 4+ cores |
+| RAM | 6 GB usable (installer-enforced) | 8 GB+ |
+| Disk | 20 GB (installer-enforced) | 64 GB+ SSD, NVMe preferred |
+| Firmware | UEFI **or** legacy BIOS | UEFI |
+
+The installer refuses to start below the minimums rather than fail
+midway. Both firmwares boot from the same GPT disk layout.
+
+## WiFi and networking
+
+The linux-firmware splits for **Atheros, Realtek, Mediatek, Marvell,
+Broadcom, Intel** and more ship in the base system — WiFi works on
+first boot on virtually all laptops, no wired-connection bootstrap
+needed. NetworkManager (with iwd) drives connections; the waybar
+network icon opens the TUI.
+
+## Graphics
+
+- **AMD / Intel** — first-class. Mesa drivers ship; Hyprland runs
+  out of the box.
+- **NVIDIA** — works with the proprietary driver
+  (`nvidia_drm.modeset=1` is set when the installer detects the
+  card). Wayland + NVIDIA has sharper edges than AMD/Intel;
+  recent-generation cards on current drivers fare best.
+
+## Storage
+
+The root filesystem is **BTRFS** by design — snapshots and
+`shedman rollback` depend on it, so the installer doesn't offer
+alternatives. Twelve subvolumes separate system, home, logs, caches
+and container data so snapshots stay small and rollbacks don't touch
+your files. LUKS2 full-disk encryption is a checkbox at install.
+
+## Laptops
+
+TLP power management, brightness/media keys, and the 2/3/4-finger
+touchpad gestures work out of the box. Fingerprint readers supported
+by `fprintd` (most Goodix, Synaptics, Elan) enroll with
+`shedman fingerprint enroll` and unlock both the lock screen and the
+greeter.
+
+## Dual-boot
+
+The installer detects a Windows boot manager on any ESP, adds a
+Windows entry to the boot menu, and registers ShedOS with your
+firmware — both systems stay reachable.
+
+<CalloutBox kind="note">
+Something not working on your hardware? Check
+[GitHub issues](https://github.com/Theshedman/shedos/issues) — a
+report with `shedman status` output and your hardware model is the
+fastest path to a fix.
+</CalloutBox>
