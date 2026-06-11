@@ -150,9 +150,15 @@ jobs:
         run: bash scripts/bump-version.sh --check
 
       - name: Wire makepkg config
+        # System-wide drop-in, NOT a per-user file: the actual builds
+        # run as `builduser` (created fresh by build-shedos-packages.sh),
+        # so the old /home/builder/.makepkg.conf was never read —
+        # kernel builds ran at makepkg's default parallelism with debug
+        # packages enabled, a direct contributor to the cold-build wall
+        # time.
         run: |
-          install -d -o builder -g builder /home/builder
-          cat > /home/builder/.makepkg.conf <<'EOF'
+          install -d /etc/makepkg.conf.d
+          cat > /etc/makepkg.conf.d/99-shedos-ci.conf <<'EOF'
           BUILDENV=(!distcc color !check !sign)
           # Override Arch's default OPTIONS to flip `debug` off. Without
           # this, makepkg produces a sibling -debug pkg for every package
