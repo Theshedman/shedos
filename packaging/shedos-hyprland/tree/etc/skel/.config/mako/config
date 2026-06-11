@@ -1,5 +1,6 @@
 # ShedOS Mako Notification Configuration
-# Theme: Catppuccin Mocha
+# Colors come from the active ShedOS theme via the include below;
+# `shedman theme set <palette>` regenerates it and reloads mako.
 
 # ─────────────────────────────────────────────────────────────
 # General Settings
@@ -14,9 +15,6 @@ anchor=top-right
 # ─────────────────────────────────────────────────────────────
 
 font=JetBrainsMono Nerd Font 10
-background-color=#1e1e2edd
-text-color=#cdd6f4
-border-color=#89b4fa
 border-size=2
 border-radius=10
 padding=15
@@ -45,22 +43,22 @@ on-button-middle=none
 on-button-right=dismiss-all
 on-touch=dismiss
 
+# Theme colors. Last global line on purpose: the include carries an
+# [urgency=normal] section, which would end the global scope for any
+# option placed after it.
+include=/etc/shedos/themes/current/mako-colors.conf
+
 # ─────────────────────────────────────────────────────────────
 # Urgency Styles
 # ─────────────────────────────────────────────────────────────
 
 [urgency=low]
-border-color=#a6adc8
 default-timeout=3000
 
 [urgency=normal]
-border-color=#89b4fa
 default-timeout=5000
 
 [urgency=critical]
-border-color=#f38ba8
-background-color=#1e1e2eff
-text-color=#f38ba8
 default-timeout=0
 ignore-timeout=1
 
