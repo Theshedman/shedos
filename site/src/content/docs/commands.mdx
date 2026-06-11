@@ -158,6 +158,36 @@ dated before April 2026. Fresh installs see "already packaged" and
 exit 0.
 </CalloutBox>
 
+## Desktop & session
+
+| Command | Does |
+|---|---|
+| `shedman keybindings` | Every keybinding and touchpad gesture in a searchable dialog (Super+/). |
+| `shedman launcher` | Open the Walker app launcher. |
+| `shedman dock <verb>` | Manage the dock: `toggle`, `position <edge>`, `pin`/`unpin <app>`, `pinned`, `restart`, `status`. |
+| `shedman power` | The power menu (lock / sleep / reboot / shutdown). |
+| `shedman lock` | Lock the session (logind → shedos-screensaver). |
+| `shedman screenrecord` | Start/stop screen recording (wf-recorder; waybar pill shows the live state). |
+| `shedman screensaver` | The animated SHEDOS art — terminal or fullscreen overlay. |
+| `shedman browser` | Launch the default web browser. |
+| `shedman theme list / get` | Show available palettes / current theme values. |
+| `shedman theme set <key> <value>` | Switch `palette`, `wallpaper`, `font_ui`, or `font_mono`; re-renders and reloads everything live. |
+| `shedman theme apply` | Re-render the theme outputs without changing values. |
+
+## System management
+
+| Command | Does |
+|---|---|
+| `shedman kernel -l` / `--list` | Installed kernels; `*` marks the default Limine entry. |
+| `sudo shedman kernel --set-default <pkgbase>` | Make a kernel the default boot entry. |
+| `shedman services` | Table of expected services (platform set + whatever `system.toml` declares) with enabled/active state. |
+| `sudo shedman services --fix` | Enable + start anything missing; initializes the Postgres cluster if absent. |
+| `shedman datetime` | Set timezone, network time, and the system clock. |
+| `shedman db` | Database-service bootstrap/admin helpers (per-user Postgres role + database). |
+| `shedman fingerprint list / enroll / delete / clear` | Manage fingerprint enrollments (login + sudo). |
+| `shedman uninstall <pkg>` | Remove packages + unused deps; routes pacman vs yay automatically, prompts before removing (`-y` to skip). |
+| `shedman upgrade-history` | Browse past upgrades and roll back to any snapshot. |
+
 ## pacman cheatsheet
 
 `shedman update` wraps `pacman -Syu` for you, but the raw commands are
@@ -193,12 +223,11 @@ invocations for ad-hoc AUR work:
 | `yay -Ps` | Print AUR/pacman stats. |
 
 <CalloutBox kind="info">
-Proprietary AUR packages (Chrome, Postman, Claude Code, JetBrains
-Toolbox) are listed in `shedos-meta`'s `optdepends=()` and aren't
-installed by default. Calamares' optional-apps screen offers them at
-install time; post-boot, `shedman install <pkg>` installs from any
+Proprietary AUR packages (Chrome, Postman, JetBrains Toolbox) are
+listed in `shedos-meta`'s `optdepends=()` and aren't installed by
+default — `shedman install <pkg>` adds any of them post-boot from any
 source (pacman or AUR) with one command. `code` (open-source VS Code
-from `extra`) ships by default — no picker entry needed.
+from `extra`) ships by default.
 </CalloutBox>
 
 ## Flag combining

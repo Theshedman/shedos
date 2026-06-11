@@ -64,8 +64,33 @@ const hasRc =
                     sha256Url={RC_SHA256_URL!}
                     tone="muted"
                 />
+                <p class="mt-3 text-sm text-[color:var(--color-muted)]">
+                    ShedOS has two channels. <strong>Stable</strong> is what most
+                    people should run. A <strong>testing</strong> ISO appears here
+                    during release-candidate windows: systems installed from it
+                    track the testing package channel, so the upcoming release
+                    gets real-world soak before promotion — the same packages,
+                    a week or two early. Found a problem? Report it on{" "}
+                    <a class="underline" href="https://github.com/Theshedman/shedos/issues">GitHub issues</a>.
+                    A testing install keeps tracking testing; reinstall from a
+                    stable ISO (or edit the <code class="font-mono">[shedos]</code>{" "}
+                    server line in <code class="font-mono">/etc/pacman.conf</code>)
+                    to switch back.
+                </p>
             </div>
         )}
+
+        <section class="mt-16">
+            <h2 class="text-xl font-semibold">System requirements</h2>
+            <div class="mt-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+                <ul class="grid gap-2 text-sm text-[color:var(--color-muted)] md:grid-cols-2">
+                    <li><strong class="text-[color:var(--color-text)]">CPU:</strong> any x86_64 processor.</li>
+                    <li><strong class="text-[color:var(--color-text)]">RAM:</strong> 8 GB recommended (the installer requires 6 GB usable).</li>
+                    <li><strong class="text-[color:var(--color-text)]">Disk:</strong> 20 GB minimum; SSD recommended.</li>
+                    <li><strong class="text-[color:var(--color-text)]">Firmware:</strong> UEFI or legacy BIOS; GPT disks on both.</li>
+                </ul>
+            </div>
+        </section>
 
         <section class="mt-16">
             <h2 class="text-xl font-semibold">After you download</h2>
