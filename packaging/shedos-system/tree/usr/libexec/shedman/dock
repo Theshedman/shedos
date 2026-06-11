@@ -6,7 +6,7 @@ shedos-dock.service systemd user unit. Wraps the dock's signal-based
 toggle and writes user intent to two places:
 
     ~/.config/shedos/dock.toml             (position, icon_size, launcher)
-    ~/.config/nwg-dock-hyprland/pinned     (one app id per line)
+    $XDG_CACHE_HOME/nwg-dock-pinned        (one app id per line)
 
 Mutating commands restart the user unit so the change takes effect
 immediately. The dock cold-starts in well under a second.

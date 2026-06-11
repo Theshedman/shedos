@@ -477,11 +477,20 @@ def render_theme(system_doc: dict, etc_root: Path = Path("/etc"),
     if dry_run:
         return tmp
 
-    if target.is_symlink() or target.is_file():
-        target.unlink()
-    elif target.is_dir():
-        shutil.rmtree(target)
+    # Swap via a sibling -old name so there is never a moment with no
+    # current/ at all (consumers dereference it at arbitrary times).
+    old = target.with_name(target.name + ".old")
+    if old.is_dir():
+        shutil.rmtree(old)
+    elif old.exists() or old.is_symlink():
+        old.unlink()
+    if target.exists() or target.is_symlink():
+        target.rename(old)
     tmp.rename(target)
+    if old.is_dir():
+        shutil.rmtree(old, ignore_errors=True)
+    elif old.exists() or old.is_symlink():
+        old.unlink()
     return target
 
 
