@@ -34,12 +34,25 @@ url='https://github.com/Theshedman/calamares'
 license=('GPL-3.0-or-later')
 arch=('x86_64')
 
+# Full runtime closure. The KDE/Qt half used to be undeclared and the
+# binary worked only because installer.txt happened to seed the ISO
+# with everything; a bare `pacman -S` of this package linked against
+# libraries pacman didn't know about.
 depends=(
+    'kconfig'
     'kcoreaddons'
+    'ki18n'
+    'kirigami'
+    'kparts'
     'kpmcore'
+    'kservice'
+    'libplasma'
     'libpwquality'
+    'polkit-qt6'
+    'qt6-base'
     'qt6-declarative'
     'qt6-svg'
+    'solid'
     'yaml-cpp'
 )
 
@@ -65,6 +78,8 @@ options=('!debug')
 _commit='09a8ff53a89cbf81adfba57db67ad2f4b795ba46'
 
 source=("git+https://github.com/Theshedman/calamares.git#commit=$_commit")
+# SKIP is fine here: the integrity anchor is the exact commit pin above
+# (git verifies the SHA on fetch), not a tarball checksum.
 sha256sums=('SKIP')
 
 build() {
