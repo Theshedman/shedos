@@ -130,6 +130,30 @@ PYEOF
 
 cmd=${1:-}
 case "$cmd" in
+    --help-summary)
+        echo "inspect and switch the system theme (palette, wallpaper, fonts)"
+        exit 0
+        ;;
+    # Completion must never run the renderer or list the disk; answer
+    # statically and leave. Second arg = the word before the cursor,
+    # so `theme set <TAB>` can offer the keys.
+    --complete-bash|--complete-zsh)
+        case "${2:-}" in
+            set) printf '%s\n' wallpaper palette font_ui font_mono ;;
+            *)   printf '%s\n' list get set apply --help -h ;;
+        esac
+        exit 0
+        ;;
+    --complete-fish)
+        cat <<'EOF'
+list	List available palettes
+get	Show the current theme values
+set	Set wallpaper, palette, font_ui or font_mono
+apply	Re-render the theme outputs
+--help	Show this help
+EOF
+        exit 0
+        ;;
     list)
         list_palettes
         ;;
