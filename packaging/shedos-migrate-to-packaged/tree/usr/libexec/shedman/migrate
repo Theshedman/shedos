@@ -129,7 +129,7 @@ _fence_pacman_conf() {
 # Run `pacman -R shedos-system` to remove automatically.
 [shedos]
 SigLevel = Required DatabaseRequired
-Server = https://repo.shedos.org/$arch
+Server = https://repo.shedos.org/stable/$arch
 # <<< shedos >>>
 EOF
     log "appended [shedos] fence to $conf"
