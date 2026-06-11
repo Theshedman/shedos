@@ -18,11 +18,16 @@ pkgdesc='One-shot retrofit: bootstrap a pre-packaging ShedOS install onto the pa
 arch=('any')
 url='https://github.com/Theshedman/shedos'
 license=('GPL-3.0-or-later')
+# The script degrades gracefully when snapper or reflector are absent
+# (it warns and continues), so they are optional; pacman-contrib was
+# never used at all.
 depends=(
     'bash'
-    'pacman-contrib'
-    'snapper'
     'coreutils'
+)
+optdepends=(
+    'snapper: pre-migration safety snapshot'
+    'reflector: mirrorlist refresh before the first packaged update'
 )
 
 package() {
