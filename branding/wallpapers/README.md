@@ -5,10 +5,15 @@ Custom wallpapers for ShedOS featuring geometric patterns and Catppuccin Mocha c
 ## Wallpapers
 
 ### shedos-default.png (4K - 3840x2160)
-**Primary wallpaper** with gentle geometric circles in ShedOS brand colors:
+**Primary wallpaper** with gentle geometric circles in the desktop
+theme palette. (The BRAND colors are defined in
+`branding/new_assets/ShedOS-Color palette.pdf` — Electric Blue
+`#007FFF` primary, Pure White, Alert Red, Classic Black; the colors
+below are the Catppuccin Mocha *theme* accents the desktop ships
+with, not the brand palette.)
 - Base gradient: `#1e1e2e` → `#11111b` (Catppuccin Mocha base/crust)
 - Accent colors:
-  - ShedOS Blue (#89b4fa) - primary brand color
+  - Catppuccin Blue (#89b4fa) - default theme accent
   - Sapphire (#74c7ec) - complementary
   - Lavender (#b4befe) - complementary
 

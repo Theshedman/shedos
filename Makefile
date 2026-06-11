@@ -369,8 +369,6 @@ prepare: check-root check-deps generate-packages
 	@mkdir -p $(BUILD_DIR)/airootfs/etc
 	@cp branding/issue $(BUILD_DIR)/airootfs/etc/issue
 	@cp branding/motd $(BUILD_DIR)/airootfs/etc/motd
-	@mkdir -p $(BUILD_DIR)/airootfs/etc/neofetch
-	@cp branding/neofetch/config.conf $(BUILD_DIR)/airootfs/etc/neofetch/
 	@# Bake Claude Code into /etc/skel from the official installer (pinned).
 	@# The installer's launcher is an absolute symlink; we relativize it so
 	@# it resolves under each user's $$HOME. Inert bytes in the squashfs.
