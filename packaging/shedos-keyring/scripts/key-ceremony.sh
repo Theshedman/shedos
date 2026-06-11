@@ -22,12 +22,10 @@ set -euo pipefail
 here=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 pkg_dir=$(cd -- "$here/.." && pwd)
 
-if [[ -d "${GNUPGHOME:-}" ]]; then
-    echo "Refusing to pollute existing GNUPGHOME=$GNUPGHOME" >&2
-    echo "Run in a temporary shell: GNUPGHOME=\$(mktemp -d) ./$0" >&2
-    exit 2
-fi
-
+# The ceremony always runs in its own throwaway GNUPGHOME — the
+# caller's keyring is never read or written, so no guard is needed.
+# (An earlier guard refused any existing GNUPGHOME and then
+# recommended `GNUPGHOME=$(mktemp -d)` — which it would also refuse.)
 tmpgpg=$(mktemp -d)
 trap 'rm -rf "$tmpgpg"' EXIT
 export GNUPGHOME=$tmpgpg
