@@ -1,0 +1,4 @@
+{
+  "diagnostics": { "globals": ["hl", "SHEDOS_THEME"] },
+  "workspace": { "library": ["/usr/share/hypr/stubs"] }
+}

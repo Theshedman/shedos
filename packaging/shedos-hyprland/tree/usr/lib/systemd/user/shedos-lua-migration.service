@@ -1,0 +1,14 @@
+[Unit]
+Description=Move superseded hyprlang configs aside after the Lua migration
+After=graphical-session.target
+PartOf=graphical-session.target
+# Skip entirely once migrated; the script self-gates on the same stamp.
+ConditionPathExists=!%h/.local/state/shedos/.hypr-lua-migrated
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/shedos-hyprland/lua-migration
+RemainAfterExit=yes
+
+[Install]
+WantedBy=graphical-session.target

@@ -10,8 +10,8 @@ Toolbox's case, hugging the tray icon — inside the waybar strip).
 This daemon subscribes to Hyprland's IPC event socket. On each
 ``openwindow>>`` event whose class is in CLASS_RULES, it computes the
 intended absolute pixel position from the window's current monitor +
-size and fires ``hyprctl dispatch movewindowpixel`` in a retry burst
-to outlast Xwayland's late repositioning.
+size and fires ``hyprctl dispatch 'hl.dsp.window.move(…)'`` in a retry
+burst to outlast Xwayland's late repositioning.
 
 Add a new entry to CLASS_RULES for any future X11 app that ignores the
 windowrule. The tuple is (x_from_right_px, y_below_reserved_px); the
@@ -92,9 +92,12 @@ def move_to(cls: str, x_from_right: int, y_below_reserved: int) -> None:
     reserved_top = mon.get("reserved", [0, 0, 0, 0])[1]
     target_x = mon["x"] + mon["width"] - win_w - x_from_right
     target_y = mon["y"] + reserved_top + y_below_reserved
+    # Lua-config Hyprland only accepts the hl.dsp form; the pre-0.55
+    # `movewindowpixel exact …` no longer parses.
     subprocess.run(
-        ["hyprctl", "dispatch", "movewindowpixel",
-         f"exact {target_x} {target_y},class:^({cls})$"],
+        ["hyprctl", "dispatch",
+         f'hl.dsp.window.move({{ x = {target_x}, y = {target_y}, '
+         f'window = "class:^({cls})$" }})'],
         check=False, capture_output=True, timeout=2,
     )
 

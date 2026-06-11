@@ -1,0 +1,54 @@
+#!/bin/bash
+# Per-user migration to the Lua Hyprland config (Hyprland 0.55).
+#
+# The package replaced the ten hyprlang .conf files with .lua modules;
+# `shedman config --sync` seeds the new files but never deletes the old
+# ones, and Hyprland silently prefers hyprland.lua once it exists — so
+# a user's old .confs (and any customizations in them) would sit dead
+# in ~/.config/hypr forever. Move them into a dated backup dir so the
+# live tree reflects reality, and say so once. hypridle.conf and
+# shaders/ stay: hypridle is a separate daemon that still speaks
+# hyprlang.
+#
+# Gated three ways: a stamp makes it once-per-user; it never acts
+# before the sync has seeded hyprland.lua (retries next session); and
+# it only moves the ten ShedOS-shipped filenames, never user-created
+# extras.
+set -uo pipefail
+
+hypr="${XDG_CONFIG_HOME:-$HOME/.config}/hypr"
+stamp="${XDG_STATE_HOME:-$HOME/.local/state}/shedos/.hypr-lua-migrated"
+
+[[ -f $stamp ]] && exit 0
+
+# Nothing to migrate: fresh install or already clean.
+if [[ ! -f $hypr/hyprland.conf ]]; then
+    mkdir -p "$(dirname "$stamp")"
+    : > "$stamp"
+    exit 0
+fi
+
+# The sync hasn't seeded the Lua config yet; the session is still
+# running hyprlang. Try again next login.
+[[ -f $hypr/hyprland.lua ]] || exit 0
+
+migrated=(hyprland.conf env.conf monitor.conf input.conf general.conf
+          decoration.conf autostart.conf windowrules.conf
+          keybindings.conf gestures.conf)
+
+backup="$hypr/hyprlang-backup-$(date +%Y%m%d-%H%M%S)"
+mkdir -p "$backup"
+for f in "${migrated[@]}"; do
+    [[ -f $hypr/$f ]] && mv "$hypr/$f" "$backup/$f"
+done
+
+mkdir -p "$(dirname "$stamp")"
+: > "$stamp"
+
+echo "lua-migration: hyprlang configs moved to $backup"
+
+if command -v notify-send >/dev/null 2>&1; then
+    notify-send -a "ShedOS" "Hyprland config is now Lua" \
+        "The .conf files were replaced by .lua modules in ~/.config/hypr. Your old files are kept at ${backup/#"$HOME"/\~} — port any customizations into the matching .lua module." \
+        2>/dev/null || true
+fi

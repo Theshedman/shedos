@@ -163,6 +163,15 @@ package() {
         "$pkgdir/usr/lib/systemd/user/shedos-lock-migration.service"
     install -Dm755 tree/usr/libexec/shedos-hyprland/lock-migration \
         "$pkgdir/usr/libexec/shedos-hyprland/lock-migration"
+
+    # Per-user one-shot for the hyprlang→Lua config migration: moves the
+    # superseded .conf files into a dated backup once the sync has
+    # seeded hyprland.lua, and tells the user where they went.
+    install -Dm644 tree/usr/lib/systemd/user/shedos-lua-migration.service \
+        "$pkgdir/usr/lib/systemd/user/shedos-lua-migration.service"
+    install -Dm755 tree/usr/libexec/shedos-hyprland/lua-migration \
+        "$pkgdir/usr/libexec/shedos-hyprland/lua-migration"
+
     install -Dm644 tree/usr/lib/systemd/user/shedos-wallpaper.service \
         "$pkgdir/usr/lib/systemd/user/shedos-wallpaper.service"
     install -d "$pkgdir/usr/libexec/shedos-postupgrade"
