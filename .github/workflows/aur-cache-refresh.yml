@@ -44,7 +44,11 @@ jobs:
           # base-devel + scdoc mirror what build-packages.yml installs;
           # makepkg --nodeps means runtime depends never resolve, so
           # makedeps must be installed up front.
-          pacman -S --needed --noconfirm base-devel git sudo scdoc
+          # github-cli: archlinux:latest doesn't ship `gh`, so the
+          # cache-delete step below silently no-op'd — the save step
+          # then skipped on the duplicate key and every Monday rebuild
+          # was discarded; -git packages never moved.
+          pacman -S --needed --noconfirm base-devel git sudo scdoc github-cli
           pacman-key --init
           pacman-key --populate archlinux
           # build-aur-packages.sh creates `builduser` itself and demands
@@ -76,7 +80,7 @@ jobs:
         run: bash scripts/build-aur-packages.sh
 
       - name: Drop stale cache entry under primary key
-        # actions/cache/save@v4 fails on a duplicate key. The push-driven
+        # actions/cache/save fails on a duplicate key. The push-driven
         # build-packages.yml saved one earlier under the exact key; we
         # need to clear it so our refreshed archive can take its place.
         # If the key doesn't exist (first refresh ever, or aur.txt just
@@ -85,10 +89,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CACHE_KEY: aur-${{ runner.os }}-${{ hashFiles('packages/aur.txt') }}
         run: |
-          gh extension install actions/gh-actions-cache --pin v0.5.0 || true
-          gh actions-cache delete "$CACHE_KEY" \
-              --repo "$GITHUB_REPOSITORY" \
-              --confirm 2>/dev/null || \
+          # Native `gh cache delete` (the actions-cache extension is
+          # deprecated upstream). Failure is fine: no entry yet.
+          gh cache delete "$CACHE_KEY" --repo "$GITHUB_REPOSITORY" \
+              2>/dev/null || \
               echo "no existing cache entry under $CACHE_KEY (fine)"
 
       - name: Save refreshed cache
