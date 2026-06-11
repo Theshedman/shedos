@@ -7,7 +7,10 @@
 #   bump-version.sh              Bump VERSION (or use --today / argv) and
 #                                bump pkgrel for changed shedos-* packages.
 #   bump-version.sh --check      Validate manifest matches the working tree.
-#                                Writes nothing; exits non-zero on drift.
+#                                Exits non-zero on drift. (Runs
+#                                refresh-local-hashes.sh first, which may
+#                                rewrite hash stamps inside PKGBUILDs —
+#                                no pkgver/pkgrel/manifest changes.)
 #                                CI uses this to refuse pushes with a stale
 #                                manifest.
 

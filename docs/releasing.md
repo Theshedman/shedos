@@ -97,6 +97,11 @@ hash-aware and only bumps packages whose content actually changed since
 the manifest. A no-source-change stable cut publishes nothing new; the
 rclone promote is the only artifact move.
 
+During the RC soak, after installing in a VM, run
+`test/install/verify-calamares-defaults.sh` inside the freshly
+installed system — it confirms the proprietary apps that ride
+install.sfs actually landed.
+
 ---
 
 ## Why the maintainer signs locally

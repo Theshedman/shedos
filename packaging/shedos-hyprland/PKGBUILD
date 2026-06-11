@@ -30,7 +30,6 @@ depends=(
     'walker'
     'kitty'
     'mako'
-    'rofi'
     'fastfetch'
     'mise-bin'
     'zsh'

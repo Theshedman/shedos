@@ -35,8 +35,10 @@ clean_output() {
 }
 
 clean_test() {
-    log_info "Removing test directory..."
-    rm -rf "$PROJECT_DIR/test"
+    # Only the heavyweight VM artifacts — test/ holds 700+ tracked
+    # fixture files that `rm -rf test` used to delete wholesale.
+    log_info "Removing QEMU/OVMF test artifacts..."
+    rm -f "$PROJECT_DIR"/test/*.qcow2 "$PROJECT_DIR"/test/OVMF_*.fd
 }
 
 clean_python() {
