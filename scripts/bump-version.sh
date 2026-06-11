@@ -110,7 +110,11 @@ declare -A drifted=()
 changed=0
 unchanged=0
 
-for pkgbuild in "$root"/packaging/shedos-*/PKGBUILD; do
+# Every PKGBUILD under packaging/, not just shedos-*: the repackaged
+# externals (calamares, cage) used to sit outside the hash system, so
+# content edits without a manual pkgrel bump shipped stale cached
+# binaries.
+for pkgbuild in "$root"/packaging/*/PKGBUILD; do
     pkg=$(basename "$(dirname "$pkgbuild")")
     bash "$here/refresh-local-hashes.sh" "$pkgbuild"
     h=$("$here/compute-pkg-hash.sh" "$pkg")
@@ -133,7 +137,13 @@ for pkgbuild in "$root"/packaging/shedos-*/PKGBUILD; do
         continue
     fi
 
-    if [[ $current_ver == "$new_version" ]]; then
+    if [[ $pkg != shedos-* ]]; then
+        # Repackaged externals (calamares, cage) keep their upstream
+        # pkgver; only the rebuild counter moves.
+        new_rel=$((current_rel + 1))
+        sed -i "s/^pkgrel=.*/pkgrel=$new_rel/" "$pkgbuild"
+        echo "  $pkg: pkgrel $current_rel → $new_rel (external; pkgver untouched)"
+    elif [[ $current_ver == "$new_version" ]]; then
         new_rel=$((current_rel + 1))
         sed -i "s/^pkgrel=.*/pkgrel=$new_rel/" "$pkgbuild"
         echo "  $pkg: pkgrel $current_rel → $new_rel"
