@@ -119,6 +119,13 @@ package() {
     install -Dm644 tree/usr/lib/systemd/user/shedos-hypr-reload.service \
         "$pkgdir/usr/lib/systemd/user/shedos-hypr-reload.service"
 
+    # Auto-recovery notifier: surfaces the initrd recovery marker as
+    # a desktop notification with the make-it-permanent command.
+    install -Dm755 tree/usr/libexec/shedos-hyprland/recovery-notify \
+        "$pkgdir/usr/libexec/shedos-hyprland/recovery-notify"
+    install -Dm644 tree/usr/lib/systemd/user/shedos-recovery-notify.service \
+        "$pkgdir/usr/lib/systemd/user/shedos-recovery-notify.service"
+
     # Night-light schedule: helper + user timer pairs. Timers ship
     # disabled; `shedman datetime` enables them with the user's times.
     install -Dm755 tree/usr/libexec/shedos-hyprland/nightlight \

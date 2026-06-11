@@ -1,0 +1,12 @@
+[Unit]
+Description=Notify when the system auto-recovered from failed boots
+ConditionPathExists=/etc/shedos/recovered-from
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/shedos-hyprland/recovery-notify
+
+[Install]
+WantedBy=graphical-session.target

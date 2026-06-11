@@ -1,0 +1,16 @@
+#!/bin/bash
+# Tell the user their machine auto-recovered from failed boots.
+# The initrd recovery script writes the marker into the clone it
+# boots; the marker disappears once `shedman rollback` restores a
+# real root. One notification per boot.
+set -u
+marker=/etc/shedos/recovered-from
+stamp=/run/user/$UID/shedos-recovery-notified
+[[ -f $marker && ! -f $stamp ]] || exit 0
+snap=$(sed -n 's/^snapshot=//p' "$marker")
+notify-send --app-name=ShedOS --urgency=critical \
+    --icon=system-software-update \
+    "ShedOS recovered from a failed update" \
+    "Three boots failed, so you are running a safe copy of snapshot #${snap:-?}. Your files are intact. Make it permanent with: sudo shedman rollback ${snap:-<n>}" \
+    2>/dev/null || exit 0
+touch "$stamp"

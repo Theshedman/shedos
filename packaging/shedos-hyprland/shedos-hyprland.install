@@ -46,6 +46,7 @@ post_install() {
     systemctl --global enable shedos-lock-migration.service 2>/dev/null || true
     systemctl --global enable shedos-lua-migration.service 2>/dev/null || true
     systemctl --global enable shedos-wallpaper.service 2>/dev/null || true
+    systemctl --global enable shedos-recovery-notify.service 2>/dev/null || true
     systemctl --global enable hypridle.service waybar.service mako.service 2>/dev/null || true
     /usr/lib/shedos/sync-lockdead 2>/dev/null || true
     cat <<'EOF'
@@ -66,6 +67,7 @@ post_upgrade() {
     systemctl --global enable shedos-lock-migration.service 2>/dev/null || true
     systemctl --global enable shedos-lua-migration.service 2>/dev/null || true
     systemctl --global enable shedos-wallpaper.service 2>/dev/null || true
+    systemctl --global enable shedos-recovery-notify.service 2>/dev/null || true
     systemctl --global enable hypridle.service waybar.service mako.service 2>/dev/null || true
     /usr/lib/shedos/sync-lockdead 2>/dev/null || true
 }
