@@ -155,6 +155,10 @@ jobs:
         # download-packages` invokes scripts/build-aur-packages.sh which
         # populates archiso/shedos-repo/. With the cache restored above,
         # unchanged packages skip rebuilds.
+        env:
+          # Fail when a declared PGP key can't be fetched from any
+          # keyserver, instead of warn-and-skip (fail-open).
+          SHEDOS_AUR_STRICT_PGP: '1'
         run: make download-packages
 
       - name: Save AUR package cache

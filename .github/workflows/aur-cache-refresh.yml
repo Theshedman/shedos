@@ -77,6 +77,10 @@ jobs:
         # the actual build cost scales with how much upstream churned.
         env:
           SHEDOS_AUR_FORCE_REBUILD: '1'
+          # Fail the build when a declared PGP key can't be fetched
+          # from any keyserver, instead of warn-and-skip. Unset
+          # anywhere, the 3-keyserver fallback was still fail-open.
+          SHEDOS_AUR_STRICT_PGP: '1'
         run: bash scripts/build-aur-packages.sh
 
       - name: Drop stale cache entry under primary key

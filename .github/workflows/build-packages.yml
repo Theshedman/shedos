@@ -249,6 +249,10 @@ jobs:
         #      resolve shedos-meta's depends=() from repo.shedos.org alone.
         # The script handles root→builduser hop internally. With the cache
         # restored above, unchanged packages skip rebuilds.
+        env:
+          # Fail when a declared PGP key can't be fetched from any
+          # keyserver, instead of warn-and-skip (fail-open).
+          SHEDOS_AUR_STRICT_PGP: '1'
         run: scripts/build-aur-packages.sh
 
       - name: Save AUR package cache
