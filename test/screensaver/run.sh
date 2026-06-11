@@ -8,6 +8,15 @@ set -uo pipefail
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 REPO_ROOT=$(cd -- "$SCRIPT_DIR/../.." &> /dev/null && pwd)
 
+# Build from HEAD when cargo is available — preferring a stale
+# prebuilt binary silently tested week-old code. The prebuilt paths
+# stay as fallback for environments without a Rust toolchain.
+if command -v cargo >/dev/null 2>&1; then
+    (cd "$REPO_ROOT/packaging/shedos-screensaver" \
+        && cargo build --release --quiet) \
+        || echo "WARN: cargo build failed; falling back to a prebuilt binary" >&2
+fi
+
 BIN=
 for candidate in \
     "$REPO_ROOT/packaging/shedos-screensaver/target/release/shedos-screensaver" \

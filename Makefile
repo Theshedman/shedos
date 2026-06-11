@@ -67,11 +67,12 @@ help:
 	@echo "  test-man           Run shedman man-page sanity tests"
 	@echo "  test-screenrecord  Run shedman screenrecord fixture tests"
 	@echo "  test-kernel        Run kernel (linux-zen) migration-wiring contract tests"
-	@echo "  test-installer     Run installer pytest suite (LUKS, disk, BTRFS, hardware parsers)"
+	@echo "  test-installer     Run installer pytest suite (Calamares modules + core)"
 	@echo "  test-config        Run shedman config umbrella tests"
 	@echo "  test-rollback      Run shedman rollback smoke tests"
 	@echo "  test-update        Run shedman update smoke tests"
 	@echo "  test-install       Run shedman install smoke tests"
+	@echo "  test-all           Run every test/*/run.sh via CI's discovery"
 	@echo "  check-deps         Check build dependencies"
 	@echo "  prepare            Prepare build environment"
 	@echo "  generate-packages  Regenerate archiso/packages.x86_64 from packages/"
@@ -522,6 +523,11 @@ test-apply:
 check:
 	@bash scripts/run-shell-tests.sh
 
+# Every test/*/run.sh via the same discovery CI uses (tests.yml →
+# run-shell-tests.sh), so a suite can never go dark again by missing
+# its individual Makefile target.
+test-all: check
+
 test-apply-checkpoint:
 	@echo -e "$(GREEN)Running apply_core StateCheckpoint tests...$(NC)"
 	@bash $(TEST_DIR)/apply-checkpoint/run.sh
@@ -595,4 +601,4 @@ dev-install:
 	@echo -e "$(GREEN)Installing development dependencies...$(NC)"
 	@cd installer && pip install -e ".[dev]"
 
-.PHONY: dev-install lint test test-bios check
+.PHONY: dev-install lint test test-bios check test-all
