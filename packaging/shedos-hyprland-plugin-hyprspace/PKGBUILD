@@ -7,13 +7,16 @@
 # Source: Theshedman/Hyprspace — our fork of Petar546/Hyprspace, in turn
 # a fork of KZdkm/Hyprspace ported to Hyprland 0.55. Each ShedOS fix is
 # a separate commit on the fork; see `git log` on the fork for the full
-# story. Two fixes carried at time of writing:
+# story. Three fixes carried at time of writing:
 #   - wire reloadConfig() to the config.reloaded event so user-set
 #     plugin:overview:* keys actually apply
 #   - rewrite renderWindowStub to pin m_realPosition/m_realSize to the
 #     thumbnail rect directly (ElementRenderer.cpp:318 culled the
 #     renderModif-relocated pixels because damage stayed at the
 #     un-modif'd box)
+#   - expose hl.plugin.hyprspace.{toggle,open,close}() Lua functions —
+#     the Lua config manager can't invoke legacy plugin dispatchers,
+#     so the hyprland.lua binds and gestures call these instead
 
 pkgname=shedos-hyprland-plugin-hyprspace
 pkgver=2026.05.14
@@ -24,7 +27,12 @@ url='https://github.com/Theshedman/Hyprspace'
 license=('BSD-3-Clause')
 
 depends=(
-    'hyprland'
+    # Exact-version pin: a plugin compiled against one hyprland/aquamarine
+    # ABI dlopen-fails on the next (the May 2026 aquamarine .so.10→.so.11
+    # bump silently killed the overview on every install). The pin makes
+    # pacman refuse a hyprland upgrade unless a rebuilt plugin ships in
+    # the same transaction.
+    'hyprland=0.55.3'
     'gcc-libs'
     'glibc'
     'pixman'
@@ -43,7 +51,7 @@ makedepends=(
     'git'
 )
 
-_commit='a181f4a5eb44f1700f5f9455d491b1ea67ead899'
+_commit='d8777776198017116ac446f160f87fb47b30a8e3'
 
 source=("git+https://github.com/Theshedman/Hyprspace.git#commit=$_commit")
 sha256sums=('SKIP')
