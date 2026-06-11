@@ -8,7 +8,6 @@
 
 set -euo pipefail
 
-SYSTEM_TOML=/etc/shedos/system.toml
 PALETTES_DIR=/etc/shedos/themes/palettes
 RENDERER=/usr/lib/shedos/theme_renderer.py
 
