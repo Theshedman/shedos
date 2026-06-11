@@ -64,6 +64,7 @@ depends=(
     'polkit-gnome'        # authentication agent (autostart)
     'hyprshade'           # idle dim shader (hypridle)
     'nautilus'            # file manager (Super+N)
+    'shedos-tour'         # first-run welcome tour (user oneshot)
 )
 optdepends=(
     'impala: network TUI launched from waybar network icon'
