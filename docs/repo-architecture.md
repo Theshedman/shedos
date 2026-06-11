@@ -70,17 +70,20 @@ r2:shedos-repo/
 **Channel routing** (changed in v2026.05.02):
 
 - **`/test/x86_64/`** — always-fresh. Every push to `main` and every
-  RC tag publishes here. Retention sweep keeps the latest 5 versions
-  per package. Live ISOs (RC and non-tagged builds) pacstrap from this
-  channel at install time.
+  RC tag publishes here via `rclone sync`, which exactly mirrors the
+  run's dist/ — older versions are pruned by the sync itself (there is
+  no separate retention sweep).
+- **`/rc/v<date>-rcN/x86_64/`** — immutable snapshot frozen by each RC
+  tag: the exact bytes that soak during the RC window.
 - **`/stable/x86_64/`** — frozen until promoted. A stable tag
-  (`v<CalVer>`, no `-rcN`) triggers `rclone copy /test/x86_64/` →
-  `/stable/x86_64/` — **no rebuild**, no version churn. Stable users
-  pull `pacman -Syu` from here. Long-tail retention (rclone copy, not
-  sync, so older versions stay for downgrade).
-- Stable-tagged ISOs render their live `pacman.conf` against
-  `/stable/x86_64/` so installs from a stable ISO pull from the same
-  channel they'll subsequently update from.
+  (`v<CalVer>`, no `-rcN`) triggers `rclone copy` of the **latest
+  matching RC snapshot** → `/stable/x86_64/` — no rebuild, and pushes
+  to `main` during the soak can't slip in (promotion refuses to run
+  without an RC snapshot). Long-tail retention (copy, not sync, so
+  older versions stay for downgrade).
+- ISOs bake their channel into `/etc/shedos/channel`; shedos-system's
+  pacman.conf fence reads it on the installed system, so RC-ISO
+  installs track `/test` and stable-ISO installs track `/stable`.
 
 The two-channel split with tag-driven promotion lets RC packages bake
 on `/test/` for as long as needed before any user on `/stable/` sees

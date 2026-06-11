@@ -112,20 +112,26 @@ jobs:
           fi
           echo "VERSION matches tag: $actual"
 
-      - name: Render live-ISO pacman.conf channel
-        # Stable tag (v<CalVer>, no -rcN) → /stable/. Anything else
-        # (RC tag, branch push, workflow_dispatch) → /test/. The live
-        # ISO's airootfs/etc/pacman.conf gets baked into the squashfs
-        # by mkarchiso, so the substitution must happen BEFORE that.
+      - name: Bake the release channel into the ISO
+        # Stable tag (v<CalVer>, no -rcN) → stable. Anything else (RC
+        # tag, branch push, workflow_dispatch) → test. The marker file
+        # rides the squashfs into every install, where shedos-system's
+        # install fence reads it to point [shedos] at /test or
+        # /stable — so an RC ISO's installs actually soak the RC
+        # packages. (The old @CHANNEL@ sed was dead: pacman.conf.in
+        # lost its placeholder and the live ISO carries no [shedos]
+        # block, so every install tracked /stable regardless of which
+        # ISO it came from.)
         run: |
           channel="test"
           if [[ "$GITHUB_REF_TYPE" == "tag" ]] && [[ "$GITHUB_REF_NAME" != *-rc* ]]; then
               channel="stable"
           fi
-          echo "Rendering airootfs pacman.conf with channel=$channel"
-          sed "s|@CHANNEL@|$channel|g" \
-              archiso/airootfs/etc/pacman.conf.in \
-              > archiso/airootfs/etc/pacman.conf
+          echo "Baking channel=$channel"
+          install -d archiso/airootfs/etc/shedos
+          printf '%s\n' "$channel" > archiso/airootfs/etc/shedos/channel
+          cp archiso/airootfs/etc/pacman.conf.in \
+             archiso/airootfs/etc/pacman.conf
 
       - name: Restore AUR package cache
         # Share one cache entry with build-packages.yml: same key shape,

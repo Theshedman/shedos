@@ -301,15 +301,19 @@ prepare: check-root check-deps generate-packages
 	@sed "s|@SHEDOS_REPO@|$(abspath $(PROFILE_DIR)/shedos-repo)|g" \
 		$(PROFILE_DIR)/pacman.conf.in > $(BUILD_DIR)/pacman.conf
 	@rm -f $(BUILD_DIR)/pacman.conf.in
-	@# Live-ISO pacman.conf channel substitution. CI overrides the
-	@# default per-tag (stable vs test); local builds always go test.
+	@# Channel marker: installs from this ISO read it via shedos-system's
+	@# install fence to pick /test vs /stable. CI bakes stable on stable
+	@# tags (build-iso.yml); local builds always go test.
 	@if [ ! -f "$(BUILD_DIR)/airootfs/etc/pacman.conf.in" ]; then \
 		echo -e "$(RED)ERROR: missing $(BUILD_DIR)/airootfs/etc/pacman.conf.in$(NC)"; \
 		exit 1; \
 	fi
-	@sed "s|@CHANNEL@|test|g" \
-		$(BUILD_DIR)/airootfs/etc/pacman.conf.in \
-		> $(BUILD_DIR)/airootfs/etc/pacman.conf
+	@if [ ! -f "$(BUILD_DIR)/airootfs/etc/shedos/channel" ]; then \
+		mkdir -p $(BUILD_DIR)/airootfs/etc/shedos; \
+		printf 'test\n' > $(BUILD_DIR)/airootfs/etc/shedos/channel; \
+	fi
+	@cp $(BUILD_DIR)/airootfs/etc/pacman.conf.in \
+		$(BUILD_DIR)/airootfs/etc/pacman.conf
 	@rm -f $(BUILD_DIR)/airootfs/etc/pacman.conf.in
 	@# Stamp ISO_VER into profiledef.sh so iso_version in the built ISO's
 	@# filename matches whatever CI (or a local build) picked via the

@@ -65,10 +65,14 @@ git push origin "v$today-rc1"
 
 - Marks the GitHub Release as a prerelease and slots the ISO into the
   RC retention bucket (1 kept) rather than the stable bucket (2 kept).
-- Renders the live ISO's `pacman.conf` to pacstrap from
-  `[shedos-testing] = repo.shedos.org/test/x86_64` — the always-fresh
-  channel that the RC's packages were just published to. So the RC ISO
-  actually installs and exercises the RC packages under bake.
+- Bakes `test` into the ISO's `/etc/shedos/channel`. The marker rides
+  the squashfs into every install, where shedos-system's pacman.conf
+  fence reads it and points `[shedos]` at `/test/x86_64/` — so systems
+  installed from the RC ISO actually soak the RC packages.
+
+`build-packages.yml` on the RC tag also freezes the exact published
+set at `r2:shedos-repo/rc/v<date>-rcN/x86_64/` — an immutable snapshot
+of what the soak exercises.
 
 If the RC holds up, promote by cutting the plain stable tag:
 
@@ -79,14 +83,14 @@ git push origin "v$today"
 
 The stable tag triggers two things in parallel:
 
-1. `build-packages.yml` skips makepkg entirely and runs
-   `rclone copy r2:shedos-repo/test/x86_64/ r2:shedos-repo/stable/x86_64/`.
-   The packages on `/stable/` are now byte-identical to what `/test/`
-   has been serving during RC bake.
-2. `build-iso.yml` builds a stable ISO whose live `pacman.conf` points
-   at `[shedos] = repo.shedos.org/stable/x86_64`. So users installing
-   from the stable ISO pull from the same channel they'll subsequently
-   `pacman -Syu` from.
+1. `build-packages.yml` skips makepkg entirely and promotes the
+   latest matching RC snapshot:
+   `rclone copy r2:shedos-repo/rc/v<date>-rcN/x86_64/ → /stable/x86_64/`.
+   Promotion refuses to run when no RC snapshot exists for the
+   version, and pushes to `main` during the soak cannot contaminate
+   it — `/stable` gets exactly the bytes the RC soaked, nothing newer.
+2. `build-iso.yml` builds a stable ISO that bakes `stable` into
+   `/etc/shedos/channel`, so installs from it track `/stable/x86_64/`.
 
 No `VERSION` churn between RC and stable — `bump-version.sh` is
 hash-aware and only bumps packages whose content actually changed since

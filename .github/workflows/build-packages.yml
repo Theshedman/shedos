@@ -519,82 +519,38 @@ jobs:
         run: |
           # Channel routing:
           #   * push to main           → /test/x86_64/ (from this run's dist/)
-          #   * RC tag (v<date>-rcN)   → /test/x86_64/ (same as push)
-          #   * stable tag (v<date>)   → /stable/x86_64/ via rclone copy from
-          #                              /test/x86_64/, NO rebuild. dist/ is
-          #                              ignored. Uses rclone copy (not sync)
-          #                              so /stable/ retains older versions
-          #                              for downgrade.
+          #   * RC tag (v<date>-rcN)   → /test/x86_64/ PLUS an immutable
+          #                              snapshot at /rc/<tag>/x86_64/ —
+          #                              the exact bits the soak exercises.
+          #   * stable tag (v<date>)   → /stable/x86_64/ via rclone copy of
+          #                              the LATEST matching RC snapshot,
+          #                              never of the live /test prefix:
+          #                              pushes to main during the soak
+          #                              replace /test, so copying it could
+          #                              ship bits that never soaked. Copy
+          #                              (not sync) so /stable keeps older
+          #                              versions for downgrade. Refuses to
+          #                              promote when no RC snapshot exists.
           if [[ "$GITHUB_REF_TYPE" == "tag" ]] && [[ "$GITHUB_REF_NAME" != *-rc* ]]; then
-              echo "Stable tag $GITHUB_REF_NAME: promoting /test/x86_64/ → /stable/x86_64/"
-              rclone copy "r2:$R2_BUCKET/test/x86_64/" "r2:$R2_BUCKET/stable/x86_64/" --progress
+              mapfile -t snaps < <(rclone lsf --dirs-only "r2:$R2_BUCKET/rc/" 2>/dev/null \
+                  | grep -E "^${GITHUB_REF_NAME}-rc[0-9]+/$" | sort -V)
+              if (( ${#snaps[@]} == 0 )); then
+                  echo "::error::No RC snapshot under /rc/ matches $GITHUB_REF_NAME." \
+                       "Cut and soak an RC (make release-rc) before tagging stable."
+                  exit 1
+              fi
+              snap=${snaps[-1]%/}
+              echo "Stable tag $GITHUB_REF_NAME: promoting /rc/$snap/x86_64/ → /stable/x86_64/"
+              rclone copy "r2:$R2_BUCKET/rc/$snap/x86_64/" "r2:$R2_BUCKET/stable/x86_64/" --progress
           else
               echo "Push or RC tag: publishing dist/x86_64/ → /test/x86_64/"
               rclone sync dist/x86_64/ "r2:$R2_BUCKET/test/x86_64/" --progress
+              if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+                  echo "RC tag $GITHUB_REF_NAME: freezing snapshot at /rc/$GITHUB_REF_NAME/x86_64/"
+                  rclone copy dist/x86_64/ "r2:$R2_BUCKET/rc/$GITHUB_REF_NAME/x86_64/" --progress
+              fi
           fi
           # Ship the bootstrap pubkey at the bucket root so the migration
           # script can fetch it without the keyring installed.
           rclone copyto packaging/shedos-keyring/tree/shedos.gpg \
               "r2:$R2_BUCKET/shedos.gpg"
-
-      - name: Retention sweep for test channel
-        # Keep the latest 3 RC iterations + 2 stables-of-each-package in
-        # /test/x86_64/. Anything older is purged. Stable repo
-        # (/stable/x86_64/) has no sweep; repo-add already manages its
-        # generation, and stable users want the long tail of older
-        # versions for downgrade.
-        env:
-          RCLONE_CONFIG_R2_TYPE: s3
-          RCLONE_CONFIG_R2_PROVIDER: Cloudflare
-          RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          RCLONE_CONFIG_R2_ENDPOINT: ${{ env.R2_ENDPOINT }}
-          RCLONE_CONFIG_R2_REGION: auto
-          RCLONE_S3_NO_CHECK_BUCKET: "true"
-        run: |
-          KEEP_PER_PKG=5  # latest N versions per package name
-          set -u
-          # Group by pkgname; sort by mtime; delete everything past the
-          # keep threshold per group. rclone lsf gives "name;mtime" lines
-          # we can sort over.
-          mapfile -t entries < <(
-              rclone lsf --format "ts" --files-only --absolute \
-                  "r2:$R2_BUCKET/test/x86_64/" 2>/dev/null \
-                  | grep -E '\.pkg\.tar\.zst$' \
-                  | sort
-          )
-          # No-op early if the test prefix is empty (first publish).
-          if (( ${#entries[@]} == 0 )); then
-              echo "test prefix empty or unreadable; skipping sweep."
-              exit 0
-          fi
-          declare -A by_pkg=()
-          for line in "${entries[@]}"; do
-              ts=${line%%;*}
-              path=${line#*;}
-              base=$(basename "$path")
-              # pkgname is everything up to the last "-<ver>-<rel>-<arch>".
-              # `<arch>` is always the last token (after final `-`).
-              pkgname=${base%-*-*-*.pkg.tar.zst}
-              by_pkg["$pkgname"]+="$ts;$path"$'\n'
-          done
-          purged=0
-          for pkgname in "${!by_pkg[@]}"; do
-              # Sort newest first; keep first $KEEP_PER_PKG; purge rest.
-              mapfile -t versions < <(
-                  printf '%s' "${by_pkg[$pkgname]}" \
-                      | grep -v '^$' | sort -r
-              )
-              if (( ${#versions[@]} <= KEEP_PER_PKG )); then continue; fi
-              for v in "${versions[@]:KEEP_PER_PKG}"; do
-                  path=${v#*;}
-                  base=$(basename "$path")
-                  echo "purge test/$base (over keep=$KEEP_PER_PKG)"
-                  rclone delete "r2:$R2_BUCKET/test/x86_64/$base" \
-                      || true
-                  rclone delete "r2:$R2_BUCKET/test/x86_64/$base.sig" \
-                      || true
-                  purged=$((purged+1))
-              done
-          done
-          echo "purged $purged old test-channel package files."
