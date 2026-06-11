@@ -75,7 +75,7 @@ jobs:
           sed -i 's/^BUILDENV=.*/BUILDENV=(!distcc color !check !sign)/' /etc/makepkg.conf
           sed -i 's/^#\?MAKEFLAGS=.*/MAKEFLAGS="-j$(nproc)"/' /etc/makepkg.conf
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           # fetch-tags + full depth so the release-notes step can find the
           # previous tag. On a tag push, fetch-tags defaults to false.
@@ -140,7 +140,7 @@ jobs:
         # build rebuilds ~38 AUR packages from source on every tag (~35 min
         # cold); with a cache hit it's near-instant.
         id: aur-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: archiso/shedos-repo
           key: aur-${{ runner.os }}-${{ hashFiles('packages/aur.txt') }}
@@ -162,7 +162,7 @@ jobs:
         # if later steps fail; mirrors the build-packages.yml pattern to
         # avoid discarding 35 min of prebuilt output on a downstream flake.
         if: always() && steps.aur-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: archiso/shedos-repo
           key: aur-${{ runner.os }}-${{ hashFiles('packages/aur.txt') }}
@@ -172,7 +172,7 @@ jobs:
         # Shares the cache prefix with build-packages.yml so a tag-pushed
         # ISO build hits whatever the most recent push-to-main saved.
         id: shedos-pkgs-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: /tmp/shedos-pkg-cache
           key: shedos-pkgs-${{ runner.os }}-${{ github.sha }}
@@ -249,7 +249,7 @@ jobs:
         # has_files gate: empty caches from early failures would otherwise
         # shadow healthy prior caches via the restore-keys prefix match.
         if: always() && steps.shedos-pkgs-stage.outputs.has_files == '1'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: /tmp/shedos-pkg-cache
           key: shedos-pkgs-${{ runner.os }}-${{ github.sha }}
@@ -466,10 +466,15 @@ jobs:
           echo "PREV_TAG=$prev_tag" >> "$GITHUB_ENV"
 
       - name: Publish GitHub Release
+        # workflow_dispatch from a branch must stay private: an
+        # un-tagged build would publish shedos-main-x86_64.iso, the
+        # sweep would classify it stable, and sort -V puts 'main'
+        # last — evicting a real stable ISO.
+        if: github.ref_type == 'tag'
         # The ISO exceeds GitHub Releases' per-file size limit. Attach
         # only the per-file .sha256 + point at R2 in the body. The Release
         # itself is still the canonical "what's in tag vX" pin.
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
           # Tag convention: v<CalVer>       → stable release
           #                 v<CalVer>-rcN   → prerelease (user-reviewed RC)

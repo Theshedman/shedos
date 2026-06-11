@@ -85,7 +85,7 @@ jobs:
           echo '%wheel ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/wheel
           chmod 440 /etc/sudoers.d/wheel
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           # Need the full token so the auto-bump step can push back to
           # main; the default GITHUB_TOKEN works because permissions
@@ -232,7 +232,7 @@ jobs:
         # prebuild's output. Save is triggered explicitly below with
         # `if: always()`.
         id: aur-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: archiso/shedos-repo
           key: aur-${{ runner.os }}-${{ hashFiles('packages/aur.txt') }}
@@ -256,7 +256,7 @@ jobs:
         # downstream failure in the shedos-* build / sign / publish steps
         # doesn't cost us the 35 min we just spent prebuilding AUR.
         if: always() && steps.aur-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: archiso/shedos-repo
           key: aur-${{ runner.os }}-${{ hashFiles('packages/aur.txt') }}
@@ -269,7 +269,7 @@ jobs:
         # pkgver-pkgrel matches an existing .pkg.tar.zst in
         # archiso/shedos-repo, so unchanged packages don't rebuild.
         id: shedos-pkgs-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: /tmp/shedos-pkg-cache
           key: shedos-pkgs-${{ runner.os }}-${{ github.sha }}
@@ -498,7 +498,7 @@ jobs:
         # has_files gate: empty caches from early failures would otherwise
         # shadow healthy prior caches via the restore-keys prefix match.
         if: always() && steps.shedos-pkgs-stage.outputs.has_files == '1'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: /tmp/shedos-pkg-cache
           key: shedos-pkgs-${{ runner.os }}-${{ github.sha }}
