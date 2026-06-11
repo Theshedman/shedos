@@ -53,7 +53,7 @@ required.
 Calamares' sequence:
 
   show:  welcome → locale → keyboard → partition → users → summary
-  exec:  partition → mount → shedos_mirrors → unpackfs → copykernel
+  exec:  partition → mount → shedos_sourcemedia → unpackfs → copykernel
          → fstab → locale → keyboard → localecfg → users → networkcfg
          → hwclock → initcpiocfg → shedos_nvidia → initcpio
          → shedos_limine → shedos_configs → shedos_gitconfig
@@ -74,7 +74,9 @@ Update flow (installed system)
 
 Once installed, ShedOS is a rolling release. Every commit to main
 that touches packaging/ ships through CI to
-https://repo.shedos.org/stable/x86_64/. Users pick up updates with
+https://repo.shedos.org/test/x86_64/; a stable tag promotes the
+RC-soaked snapshot to /stable/x86_64/, which installed systems track
+by default. Users pick up updates with
 `shedman update`, which:
 
   1. lists pacman + AUR pending updates
@@ -96,7 +98,8 @@ Repo layout
                  aur-norepublish.txt, installer-only.txt)
   installer/     Calamares branding + custom Python modules + the
                  shared shedos_installer Python library
-  branding/      wallpapers, ASCII logos, /etc/issue, motd, os-release
+  branding/      wallpapers, ASCII logos, /etc/issue, motd
+                 (/etc/os-release ships from packaging/shedos-system)
   scripts/       build, release, package-list, kernel-bump helpers
   docs/          maintainer documentation
   site/          Astro source for shedos.org

@@ -24,7 +24,7 @@ system stays current via `pacman -Syu` — no reinstall, no image swap.
 ### 🛠️ Developer Ready
 - **Tools**: Neovim (LazyVim), VSCode, Zsh + Oh My Zsh.
 - **Languages**: Pre-configured for Python, Node, Go, Rust, C++.
-- **Containers**: Docker + K8s tools ready (kubectl, kind, helm, k9s).
+- **Containers**: Docker + K8s tools ready (kubectl, minikube, helm, lazydocker).
 
 ### 🔒 System
 - **Native-package install**: All ShedOS-specific content is delivered as signed Arch packages (see `packaging/`).
@@ -32,7 +32,7 @@ system stays current via `pacman -Syu` — no reinstall, no image swap.
 - **Secure**: Optional LUKS encryption.
 - **In-place upgrades**: `shedman update` + the waybar indicator surface updates the moment they land on the repo.
 
-> **WiFi firmware:** ShedOS ships firmware for AMD/Intel/NVIDIA GPUs and Atheros + Realtek WiFi (covers ~95% of laptops). If your WiFi card is Mediatek, Marvell, Broadcom, or Qualcomm, run `pacman -S linux-firmware-mediatek` (or `-marvell` / `-broadcom` / `-qcom`) on a wired connection after first boot.
+> **WiFi firmware:** ShedOS ships the linux-firmware splits for AMD/Intel/NVIDIA GPUs plus Atheros, Realtek, Mediatek, Marvell, Broadcom, and more out of the box — WiFi works on first boot on virtually all laptops.
 
 > **Printing:** not in the default install. `pacman -S cups hplip system-config-printer` if you need it.
 
@@ -148,7 +148,7 @@ shedos/
 │   ├── aur.txt           # AUR packages built locally and shipped
 │   └── aur-norepublish.txt  # Proprietary AUR (bundled into ISO, never republished)
 ├── installer/            # Calamares branding + custom Python modules + shared library
-├── branding/             # Wallpapers, ASCII logos, /etc/issue, /etc/motd, os-release
+├── branding/             # Wallpapers, ASCII logos, /etc/issue, /etc/motd
 ├── scripts/              # Build, release, and package-list helpers
 ├── docs/                 # Maintainer documentation
 ├── site/                 # Astro source for shedos.org
@@ -171,13 +171,12 @@ shedos/
 | `@snapshots` | `/.snapshots` | Yes | Snapper snapshots |
 | `@log` | `/var/log` | No | System logs |
 | `@cache` | `/var/cache` | No | Cache files |
-| `@temp` | `/tmp` | No | Temporary files |
+| `@tmp` | `/tmp` | No | Temporary files |
 | `@pkg` | `/var/cache/pacman/pkg` | No | Package cache |
 | `@srv` | `/srv` | Yes | Server data |
 | `@opt` | `/opt` | Yes | Optional software |
-| `@libvirt` | `/var/lib/libvirt` | No | VM images |
 | `@docker` | `/var/lib/docker` | No | Docker data |
-| `@database` | `/var/lib/database` | No | Database storage |
+| `@machines` | `/var/lib/machines` | No | systemd-nspawn / VM images |
 
 ## 🤝 Contributing
 
