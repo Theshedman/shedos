@@ -303,6 +303,11 @@ jobs:
           echo "ISO_NAME=$ISO_NAME" >> "$GITHUB_ENV"
 
       - name: Upload ISO to R2
+        # workflow_dispatch from a branch must stay private: an
+        # un-tagged build would publish shedos-main-x86_64.iso, the
+        # sweep would classify it stable, and sort -V puts 'main'
+        # last — evicting a real stable ISO.
+        if: github.ref_type == 'tag'
         env:
           RCLONE_CONFIG_R2_TYPE: s3
           RCLONE_CONFIG_R2_PROVIDER: Cloudflare
@@ -323,6 +328,11 @@ jobs:
           rclone copy "out/${ISO_NAME}.sha256" "r2:$R2_BUCKET/iso/"
 
       - name: Retention sweep
+        # workflow_dispatch from a branch must stay private: an
+        # un-tagged build would publish shedos-main-x86_64.iso, the
+        # sweep would classify it stable, and sort -V puts 'main'
+        # last — evicting a real stable ISO.
+        if: github.ref_type == 'tag'
         # Keep 2 stables + 1 RC on R2 (plus their .sha256 siblings). Rolling
         # release = nobody wants older ISOs post-install; previous-stable is
         # kept purely as a rollback lifeline if the newest stable ships broken.
@@ -383,6 +393,11 @@ jobs:
           rclone lsf "r2:$R2_BUCKET/iso/" --files-only | sort -V
 
       - name: Generate release notes
+        # workflow_dispatch from a branch must stay private: an
+        # un-tagged build would publish shedos-main-x86_64.iso, the
+        # sweep would classify it stable, and sort -V puts 'main'
+        # last — evicting a real stable ISO.
+        if: github.ref_type == 'tag'
         # Group commits since the previous tag by Conventional Commit type so
         # the GitHub Release body shows a human-readable changelog instead of
         # a fixed template. Output exposed as $RELEASE_NOTES (multiline env
