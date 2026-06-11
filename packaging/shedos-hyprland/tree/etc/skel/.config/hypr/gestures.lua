@@ -12,7 +12,7 @@ hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
 hl.gesture({ fingers = 3, direction = "pinchin",  action = "fullscreen" })
 hl.gesture({ fingers = 3, direction = "pinchout", action = "float" })
 
--- 2-finger pinch — cursor zoom in/out (macOS accessibility zoom).
+-- 2-finger pinch — cursor zoom in/out (accessibility zoom).
 hl.gesture({ fingers = 2, direction = "pinchout", action = "cursorZoom", zoom_level = 2.0 })
 hl.gesture({ fingers = 2, direction = "pinchin",  action = "cursorZoom", zoom_level = 1.0 })
 
@@ -29,14 +29,14 @@ hl.gesture({ fingers = 4, direction = "pinchout", action = function() hl.dispatc
 hl.gesture({ fingers = 4, direction = "pinchin", action = function() hl.exec_cmd("shedman launcher") end })
 
 -- ---- Hyprspace plugin: workspace overview --------------------------
--- macOS-Mission-Control strip with live window thumbnails; autoDrag
+-- Overview strip with live window thumbnails; autoDrag
 -- lets users drag windows between workspaces inside the overview.
 hl.plugin.load("/usr/lib/hyprland/Hyprspace.so")
 
 hl.config({
     plugin = {
         overview = {
-            centerAligned = 1,        -- macOS-style horizontal alignment
+            centerAligned = 1,        -- center the workspace strip
             onBottom = 0,             -- panel at the top (Mission Control)
             panelHeight = 250,
             workspaceMargin = 12,

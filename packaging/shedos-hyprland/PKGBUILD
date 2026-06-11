@@ -47,7 +47,7 @@ depends=(
     'nwg-dock-hyprland'   # application dock; ExecStart for shedos-dock.service
     'nwg-drawer'          # full-screen app drawer (dock's default launcher)
     'shedos-power'        # Rust GUI overlay execd by `shedman power` (waybar power icon)
-    'shedos-hyprland-plugin-hyprspace'   # workspace overview (macOS Mission Control style) for the 3-finger swipe up gesture
+    'shedos-hyprland-plugin-hyprspace'   # workspace overview for the 3-finger swipe up gesture
     # Binaries the shipped configs exec directly (keybinds, autostart,
     # hypridle). Previously these rode in via the meta world list only.
     'grim'                # screenshots (Print binds)
