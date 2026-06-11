@@ -6,49 +6,98 @@
 # ones, and Hyprland silently prefers hyprland.lua once it exists — so
 # a user's old .confs (and any customizations in them) would sit dead
 # in ~/.config/hypr forever. Move them into a dated backup dir so the
-# live tree reflects reality, and say so once. hypridle.conf and
-# shaders/ stay: hypridle is a separate daemon that still speaks
-# hyprlang.
+# live tree reflects reality, and say so once.
 #
-# Gated three ways: a stamp makes it once-per-user; it never acts
+# The same pass sweeps the backup litter years of earlier mechanisms
+# left beside them — sync's .shedosbak conflict copies, the lock
+# migration's .pre-shedos-migration.bak, ad-hoc .fallback/.bak files —
+# plus two formerly-shipped files nothing uses anymore
+# (check-capslock.sh, hyprlock.conf). Everything lands in the same
+# backup dir; nothing is deleted.
+#
+# hypridle.conf and shaders/ stay live: hypridle is a separate daemon
+# that still speaks hyprlang.
+#
+# Gated three ways: a stamp makes it once-per-user (v2 so installs
+# that ran the original .conf move still get the sweep); it never acts
 # before the sync has seeded hyprland.lua (retries next session); and
-# it only moves the ten ShedOS-shipped filenames, never user-created
-# extras.
+# it only touches ShedOS-shipped names, never user-created files.
 set -uo pipefail
 
 hypr="${XDG_CONFIG_HOME:-$HOME/.config}/hypr"
-stamp="${XDG_STATE_HOME:-$HOME/.local/state}/shedos/.hypr-lua-migrated"
+state="${XDG_STATE_HOME:-$HOME/.local/state}/shedos"
+stamp="$state/.hypr-lua-migrated-2"
 
 [[ -f $stamp ]] && exit 0
 
-# Nothing to migrate: fresh install or already clean.
-if [[ ! -f $hypr/hyprland.conf ]]; then
-    mkdir -p "$(dirname "$stamp")"
+_finish() {
+    mkdir -p "$state"
     : > "$stamp"
+    rm -f "$state/.hypr-lua-migrated"
     exit 0
-fi
+}
+
+# Nothing here at all: brand-new user, nothing to migrate or sweep.
+[[ -d $hypr ]] || _finish
 
 # The sync hasn't seeded the Lua config yet; the session is still
-# running hyprlang. Try again next login.
+# running hyprlang. Leave everything alone and retry next login.
 [[ -f $hypr/hyprland.lua ]] || exit 0
 
-migrated=(hyprland.conf env.conf monitor.conf input.conf general.conf
-          decoration.conf autostart.conf windowrules.conf
-          keybindings.conf gestures.conf)
+migrated=(hyprland env monitor input general decoration autostart
+          windowrules keybindings gestures)
 
-backup="$hypr/hyprlang-backup-$(date +%Y%m%d-%H%M%S)"
-mkdir -p "$backup"
-for f in "${migrated[@]}"; do
-    [[ -f $hypr/$f ]] && mv "$hypr/$f" "$backup/$f"
+backup=""
+_ensure_backup_dir() {
+    [[ -n $backup ]] && return 0
+    # Reuse the existing dir when an earlier run already created one.
+    backup=$(find "$hypr" -maxdepth 1 -type d -name 'hyprlang-backup-*' \
+                 2>/dev/null | sort | tail -1)
+    [[ -n $backup ]] || backup="$hypr/hyprlang-backup-$(date +%Y%m%d-%H%M%S)"
+    mkdir -p "$backup"
+}
+
+moved=0
+_stash() {
+    local f=$1
+    [[ -e $f ]] || return 0
+    _ensure_backup_dir
+    mv "$f" "$backup/$(basename "$f")" && ((moved++)) || true
+}
+
+for base in "${migrated[@]}"; do
+    _stash "$hypr/$base.conf"
+    # Backup remnants of the superseded configs, whatever suffix an
+    # earlier mechanism used (.shedosbak, .pre-shedos-migration.bak,
+    # .fallback, .bak-*, …).
+    for f in "$hypr/$base".conf.*; do
+        _stash "$f"
+    done
+done
+# hypridle.conf stays, but its old backup copies are the same litter.
+for f in "$hypr"/hypridle.conf.*; do
+    _stash "$f"
+done
+# Formerly shipped, no longer used by anything. hyprlock itself was
+# dropped for the shedos-screensaver lock client; only sweep its live
+# conf when the binary is absent, in case a user installed it
+# themselves. Its .shedos-bak archives from the lock migration are
+# litter either way.
+_stash "$hypr/check-capslock.sh"
+if ! command -v hyprlock >/dev/null 2>&1; then
+    _stash "$hypr/hyprlock.conf"
+fi
+for f in "$hypr"/hyprlock.conf.*; do
+    _stash "$f"
 done
 
-mkdir -p "$(dirname "$stamp")"
-: > "$stamp"
-
-echo "lua-migration: hyprlang configs moved to $backup"
-
-if command -v notify-send >/dev/null 2>&1; then
-    notify-send -a "ShedOS" "Hyprland config is now Lua" \
-        "The .conf files were replaced by .lua modules in ~/.config/hypr. Your old files are kept at ${backup/#"$HOME"/\~} — port any customizations into the matching .lua module." \
-        2>/dev/null || true
+if (( moved > 0 )); then
+    echo "lua-migration: $moved file(s) moved to $backup"
+    if command -v notify-send >/dev/null 2>&1; then
+        notify-send -a "ShedOS" "Hyprland config is now Lua" \
+            "The .conf files were replaced by .lua modules in ~/.config/hypr. Old configs and stale backups are kept at ${backup/#"$HOME"/\~} — port any customizations into the matching .lua module." \
+            2>/dev/null || true
+    fi
 fi
+
+_finish
