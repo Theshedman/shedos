@@ -1,0 +1,6 @@
+[Unit]
+Description=Turn the night-light filter off (hyprsunset)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/shedos-hyprland/nightlight off

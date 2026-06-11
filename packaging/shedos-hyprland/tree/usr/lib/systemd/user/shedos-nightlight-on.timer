@@ -1,0 +1,11 @@
+[Unit]
+Description=Nightly night-light on time
+# Disabled by default; `shedman datetime` (via shedos-nightlight
+# schedule) enables it and overrides the time with a user drop-in.
+
+[Timer]
+OnCalendar=*-*-* 19:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

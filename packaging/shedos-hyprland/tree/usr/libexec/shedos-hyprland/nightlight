@@ -1,0 +1,88 @@
+#!/bin/bash
+# Night-light control: manual on/off plus a user-timer schedule.
+# `shedman datetime` drives `schedule`; SUPER+F9 keeps the manual
+# toggle (toggle-hyprsunset.sh) for ad-hoc use.
+
+set -uo pipefail
+
+TEMP_K=4500
+ON_TIMER=shedos-nightlight-on.timer
+OFF_TIMER=shedos-nightlight-off.timer
+
+usage() {
+    cat <<'USAGE'
+Usage:
+  shedos-nightlight on|off            Apply now (idempotent).
+  shedos-nightlight schedule HH:MM HH:MM
+                                      Nightly schedule: on at the first
+                                      time, off at the second. Applies
+                                      the correct state immediately.
+  shedos-nightlight schedule off      Disable the schedule.
+  shedos-nightlight status            Current state + schedule.
+USAGE
+}
+
+_dropin() {
+    # $1 = timer unit, $2 = HH:MM
+    local dir="$HOME/.config/systemd/user/$1.d"
+    mkdir -p "$dir"
+    printf '[Timer]\nOnCalendar=\nOnCalendar=*-*-* %s:00\n' "$2" > "$dir/override.conf"
+}
+
+case "${1:-}" in
+    on)
+        # Explicit grouping: without it, `a || b &` backgrounds the
+        # whole compound and the state check races the spawn.
+        if ! pgrep -x hyprsunset >/dev/null; then
+            (hyprsunset -t "$TEMP_K" >/dev/null 2>&1 &)
+            sleep 0.3   # let it claim the display before callers re-check
+        fi
+        ;;
+    off)
+        pkill -x hyprsunset 2>/dev/null || true
+        ;;
+    schedule)
+        case "${2:-}" in
+            off)
+                systemctl --user disable --now "$ON_TIMER" "$OFF_TIMER" 2>/dev/null || true
+                rm -rf "$HOME/.config/systemd/user/$ON_TIMER.d" \
+                       "$HOME/.config/systemd/user/$OFF_TIMER.d"
+                systemctl --user daemon-reload
+                echo "Night-light schedule disabled."
+                ;;
+            [0-2][0-9]:[0-5][0-9])
+                on_t=$2 off_t=${3:-}
+                [[ $off_t =~ ^[0-2][0-9]:[0-5][0-9]$ ]] || { usage >&2; exit 2; }
+                _dropin "$ON_TIMER" "$on_t"
+                _dropin "$OFF_TIMER" "$off_t"
+                systemctl --user daemon-reload
+                systemctl --user enable --now "$ON_TIMER" "$OFF_TIMER"
+                # Apply the state the schedule implies right now. The
+                # awkward arithmetic handles overnight windows
+                # (on 19:00, off 07:00).
+                now=$(date +%H%M); on_n=${on_t/:/}; off_n=${off_t/:/}
+                in_window=0
+                if (( on_n < off_n )); then
+                    (( now >= on_n && now < off_n )) && in_window=1
+                else
+                    (( now >= on_n || now < off_n )) && in_window=1
+                fi
+                if (( in_window )); then "$0" on; else "$0" off; fi
+                echo "Night light scheduled: on $on_t, off $off_t."
+                ;;
+            *) usage >&2; exit 2 ;;
+        esac
+        ;;
+    status)
+        if pgrep -x hyprsunset >/dev/null; then echo "night light: ON (${TEMP_K}K)"
+        else echo "night light: off"; fi
+        if systemctl --user is-enabled --quiet "$ON_TIMER" 2>/dev/null; then
+            on_s=$(systemctl --user show "$ON_TIMER" -p TimersCalendar --value | grep -oE '[0-9]{2}:[0-9]{2}' | head -1)
+            off_s=$(systemctl --user show "$OFF_TIMER" -p TimersCalendar --value | grep -oE '[0-9]{2}:[0-9]{2}' | head -1)
+            echo "schedule: on ${on_s:-?}, off ${off_s:-?}"
+        else
+            echo "schedule: disabled"
+        fi
+        ;;
+    *) usage >&2; exit 2 ;;
+esac

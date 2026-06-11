@@ -119,6 +119,17 @@ package() {
     install -Dm644 tree/usr/lib/systemd/user/shedos-hypr-reload.service \
         "$pkgdir/usr/lib/systemd/user/shedos-hypr-reload.service"
 
+    # Night-light schedule: helper + user timer pairs. Timers ship
+    # disabled; `shedman datetime` enables them with the user's times.
+    install -Dm755 tree/usr/libexec/shedos-hyprland/nightlight \
+        "$pkgdir/usr/libexec/shedos-hyprland/nightlight"
+    local _nl
+    for _nl in shedos-nightlight-on.service shedos-nightlight-on.timer \
+               shedos-nightlight-off.service shedos-nightlight-off.timer; do
+        install -Dm644 "tree/usr/lib/systemd/user/$_nl" \
+            "$pkgdir/usr/lib/systemd/user/$_nl"
+    done
+
     # waybar launch wrapper + drop-in. The wrapper ensures LANG and
     # locale archive are in a workable state before exec'ing waybar so
     # the clock module's L (locale) format modifier doesn't disable
