@@ -59,6 +59,18 @@ name = "Clipboard History"
 description = "Browse and paste from clipboard history"
 
 [[bind]]
+keys = "ALT+Tab"
+category = "Windows & Tiling"
+name = "Window Switcher"
+description = "Cycle open windows (most recent first); release Alt to switch"
+
+[[bind]]
+keys = "SHIFT+ALT+Tab"
+category = "Windows & Tiling"
+name = "Window Switcher (backward)"
+description = "Cycle the switcher in reverse"
+
+[[bind]]
 keys = "SUPER+ALT+J"
 category = "Applications"
 name = "System Logs"

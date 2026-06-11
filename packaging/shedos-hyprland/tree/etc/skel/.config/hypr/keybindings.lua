@@ -100,6 +100,12 @@ hl.bind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd("hyprpicker -a"))
 -- renders the picker.
 hl.bind(mainMod .. " + C", hl.dsp.exec_cmd("walker --provider clipboard"))
 
+-- Alt-Tab: MRU strip with app icons; hold Alt, Tab cycles, release
+-- switches. The walker "$" prefix stays as the fuzzy-search path;
+-- SUPER+Tab keeps the spatial overview.
+hl.bind("ALT + Tab", hl.dsp.exec_cmd("shedos-switcher"))
+hl.bind("ALT + SHIFT + Tab", hl.dsp.exec_cmd("shedos-switcher --prev"))
+
 -- Lock screen
 hl.bind(mainMod .. " + Escape", hl.dsp.exec_cmd("/usr/libexec/shedman/lock"))
 

@@ -65,6 +65,7 @@ depends=(
     'hyprshade'           # idle dim shader (hypridle)
     'nautilus'            # file manager (Super+N)
     'shedos-tour'         # first-run welcome tour (user oneshot)
+    'shedos-switcher'     # ALT+Tab window switcher
 )
 optdepends=(
     'impala: network TUI launched from waybar network icon'
