@@ -24,6 +24,7 @@
         "pulseaudio",
         "cpu",
         "custom/health",
+        "custom/doctor",
         "custom/conflicts",
         "battery",
         "custom/power"
@@ -197,6 +198,14 @@
         "hide-empty-text": true,
         "on-click": "/usr/bin/kitty --class btop -e btop --force-utf",
         "signal": 10
+    },
+    "custom/doctor": {
+        "exec": "/usr/bin/shedman doctor --waybar",
+        "interval": 900,
+        "return-type": "json",
+        "hide-empty-text": true,
+        "on-click": "/usr/bin/kitty --class shedman-doctor -e /usr/bin/shedman doctor",
+        "signal": 12
     },
     "custom/screenrecording-indicator": {
         "on-click": "/usr/bin/shedman screenrecord",
