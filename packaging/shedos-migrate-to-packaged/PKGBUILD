@@ -12,8 +12,8 @@
 # the tool is idempotent.
 
 pkgname=shedos-migrate-to-packaged
-pkgver=2026.05.16
-pkgrel=2
+pkgver=2026.05.17
+pkgrel=1
 pkgdesc='One-shot retrofit: bootstrap a pre-packaging ShedOS install onto the packaged model'
 arch=('any')
 url='https://github.com/Theshedman/shedos'

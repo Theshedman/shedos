@@ -9,7 +9,7 @@
 
 pkgname=shedos-keyring
 pkgver=2026.05.17
-pkgrel=1
+pkgrel=2
 pkgdesc='ShedOS repository keyring — trust anchor for [shedos]'
 arch=('any')
 url='https://github.com/Theshedman/shedos'
