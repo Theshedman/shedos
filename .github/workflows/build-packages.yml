@@ -101,6 +101,18 @@ jobs:
         # before the auto-bump step's own safe.directory call.
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
+      # Resolve + render BEFORE the auto-bump so the regenerated
+      # shedos-meta PKGBUILD participates in the content hash. The old
+      # order bumped first and rendered after: a closure-only change
+      # (upstream dep graph moved) altered the PKGBUILD post-hash, the
+      # cache pre-flight saw the same ver-rel, and the new closure was
+      # discarded on every run.
+      - name: Resolve shedos-meta Arch closure
+        run: bash scripts/resolve-meta-closure.sh
+
+      - name: Refresh shedos-meta depends
+        run: bash scripts/render-meta-depends.sh
+
       - name: Auto-bump release-hashes (main + manual)
         # Skip when the actor is the bot itself; that's the push this step
         # just made; running again would be a no-op but still trigger build
@@ -150,20 +162,11 @@ jobs:
           OPTIONS=(strip docs !libtool !staticlibs emptydirs zipman purge !debug lto)
           MAKEFLAGS="-j$(nproc)"
           EOF
-          chown builder:builder /home/builder/.makepkg.conf
 
-      - name: Resolve shedos-meta Arch closure
-        # Regenerates packages/.meta-closure.txt against the runner's
-        # fresh pacman db so shedos-meta's depends has every transitive
-        # Arch dep explicit, even if upstream added/dropped packages
-        # since the closure file was last committed. Runs as root —
-        # pacman -Sy needs it.
-        run: bash scripts/resolve-meta-closure.sh
-
-      - name: Refresh shedos-meta depends
-        run: |
-          chown -R builder:builder .
-          sudo -u builder bash scripts/render-meta-depends.sh
+      - name: Hand the tree to the build user
+        # resolve/render moved before the auto-bump step (they feed the
+        # content hash); only the ownership flip remains here.
+        run: chown -R builder:builder .
 
       - name: Import signing key
         env:
