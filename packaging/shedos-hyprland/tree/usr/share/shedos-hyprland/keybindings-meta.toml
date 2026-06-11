@@ -117,6 +117,12 @@ description = "Treat a tiled window as floating within its slot"
 [[bind]]
 keys = "SUPER+J"
 category = "Windows & Tiling"
+name = "Focus Down"
+description = "Move keyboard focus to the window below (vim binding)"
+
+[[bind]]
+keys = "SUPER+O"
+category = "Windows & Tiling"
 name = "Toggle Split"
 description = "Switch the tile-split direction at the focused location"
 
@@ -159,8 +165,8 @@ description = "Move keyboard focus to the window above"
 [[bind]]
 keys = "SUPER+SHIFT+J"
 category = "Windows & Tiling"
-name = "Focus Down"
-description = "Move keyboard focus to the window below (vim binding)"
+name = "Move Window Down"
+description = "Swap the focused window with its lower neighbour (vim binding)"
 
 [[bind]]
 keys = "SUPER+down"
@@ -620,3 +626,39 @@ gesture = "4:pinchout"
 category = "Touchpad gestures"
 name = "Show desktop"
 description = "Toggle the minimized special workspace to clear the screen"
+
+[[gesture]]
+gesture = "2:pinchout"
+category = "Touchpad gestures"
+name = "Cursor Zoom In"
+description = "Magnify the area around the cursor (accessibility zoom)"
+
+[[gesture]]
+gesture = "2:pinchin"
+category = "Touchpad gestures"
+name = "Cursor Zoom Out"
+description = "Return the cursor area to normal magnification"
+
+[[bind]]
+keys = "SUPER+T"
+category = "System"
+name = "Toggle Dock"
+description = "Show or hide the application dock"
+
+[[bind]]
+keys = "SUPER+ALT+B"
+category = "System"
+name = "Dock to Bottom"
+description = "Move the application dock to the bottom edge"
+
+[[bind]]
+keys = "SUPER+ALT+L"
+category = "System"
+name = "Dock to Left"
+description = "Move the application dock to the left edge"
+
+[[bind]]
+keys = "SUPER+ALT+R"
+category = "System"
+name = "Dock to Right"
+description = "Move the application dock to the right edge"

@@ -1,18 +1,26 @@
 #!/usr/bin/env python3
 """shedman keybindings — searchable reference dialog.
 
-Reads the live Hyprland keybinds from ~/.config/hypr/*.conf, joins them
-with display metadata at /usr/share/shedos-hyprland/keybindings-meta.toml,
-and renders a 3-column dialog (keybinding · program · description)
-grouped by category. The metadata file controls the *display*; the
-binding still comes from keybindings.conf, so a user-customized bind
-without a metadata entry shows up under "Other" with its raw command.
+Reads the live keybinds from the running compositor (`hyprctl binds
+-j`), joins them with display metadata at
+/usr/share/shedos-hyprland/keybindings-meta.toml, and renders a
+3-column dialog (keybinding · program · description) grouped by
+category. Querying the compositor instead of parsing config text means
+the dialog is always true to what the keys actually do, whatever
+format the config is in. A user-customized bind without a metadata
+entry shows up under "Other" with its raw command.
+
+Gestures aren't exposed over hyprctl, so those are read from the
+config: hl.gesture(...) blocks in ~/.config/hypr/gestures.lua, plus
+legacy `gesture =` lines for sessions still on hyprlang.
 """
 
 from __future__ import annotations
 
+import json
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import Iterable
@@ -27,9 +35,10 @@ gi.require_version("Gtk", "4.0")
 from gi.repository import GLib, Gtk, Gdk  # noqa: E402
 
 
-VAR_RE = re.compile(r"^\s*\$([A-Za-z_]\w*)\s*=\s*(.+?)\s*$")
-BIND_RE = re.compile(r"^\s*(bind[lemnro]*)\s*=\s*(.+?)\s*$")
+# Legacy hyprlang gesture lines (pre-Lua sessions).
 GESTURE_RE = re.compile(r"^\s*gesture\s*=\s*(.+?)\s*$")
+# hl.gesture({ ... }) blocks in the Lua config.
+GESTURE_BLOCK_RE = re.compile(r"hl\.gesture\s*\(\s*\{(.*?)\}\s*\)", re.S)
 
 META_PATH = Path("/usr/share/shedos-hyprland/keybindings-meta.toml")
 CSS_PATH = Path("/usr/share/shedos-hyprland/keybindings-dialog.css")
@@ -74,59 +83,103 @@ DIRECTION_LABEL = {
 # ─── parsing ──────────────────────────────────────────────────────────
 
 
-def _expand(text: str, variables: dict[str, str]) -> str:
-    pattern = re.compile(r"\$([A-Za-z_]\w*)")
-    for _ in range(5):
-        new = pattern.sub(lambda m: variables.get(m.group(1), m.group(0)), text)
-        if new == text:
-            return text
-        text = new
-    return text
+# X11 modifier-mask bits, in MOD_ORDER so the canonical string matches
+# the meta TOML's `keys` format. CAPS/MOD2/3/5 bits are ignored.
+MODMASK_BITS = ((64, "SUPER"), (4, "CTRL"), (1, "SHIFT"), (8, "ALT"))
 
 
-def _canonical(mods: str, key: str) -> str:
-    parts = [p.upper() for p in mods.split() if p]
-    parts.sort(key=lambda x: MOD_ORDER.get(x, 99))
-    if key:
-        parts.append(key)
-    return "+".join(parts)
-
-
-def parse_binds(cfg_dir: Path) -> dict[str, tuple[str, str]]:
-    """Return {canonical_keys: (dispatcher, args)} from every conf in cfg_dir."""
-    variables: dict[str, str] = {}
+def parse_binds() -> dict[str, tuple[str, str]]:
+    """Return {canonical_keys: (dispatcher, args)} from the running
+    compositor. Hyprland has already expanded any config variables, so
+    what comes back is exactly what the keys do."""
     binds: dict[str, tuple[str, str]] = {}
-    if not cfg_dir.is_dir():
+    try:
+        out = subprocess.run(
+            ["hyprctl", "binds", "-j"],
+            capture_output=True, text=True, timeout=5, check=True,
+        )
+        entries = json.loads(out.stdout)
+    except (OSError, subprocess.SubprocessError, json.JSONDecodeError) as e:
+        print(f"shedman keybindings: hyprctl binds failed: {e}", file=sys.stderr)
         return binds
-    for conf in sorted(cfg_dir.glob("*.conf")):
-        try:
-            text = conf.read_text(encoding="utf-8", errors="replace")
-        except OSError:
+    for b in entries:
+        if b.get("submap"):
             continue
-        for line in text.splitlines():
-            stripped = line.lstrip()
-            if not stripped or stripped.startswith("#"):
-                continue
-            m = VAR_RE.match(line)
-            if m:
-                variables[m.group(1)] = m.group(2)
-                continue
-            m = BIND_RE.match(line)
-            if not m:
-                continue
-            parts = [p.strip() for p in m.group(2).split(",", 3)]
-            if len(parts) < 3:
-                continue
-            mods = _expand(parts[0], variables).strip()
-            key = parts[1]
-            dispatcher = parts[2]
-            args = parts[3] if len(parts) > 3 else ""
-            binds[_canonical(mods, key)] = (dispatcher, args)
+        key = b.get("key") or ""
+        if not key and b.get("keycode"):
+            key = f"code:{b['keycode']}"
+        if not key:
+            continue
+        modmask = b.get("modmask", 0)
+        parts = [name for bit, name in MODMASK_BITS if modmask & bit]
+        parts.append(key)
+        binds["+".join(parts)] = (b.get("dispatcher", ""), b.get("arg", ""))
     return binds
 
 
+def _canonical_combo(combo: str) -> str:
+    """Normalize a Lua bind combo ("SUPER + SHIFT + Return") to the
+    meta TOML key format ("SUPER+SHIFT+Return")."""
+    parts = [p.strip() for p in combo.split("+") if p.strip()]
+    if not parts:
+        return ""
+    mods = sorted((p.upper() for p in parts[:-1]),
+                  key=lambda x: MOD_ORDER.get(x, 99))
+    return "+".join(mods + parts[-1:])
+
+
+BIND_LUA_RE = re.compile(r"hl\.bind\(\s*([^,]+?),\s*(.+?)\)\s*(?:--.*)?$")
+
+
+def _action_hint(src: str) -> tuple[str, str]:
+    """Best-effort (dispatcher, args) from a Lua bind/gesture action."""
+    m = re.search(r'exec_cmd\(\s*(?:"([^"]*)"|\[\[(.*?)\]\])', src)
+    if m:
+        return ("exec", m.group(1) or m.group(2) or "")
+    m = re.search(r'overview\("(\w+)"\)', src)
+    if m:
+        return (f"overview:{m.group(1)}", "")
+    m = re.search(r"hl\.dsp\.([\w.]+)\(", src)
+    if m:
+        return (m.group(1), "")
+    return ("lua", "")
+
+
+def parse_bind_hints(cfg_dir: Path) -> dict[str, tuple[str, str]]:
+    """Under a Lua session every bind comes back from hyprctl as
+    `__lua <callback-id>`, which tells a reader nothing. Statically
+    scan the config for what each combo does, for fallback display
+    when a bind has no metadata entry. Loop-generated binds (the
+    workspace numbers) aren't visible here; they're all meta-covered."""
+    hints: dict[str, tuple[str, str]] = {}
+    for lua in sorted(cfg_dir.glob("*.lua")):
+        try:
+            text = lua.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for line in text.splitlines():
+            m = BIND_LUA_RE.search(line)
+            if not m:
+                continue
+            combo_src, action_src = m.group(1), m.group(2)
+            combo_src = combo_src.replace("mainMod", '"SUPER"')
+            # Skip combos still containing variables after the mainMod
+            # substitution (the loop-generated workspace binds).
+            if re.search(r"\.\.\s*[a-zA-Z_]", combo_src):
+                continue
+            # Lua `..` concatenates, so the combo is the quoted
+            # segments joined as-is.
+            combo = _canonical_combo("".join(re.findall(r'"([^"]*)"', combo_src)))
+            if combo:
+                hints[combo] = _action_hint(action_src)
+    return hints
+
+
 def parse_gestures(cfg_dir: Path) -> dict[str, tuple[str, str]]:
-    """Return {fingers:direction: (action, args)} from every conf."""
+    """Return {fingers:direction: (action, args)} from the config —
+    hl.gesture(...) blocks in the Lua modules plus legacy `gesture =`
+    lines for sessions still on hyprlang. hyprctl has no gesture
+    listing, so the config stays the source here."""
     gestures: dict[str, tuple[str, str]] = {}
     if not cfg_dir.is_dir():
         return gestures
@@ -148,6 +201,25 @@ def parse_gestures(cfg_dir: Path) -> dict[str, tuple[str, str]]:
             fingers, direction, action = parts[0], parts[1], parts[2]
             args = ", ".join(parts[3:]) if len(parts) > 3 else ""
             gestures[f"{fingers}:{direction}"] = (action, args)
+    for lua in sorted(cfg_dir.glob("*.lua")):
+        try:
+            text = lua.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for body in GESTURE_BLOCK_RE.findall(text):
+            fm = re.search(r"fingers\s*=\s*(\d+)", body)
+            dm = re.search(r'direction\s*=\s*"([^"]+)"', body)
+            if not (fm and dm):
+                continue
+            am = re.search(r'action\s*=\s*"([^"]+)"', body)
+            if am:
+                action, args = am.group(1), ""
+                zm = re.search(r"zoom_level\s*=\s*([\d.]+)", body)
+                if zm:
+                    args = f"zoom {zm.group(1)}"
+            else:
+                action, args = _action_hint(body)
+            gestures[f"{fm.group(1)}:{dm.group(1)}"] = (action, args)
     return gestures
 
 
@@ -430,7 +502,7 @@ class KeybindingsWindow(Gtk.ApplicationWindow):
 
     def _build_footer(self) -> Gtk.Widget:
         label = Gtk.Label(
-            label=("Bindings: ~/.config/hypr/keybindings.conf"
+            label=("Bindings: live from the compositor (hyprctl binds)"
                    "    Names: /usr/share/shedos-hyprland/keybindings-meta.toml"),
             xalign=0.0,
         )
@@ -498,10 +570,17 @@ def main() -> int:
             "bind with a human-readable name and description.")
         return 0
 
-    binds = parse_binds(HYPR_DIR)
+    binds = parse_binds()
+    # Lua callbacks come back from hyprctl as opaque `__lua <id>`;
+    # swap in what the config says the combo does for fallback display.
+    hints = parse_bind_hints(HYPR_DIR)
+    for keys, (dispatcher, _args) in list(binds.items()):
+        if dispatcher == "__lua":
+            binds[keys] = hints.get(keys, ("lua", ""))
     gestures = parse_gestures(HYPR_DIR)
     if not binds and not gestures:
-        print(f"shedman keybindings: no binds or gestures found in {HYPR_DIR}",
+        print("shedman keybindings: no binds from the compositor (is "
+              f"Hyprland running?) and no gestures in {HYPR_DIR}",
               file=sys.stderr)
         return 1
     bind_meta, gesture_meta = load_meta(META_PATH)
