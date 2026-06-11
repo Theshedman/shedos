@@ -32,7 +32,7 @@ depends=(
     # bump silently killed the overview on every install). The pin makes
     # pacman refuse a hyprland upgrade unless a rebuilt plugin ships in
     # the same transaction.
-    'hyprland=0.55.3'
+    'hyprland=0.55.4'
     'gcc-libs'
     'glibc'
     'pixman'
