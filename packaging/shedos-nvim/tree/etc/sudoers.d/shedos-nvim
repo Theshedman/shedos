@@ -2,4 +2,8 @@
 # invoking user's ~/.config/nvim/ instead of falling back to /etc.
 # HOME stays /root, so nvim's write paths (data/cache/state)
 # remain in /root/ and don't pollute the user's home.
-Defaults env_keep += "XDG_CONFIG_HOME"
+# Scoped to the nvim binary: an unscoped env_keep let EVERY sudo'd
+# program read config from a user-writable directory — and nvim's
+# config is executable Lua, so this is deliberately as narrow as
+# sudoers allows.
+Defaults!/usr/bin/nvim env_keep += "XDG_CONFIG_HOME"
