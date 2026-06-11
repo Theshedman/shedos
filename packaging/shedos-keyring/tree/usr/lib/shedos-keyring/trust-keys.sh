@@ -13,9 +13,13 @@ TRUSTED=/usr/share/pacman/keyrings/shedos-trusted
 SENTINEL_DIR=/var/lib/shedos-keyring
 SENTINEL=$SENTINEL_DIR/trusted
 
+# Missing keyring files mean the install is broken — failing loud makes
+# shedos-keyring-trust.service show red instead of green-on-broken
+# (exit 0 here used to let a system that can't verify [shedos]
+# signatures look healthy).
 if [[ ! -f $KEYRING || ! -f $TRUSTED ]]; then
     echo "shedos-keyring: keyring files missing ($KEYRING / $TRUSTED)" >&2
-    exit 0
+    exit 1
 fi
 
 # pacman-key --lsign-key needs the LOCAL master key to exist. In a fresh
