@@ -23,6 +23,9 @@ license=('GPL-3.0-or-later')
 # good on the next update.
 replaces=('blueman')
 install=shedos-hyprland.install
+makedepends=(
+    'scdoc'            # renders man/*.scd → man1
+)
 depends=(
     'shedos-system'
     'hyprland'
@@ -70,8 +73,26 @@ optdepends=(
     'wf-recorder: required for `shedman screenrecord` (Super+R / waybar pill)'
 )
 
+prepare() {
+    # Render scdoc man sources; mirrors shedos-system's pattern.
+    cd "$startdir"
+    install -d man/build
+    local src
+    for src in man/*.scd; do
+        scdoc < "$src" > "man/build/$(basename "${src%.scd}")"
+    done
+}
+
 package() {
     cd "$startdir"
+
+    # Man pages for the desktop-side shedman subcommands.
+    install -d "$pkgdir/usr/share/man/man1"
+    local _page
+    for _page in man/build/*.1; do
+        install -Dm644 "$_page" \
+            "$pkgdir/usr/share/man/man1/$(basename "$_page")"
+    done
 
     # /etc/skel/; seed for new users via useradd -m.
     cp -a tree/etc "$pkgdir/"
