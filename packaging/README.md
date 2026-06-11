@@ -19,12 +19,15 @@ plus pacman / yay cheatsheets) see
 
 ## Versioning
 
-Every `shedos-*` PKGBUILD's `pkgver` is driven from the root `VERSION`
-file. Bump it with `scripts/bump-version.sh [--today | <version>]` — the
-script rewrites every `pkgver=` and resets `pkgrel=1`. Re-running on an
-unchanged `VERSION` increments `pkgrel` instead (republish of same source).
-One shared version across all six packages means `pacman -Qi shedos-meta`
-tells a user exactly which release cohort their system is on.
+Packages version independently: each `shedos-*` PKGBUILD keeps the
+CalVer `pkgver` of its last content change, and CI bumps
+`pkgver`/`pkgrel` only for packages whose content hash moved since
+the previous release (`scripts/bump-version.sh`, manifest at
+`packaging/.last-release-hashes.toml` — never run it locally; CI owns
+the bump). The root `VERSION` file names the release/ISO cohort, so
+individual package versions routinely differ from it and from each
+other. The repo currently carries fourteen packages, including the
+repackaged externals (calamares, cage).
 
 ## Two pacman repos, one name per purpose
 
