@@ -37,14 +37,24 @@ fingerprint to `shedos-trusted`. Then:
 3. Ship a release (or let the fleet pick the keyring up from the
    stable channel). Every machine that upgrades now trusts BOTH keys.
 
-Wait for the fleet to absorb this — at minimum one stable release
-cycle. Machines that skipped the window still converge: pacman
-refuses the unknown signature, the user runs `shedman update`, which
-upgrades shedos-keyring first in the same transaction.
+Wait for the fleet to absorb this — at minimum one full stable
+release cycle, because **stable-tracking machines only receive the
+dual-trust keyring through a stable release** (pushes to main land
+on /test alone). Concretely: phase 1 → cut the next rc + stable
+normally (still old-key-signed) → stable machines absorb both keys
+via a regular `shedman update` → only then phase 2.
+
+A machine that misses the window does NOT converge on its own:
+pacman verifies the repo *database* signature before it can see any
+package, so an unknown signer means the whole [shedos] repo is
+refused — the keyring upgrade cannot ride through. Recovery is
+manual (`pacman -U` the keyring package by URL, or pacman-key --add
+the published shedos.gpg). That is the failure phase 1's patience
+exists to prevent.
 
 ## Phase 2 — swap the signer
 
-Replace the `SHEDOS_GPG_SIGNING_KEY` GitHub secret with the new
+Replace the `SHEDOS_REPO_SIGNING_KEY` GitHub secret with the new
 secret key. The next CI run signs everything with the new key; the
 fingerprint gate passes because phase 1 committed it. The repo
 database and all new packages now carry new-key signatures, which
