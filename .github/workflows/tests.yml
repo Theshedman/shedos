@@ -34,5 +34,18 @@ jobs:
           chown -R tester:tester .
           sudo -u tester bash -c 'cd packaging/shedos-screensaver && cargo build'
 
+      - name: Run the Rust unit suites
+        # Every crate with tests: the screensaver workspace plus the
+        # single-crate overlays. Locked so CI never resolves new deps.
+        run: |
+          sudo -u tester bash -c '
+            set -e
+            for crate in packaging/shedos-screensaver packaging/shedos-prompt-ui \
+                         packaging/shedos-greeter packaging/shedos-power \
+                         packaging/shedos-tour packaging/shedos-switcher; do
+                echo "---- cargo test $crate ----"
+                (cd "$crate" && cargo test --locked)
+            done'
+
       - name: Run shell test suites
         run: sudo -u tester bash scripts/run-shell-tests.sh
