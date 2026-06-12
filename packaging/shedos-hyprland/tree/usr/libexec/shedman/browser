@@ -11,10 +11,14 @@
 #   3. Hardcoded fallback list                (last-resort if neither above
 #      yields anything launchable).
 
-if [[ "${1:-}" == "--help-summary" ]]; then
-    echo "launch the default web browser"
-    exit 0
-fi
+case "${1:-}" in
+    --help-summary) echo "launch the default web browser"; exit 0 ;;
+    --complete-bash|--complete-zsh|--complete-fish) exit 0 ;;
+    -h|--help)
+        echo "Usage: shedman browser [args...]"
+        echo "Launch the default web browser in a new window; args pass through."
+        exit 0 ;;
+esac
 
 # Map a default-web-browser desktop ID to the binary that ships it, so
 # we can pass --new-window directly. Every entry below is a browser that

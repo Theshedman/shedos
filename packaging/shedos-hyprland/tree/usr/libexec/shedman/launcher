@@ -3,9 +3,13 @@
 # elephant + walker --gapplication-service are started by autostart.conf
 # so this is a near-instant dbus toggle into the warm service.
 
-if [[ "${1:-}" == "--help-summary" ]]; then
-    echo "open the Walker app launcher"
-    exit 0
-fi
+case "${1:-}" in
+    --help-summary) echo "open the Walker app launcher"; exit 0 ;;
+    --complete-bash|--complete-zsh|--complete-fish) exit 0 ;;
+    -h|--help)
+        echo "Usage: shedman launcher [walker args...]"
+        echo "Open the Walker launcher; arguments pass through to walker."
+        exit 0 ;;
+esac
 
 exec walker "$@"

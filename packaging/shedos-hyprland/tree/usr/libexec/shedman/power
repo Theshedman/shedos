@@ -6,10 +6,22 @@ set -euo pipefail
 
 action="${1:-}"
 
-if [[ "$action" == "--help-summary" ]]; then
-    echo "open the power menu (lock/sleep/reboot/shutdown)"
-    exit 0
-fi
+case "$action" in
+    --help-summary)
+        echo "open the power menu (lock/sleep/reboot/shutdown)"
+        exit 0 ;;
+    --complete-bash|--complete-zsh)
+        printf '%s\n' shutdown reboot suspend logout
+        exit 0 ;;
+    --complete-fish)
+        printf '%s\n' "shutdown\tpower off" "reboot\trestart" \
+            "suspend\tsleep" "logout\tend the session"
+        exit 0 ;;
+    -h|--help)
+        echo "Usage: shedman power [shutdown|reboot|suspend|logout]"
+        echo "No argument opens the power-menu overlay."
+        exit 0 ;;
+esac
 
 case "$action" in
     "")        exec /usr/bin/shedos-power ;;
