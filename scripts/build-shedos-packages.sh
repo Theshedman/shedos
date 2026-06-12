@@ -375,21 +375,25 @@ for dir in "${PKG_DIRS[@]}"; do
     # scriptlets (e.g. shedos-system's pacman.conf rewrite) inside the
     # build chroot.
     #
-    # shedos-greeter and shedos-power are single-crate Rust packages:
-    # their actual Rust sources live at packaging/<pkg>/src/ which
-    # collides with makepkg's $srcdir convention. --cleanbuild would
-    # rm -rf $srcdir before build() runs and delete our sources. The
-    # outer `rm -rf $work && cp -a $dir $work` above already gives a
-    # fresh per-run copy, so dropping --cleanbuild for these is safe.
+    # Single-crate Rust packages (greeter, power, tour, switcher, …)
+    # keep their sources at packaging/<pkg>/src/, which collides with
+    # makepkg's $srcdir convention: --cleanbuild would rm -rf the
+    # sources before build() runs. Detect them by Cargo.toml instead
+    # of naming them — the old explicit list silently dropped every
+    # new crate into the --nodeps branch (no cargo, then a cleanbuild
+    # deleting src/). The outer rm -rf + cp -a already gives a fresh
+    # per-run copy, so skipping --cleanbuild is safe. Workspace-style
+    # builds that DO want cleanbuild stay on the explicit list.
     case "$pkgname" in
-        shedos-greeter|shedos-power)
-            mk_flags=(--syncdeps --noconfirm --force)
-            ;;
         shedos-screensaver|calamares|shedos-hyprland-plugin-hyprspace|cage)
             mk_flags=(--syncdeps --noconfirm --force --cleanbuild)
             ;;
         *)
-            mk_flags=(--nodeps --noconfirm --force --cleanbuild)
+            if [[ -f $dir/Cargo.toml ]]; then
+                mk_flags=(--syncdeps --noconfirm --force)
+            else
+                mk_flags=(--nodeps --noconfirm --force --cleanbuild)
+            fi
             ;;
     esac
 
