@@ -11,7 +11,9 @@ Native Arch packages that make up a ShedOS installation. Published to
 | `shedos-nvim` | Default Neovim config (same dual-install pattern). Separate package so its `always-conflict` sync policy doesn't pollute the generic tool. |
 | `shedos-branding` | Plymouth theme, wallpapers, `/etc/shedos-ascii.txt` (`/etc/os-release` ships from `shedos-system`). |
 | `shedos-meta` | Zero-file metapackage. `depends=` pulls in every `shedos-*` package plus every Arch / AUR package a default install needs. |
-| `shedos-migrate-to-packaged` | One-shot migration helper for users on pre-packaged ShedOS installs. |
+| `shedos-migrate-to-packaged` | One-shot migration helper for pre-packaged ShedOS installs; `--from-arch` adopts an existing vanilla Arch install (Manjaro refused). |
+| `shedos-tour` | First-run welcome tour overlay (`/usr/bin/shedos-tour`, replayed via `shedman tour`), shown once per user by a stamp-gated oneshot. |
+| `shedos-switcher` | Alt+Tab MRU window-switcher overlay (`/usr/bin/shedos-switcher`); shedos-hyprland binds it to Alt+Tab / Alt+Shift+Tab. |
 
 For the user-facing CLI reference (every `shedman` subcommand + flags,
 plus pacman / yay cheatsheets) see
@@ -26,8 +28,8 @@ the previous release (`scripts/bump-version.sh`, manifest at
 `packaging/.last-release-hashes.toml` — never run it locally; CI owns
 the bump). The root `VERSION` file names the release/ISO cohort, so
 individual package versions routinely differ from it and from each
-other. The repo currently carries fourteen packages, including the
-repackaged externals (calamares, cage).
+other. The repo carries one package per PKGBUILD directory under
+packaging/, including the repackaged externals (calamares, cage).
 
 ## Two pacman repos, one name per purpose
 

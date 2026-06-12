@@ -6,7 +6,7 @@
 
 ShedOS ships as an ISO and a signed pacman repo at
 [`repo.shedos.org`](https://repo.shedos.org). Once installed, an existing
-system stays current via `pacman -Syu` — no reinstall, no image swap.
+system stays current via `shedman update` — no reinstall, no image swap.
 
 ## ✨ Features
 
@@ -31,10 +31,14 @@ system stays current via `pacman -Syu` — no reinstall, no image swap.
 - **BTRFS**: Pre-configured subvolumes and snapshots.
 - **Secure**: Optional LUKS encryption.
 - **In-place upgrades**: `shedman update` + the waybar indicator surface updates the moment they land on the repo.
+- **Self-healing boot**: three consecutive failed boots auto-boot the newest snapshot and the desktop explains what happened.
+- **Manual checkpoints**: `shedman snapshot <label>` before risky changes; restore via `shedman rollback`.
+- **Disk health**: daily SMART checks and monthly btrfs scrubs surface in `shedman health` and the waybar pill.
+- **Hibernation**: wired automatically on machines with a disk swap partition.
 
 > **WiFi firmware:** ShedOS ships the linux-firmware splits for AMD/Intel/NVIDIA GPUs plus Atheros, Realtek, Mediatek, Marvell, Broadcom, and more out of the box — WiFi works on first boot on virtually all laptops.
 
-> **Printing:** not in the default install. `pacman -S cups hplip system-config-printer` if you need it.
+> **Printing:** not in the default install. `shedman install cups hplip system-config-printer` if you need it.
 
 ## ⌨️ Keybindings Cheatsheet
 
@@ -47,6 +51,9 @@ system stays current via `pacman -Syu` — no reinstall, no image swap.
 | `Super + Shift + R` | Stop Recording |
 | `Super + Shift + P` | Color Picker |
 | `Super + C` | Clipboard History |
+| `Alt + Tab` | Window switcher (most recent first; `+ Shift` reverses) |
+| `Super + Alt + K` | Keybindings reference dialog |
+| `Super + F9` | Night light toggle |
 
 ## 🔄 Upgrading an installed system
 
@@ -56,9 +63,12 @@ Click the waybar update indicator, or run:
 shedman update
 ```
 
-It surfaces the list of pending updates, waits for your explicit `y/N`, runs
-`pacman -Syu`, then prompts again before `shedman config --sync` touches any
-dotfiles. See [`docs/upgrading.md`](docs/upgrading.md) for the full flow,
+It surfaces the list of pending updates and waits for your explicit
+`y/N` — the only shedman prompt in the run. After that `pacman -Syu`
+runs (pacman still asks its own questions), AUR updates apply, and
+`shedman config --sync` runs without a second prompt; conflicts land
+as `.shedosnew` files instead of overwriting your edits. See
+[`docs/upgrading.md`](docs/upgrading.md) for the full flow,
 including how conflicts surface as `.shedosnew` files (same model as
 pacman's `.pacnew`).
 
@@ -75,6 +85,9 @@ Every ShedOS utility is a subcommand of `shedman`. The headline set:
 | `shedman config --sync` | 3-way merge packaged defaults into `$HOME`; conflicts land as `.shedosnew`. |
 | `shedman status` | One-screen dashboard (updates, conflicts, health, doctor). |
 | `shedman rollback -l` | Show recent snapper snapshots to roll back to. |
+| `shedman snapshot <label>` | Manual btrfs checkpoint; restore with `shedman rollback`. |
+| `shedman db create/drop/list` | Per-project Postgres databases owned by your user. |
+| `shedman tour` | Replay the first-run welcome tour. |
 | `shedman help <cmd>` | Full usage for any subcommand. |
 
 For the full CLI reference (every flag, short aliases, pacman/yay
@@ -154,7 +167,7 @@ shedos/
 ├── site/                 # Astro source for shedos.org
 ├── test/                 # Fixture-driven test suites
 ├── .github/workflows/    # CI: build-packages, build-iso,
-│                         #     aur-cache-refresh, deploy-site
+│                         #     aur-cache-refresh, deploy-site, tests
 ├── architecture.txt      # System architecture overview
 ├── Makefile
 ├── LICENSE

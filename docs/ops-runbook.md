@@ -21,7 +21,7 @@ CI token) is currently unrecoverable.
 One passphrase-less repo signing key exists, held only as the
 `SHEDOS_REPO_SIGNING_KEY` GitHub secret. If the secret is lost or the
 account is compromised, every installed system stops trusting updates
-(key rotation across the fleet is K2, deliberately deferred).
+(fleet-wide key rotation is staged dual-key; see key-rotation.md).
 
 1. Export the private key from wherever the ceremony ran:
    `gpg --export-secret-keys --armor <fingerprint> > shedos-repo-key.asc`.

@@ -135,17 +135,16 @@ unsigned or wrong-signature packages are rejected.
 
 ### Key rotation
 
-Not automated. If rotation is ever needed:
-
-1. Generate a new keypair locally with `packaging/shedos-keyring/scripts/key-ceremony.sh`.
-2. Update `packaging/shedos-keyring/tree/shedos.gpg` + `shedos-trusted`.
-3. Paste new armored private into `SHEDOS_REPO_SIGNING_KEY`.
-4. Bump `shedos-keyring`'s `pkgver` and push. The next `pacman -Syu` on
-   user machines pulls the new keyring package, whose `.install` hook
-   trusts the new key. From then on, new signatures validate.
-
-Keep both keys trusted for one release cycle before retiring the old
-one to avoid stranding users mid-upgrade.
+Staged dual-key procedure — the runbook is
+[`key-rotation.md`](key-rotation.md). Short form: ship trust in the
+new key first (`scripts/rotate-signing-key.sh` merges the public key
+into the shipped keyring and trusted list; the fleet re-trusts on
+upgrade), swap the CI signing secret only after the fleet has
+absorbed it (the publish gate accepts any fingerprint on the
+committed trusted list), and retire the old key a release later.
+Never replace the keyring with a single new key in one step — the
+repo database is re-signed immediately and any machine that hasn't
+absorbed the new trust first can no longer verify updates.
 
 ## Release model
 

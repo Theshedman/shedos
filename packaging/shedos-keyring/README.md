@@ -30,17 +30,25 @@ fingerprint must match the committed `tree/shedos-trusted`.
 
 ## Key rotation
 
-Rotation is a deliberate operation:
+Rotation is a staged, dual-key operation — the full runbook lives at
+[`docs/key-rotation.md`](../../docs/key-rotation.md). Short form:
 
-1. Run `./scripts/key-ceremony.sh` again — this overwrites `tree/shedos.gpg`
-   and `tree/shedos-trusted` with the new key.
-2. Bump `pkgver` in the PKGBUILD.
-3. Replace `SHEDOS_REPO_SIGNING_KEY` in GitHub secrets.
-4. Commit + push. CI rebuilds the repo with the new key.
-5. Existing installs receive the new `shedos-keyring` package on their next
-   `pacman -Syu`; the `.install` scriptlet runs `pacman-key --lsign-key` on
-   the new fingerprint. Old signatures continue to verify against the old
-   key already in the user's keyring, so there is no flag-day.
+1. Generate the new key offline; export only the public half.
+2. `scripts/rotate-signing-key.sh <new.pub>` merges it into
+   `tree/shedos.gpg` and appends the fingerprint to
+   `tree/shedos-trusted` — both keys stay trusted. Also add the
+   fingerprint to migrate's `SHEDOS_KEY_FPRS`.
+3. Commit, push, release. The fleet re-trusts on upgrade (the
+   `.install` sentinel re-fires `trust-keys.sh` when the list
+   changes). CI still signs with the old key — its fingerprint is
+   still listed, so the publish gate passes.
+4. Only after the fleet has absorbed that: swap the GitHub signing
+   secret. CI signs with the new key, which machines already trust.
+5. A release later, remove the old key from both files.
+
+Never overwrite `shedos.gpg` with a single new key in one step: the
+repo database is re-signed immediately, and any machine that hasn't
+absorbed the new trust first can no longer verify updates at all.
 
 ## Why the fingerprint lives in a file, not hard-coded
 
