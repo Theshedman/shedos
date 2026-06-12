@@ -209,11 +209,13 @@ jobs:
                | awk -F: '/^fpr:/ { print $10; exit }')
           echo "GPG_FP=$FP" >> "$GITHUB_ENV"
 
-          EXPECTED=$(awk 'NF && $1 !~ /^#/ { print; exit }' \
-            packaging/shedos-keyring/tree/shedos-trusted)
-          if [[ "$FP" != "$EXPECTED" ]]; then
-              echo "FATAL: signing key fingerprint ($FP) does not match"
-              echo "       committed shedos-trusted ($EXPECTED). Refusing to publish."
+          # The signing key must be one of the committed trusted
+          # fingerprints — ANY of them, so a rotation window can sign
+          # with the new key while clients still trust both.
+          if ! grep -qx "$FP" \
+              <(awk 'NF && $1 !~ /^#/' packaging/shedos-keyring/tree/shedos-trusted); then
+              echo "FATAL: signing key fingerprint ($FP) is not listed in"
+              echo "       committed shedos-trusted. Refusing to publish."
               exit 1
           fi
 
