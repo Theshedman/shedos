@@ -44,7 +44,7 @@ desktop whenever you're convinced.
 ## Will an update break my system?
 
 This is the question ShedOS is *built around*, so the answer has
-three layers:
+four layers:
 
 1. **Tested before you get it** — every ShedOS package lands on a
    testing channel first; the stable channel only ever receives a
@@ -54,8 +54,12 @@ three layers:
 3. **One-command undo** — `shedman rollback` returns the system to
    any pre-upgrade state; `shedman upgrade-history` shows every past
    upgrade with what changed and lets you roll back from a TUI.
+4. **Self-healing boot** — if three boots in a row never reach the
+   login screen, the machine automatically boots a safe copy of the
+   newest snapshot — no keypress, no recovery USB — and a desktop
+   notification explains what happened and how to make it permanent.
 
-No other Arch-based distribution has all three.
+No other Arch-based distribution has all four.
 
 ## What happens to my config edits when ShedOS updates a default?
 

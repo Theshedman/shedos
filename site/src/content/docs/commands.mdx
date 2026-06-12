@@ -90,6 +90,17 @@ or a reboot without a preceding upgrade.
 | `shedman rollback -y` / `--yes` | Skip the confirmation prompt. |
 | `shedman rollback -k` / `--keep-current` | Pair with `--undo`: keep the prior backup around. |
 
+## Checkpoints (`shedman snapshot`)
+
+The manual "before I break something" checkpoint: a btrfs snapshot
+via snapper, listed under Manual snapshots in `shedman
+upgrade-history` and restored through `shedman rollback`.
+
+| Command | Does |
+|---|---|
+| `shedman snapshot <label>` | Create a checkpoint named `<label>`; prints the snapshot number and the restore command. |
+| `shedman snapshot -l` / `--list` | List manual checkpoints. |
+
 ## Observability
 
 Four waybar-backed signals. Each command prints human-readable text by
@@ -99,7 +110,7 @@ default; click the matching waybar pill for the same action.
 |---|---|
 | `shedman updates` | Pending pacman + AUR update count. |
 | `shedman conflicts` | Unresolved `.shedosnew` count. |
-| `shedman health` | Disk / memory / battery / CPU-temp summary. |
+| `shedman health` | Disk / memory / battery / CPU-temp / disk-SMART / btrfs-scrub summary. |
 | `shedman doctor` | Drift between `/etc/shedos/system.toml` and live state. |
 | `shedman status` | **All four signals plus a verdict line**, in one screen. |
 | `shedman status -j` / `--json` | Aggregated JSON payload (schema-versioned). |
@@ -151,11 +162,15 @@ and pings the waybar pill + mako if drift appears.
 | `shedman migrate --detect` | Print `packaged` or `legacy` based on current state. |
 | `shedman migrate -n` / `--dry-run` | Print the retrofit plan (default). |
 | `shedman migrate -y` / `--yes` | Execute retrofit onto pre-April-2026 installs. |
+| `shedman migrate --from-arch` | Adopt an existing Arch install into ShedOS without reinstalling: trust the signing key, add the repo, install the stack. Dry-run by default; add `--yes` to execute. |
 
 <CalloutBox kind="note">
-`shedman migrate` is only relevant on systems installed from an ISO
-dated before April 2026. Fresh installs see "already packaged" and
-exit 0.
+The legacy retrofit path is only relevant on systems installed from
+an ISO dated before April 2026 — fresh installs see "already
+packaged" and exit 0. `--from-arch` is different: it adopts a
+running Arch install into ShedOS (vanilla Arch only — Manjaro is
+refused). See the [FAQ](/docs/faq) for what adoption does and
+doesn't touch.
 </CalloutBox>
 
 ## Desktop & session
@@ -169,6 +184,7 @@ exit 0.
 | `shedman lock` | Lock the session (logind → shedos-screensaver). |
 | `shedman screenrecord` | Start/stop screen recording (wf-recorder; waybar pill shows the live state). |
 | `shedman screensaver` | The animated SHEDOS art — terminal or fullscreen overlay. |
+| `shedman tour` | Replay the first-run welcome tour overlay (the slide intro shown automatically on first login). |
 | `shedman browser` | Launch the default web browser. |
 | `shedman theme list / get` | Show available palettes / current theme values. |
 | `shedman theme set <key> <value>` | Switch `palette`, `wallpaper`, `font_ui`, or `font_mono`; re-renders and reloads everything live. |
@@ -182,8 +198,9 @@ exit 0.
 | `sudo shedman kernel --set-default <pkgbase>` | Make a kernel the default boot entry. |
 | `shedman services` | Table of expected services (platform set + whatever `system.toml` declares) with enabled/active state. |
 | `sudo shedman services --fix` | Enable + start anything missing; initializes the Postgres cluster if absent. |
-| `shedman datetime` | Set timezone, network time, and the system clock. |
-| `shedman db` | Database-service bootstrap/admin helpers (per-user Postgres role + database). |
+| `shedman datetime` | Set timezone, network time, the system clock, and the night-light schedule. |
+| `shedman db create / drop / list` | Per-project databases, run as you: `create <name>`, `drop <name>` (asks first; refuses your personal default DB), `list` (your databases, with sizes). |
+| `sudo shedman db --pg-bootstrap` | Bootstrap per-user Postgres roles + same-named default databases (also runs on boot). |
 | `shedman fingerprint list / enroll / delete / clear` | Manage fingerprint enrollments (login + sudo). |
 | `shedman uninstall <pkg>` | Remove packages + unused deps; routes pacman vs yay automatically, prompts before removing (`-y` to skip). |
 | `shedman upgrade-history` | Browse past upgrades and roll back to any snapshot. |
@@ -240,8 +257,8 @@ shedman apply -yn        # same as --yes --dry-run
 shedman doctor -df       # --diff --fix
 ```
 
-Bash-backed subcommands (`update`, `rollback`, `config`, `_config-sync`,
-`services`, `install`, `migrate`) don't — pass them separately:
+Bash-backed subcommands (`update`, `rollback`, `snapshot`, `config`,
+`_config-sync`, `services`, `install`, `migrate`) don't — pass them separately:
 
 ```sh
 shedman update -y -l     # OK

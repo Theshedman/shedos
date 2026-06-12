@@ -22,7 +22,12 @@ overwrites your changes.
 4. If any dotfiles need reconciling, you'll be offered the review TUI.
 
 Nothing destructive runs without an explicit `y`. Every upgrade
-interactively lists what it's about to do.
+interactively lists what it's about to do. While you review the
+pending lists, a stale mirrorlist (older than four hours) is
+re-ranked in the background and installed after you confirm; and
+when ShedOS's own packages changed — not just upstream Arch — the
+run ends with a "ShedOS updated" summary and a notification linking
+the [changelog](/changelog).
 
 ## How dotfile sync works
 
@@ -72,6 +77,17 @@ Pick the pre-upgrade snapshot number from the list. A reboot applies
 the rollback. `$HOME` is intentionally **not** rolled back — your work
 since the upgrade is preserved. Run `shedman rollback --undo` before
 rebooting if you change your mind.
+
+Before a risky change of your own, take a manual checkpoint:
+`shedman snapshot <label>`. Checkpoints list with `shedman snapshot
+--list`, appear in `shedman upgrade-history`, and restore through
+the same `shedman rollback` path.
+
+And if a boot ever goes truly wrong — three consecutive boots that
+never reach the login screen — the system recovers itself: it boots
+a safe, writable copy of the newest snapshot automatically and a
+desktop notification explains what happened and how to make the
+recovery permanent.
 
 <CalloutBox kind="note">
 Snapshots live on the same disk. For full data resilience, pair

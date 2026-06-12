@@ -56,6 +56,12 @@ by `fprintd` (most Goodix, Synaptics, Elan) enroll with
 `shedman fingerprint enroll` and unlock both the lock screen and the
 greeter.
 
+Hibernation works on machines with a disk swap partition: pick the
+RAM-sized swap option in the installer and the resume configuration
+is wired automatically; Hibernate then appears in the power menu.
+Systems installed without it gain the wiring on a later update if a
+disk swap partition exists.
+
 ## Dual-boot
 
 The installer detects a Windows boot manager on any ESP, adds a
