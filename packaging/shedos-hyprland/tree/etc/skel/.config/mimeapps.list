@@ -1,0 +1,8 @@
+# Default applications. Firefox is the shipped browser default; any
+# browser's own "set as default" prompt rewrites these entries (via
+# xdg-settings), so user choice always wins from then on.
+[Default Applications]
+x-scheme-handler/http=firefox.desktop
+x-scheme-handler/https=firefox.desktop
+text/html=firefox.desktop
+application/xhtml+xml=firefox.desktop

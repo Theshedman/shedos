@@ -104,6 +104,12 @@ package() {
     # user sees (so relpath logic in `shedman config --sync` is straightforward).
     install -d "$pkgdir/usr/share/shedos/hyprland/defaults"
     cp -a tree/etc/skel/. "$pkgdir/usr/share/shedos/hyprland/defaults/"
+    # mimeapps.list is seed-once user state, not a managed default:
+    # every browser's "set as default" prompt rewrites it, so leaving
+    # it in the sync mirror would conflict with the user's choice on
+    # every future change to the shipped file. Skel seeds it for new
+    # users; sync never touches it.
+    rm "$pkgdir/usr/share/shedos/hyprland/defaults/.config/mimeapps.list"
 
     # DE-specific shedman subcommands: `shedman launcher` (Walker),
     # `shedman power` (shutdown/reboot/logout confirm), and

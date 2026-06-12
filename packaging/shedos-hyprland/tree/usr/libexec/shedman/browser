@@ -60,7 +60,7 @@ if [[ -n "${BROWSER:-}" ]] && command -v "$BROWSER" >/dev/null 2>&1; then
 fi
 
 # 3. Hardcoded fallback
-for browser in google-chrome-stable firefox chromium brave vivaldi-stable; do
+for browser in firefox google-chrome-stable chromium brave vivaldi-stable; do
     if command -v "$browser" >/dev/null 2>&1; then
         exec "$browser" --new-window "$@"
     fi
