@@ -10,7 +10,9 @@ shedman-power - open the power menu
 
 # DESCRIPTION
 
-Opens the themed power overlay (lock / sleep / reboot / shut down)
+Opens the themed power overlay (lock / sleep / hibernate / reboot
+/ shut down — hibernate appears when the machine is configured for
+it)
 as a layer-shell surface. Destructive choices confirm before acting.
 Launched from the waybar power button.
 

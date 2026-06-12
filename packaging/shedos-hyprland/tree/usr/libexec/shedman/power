@@ -8,17 +8,18 @@ action="${1:-}"
 
 case "$action" in
     --help-summary)
-        echo "open the power menu (lock/sleep/reboot/shutdown)"
+        echo "open the power menu (lock/sleep/hibernate/reboot/shutdown)"
         exit 0 ;;
     --complete-bash|--complete-zsh)
-        printf '%s\n' shutdown reboot suspend logout
+        printf '%s\n' shutdown reboot suspend hibernate logout
         exit 0 ;;
     --complete-fish)
         printf '%s\n' "shutdown\tpower off" "reboot\trestart" \
-            "suspend\tsleep" "logout\tend the session"
+            "suspend\tsleep" "hibernate\tsuspend to disk" \
+            "logout\tend the session"
         exit 0 ;;
     -h|--help)
-        echo "Usage: shedman power [shutdown|reboot|suspend|logout]"
+        echo "Usage: shedman power [shutdown|reboot|suspend|hibernate|logout]"
         echo "No argument opens the power-menu overlay."
         exit 0 ;;
 esac
@@ -28,6 +29,7 @@ case "$action" in
     shutdown)  exec systemctl poweroff ;;
     reboot)    exec systemctl reboot ;;
     suspend)   exec systemctl suspend ;;
+    hibernate) exec systemctl hibernate ;;
     logout)
         # End the session the same way the SUPER+SHIFT+E bind does.
         if command -v uwsm >/dev/null 2>&1; then
@@ -39,7 +41,7 @@ case "$action" in
         fi
         ;;
     *)
-        echo "usage: shedman power [shutdown|reboot|suspend|logout]" >&2
+        echo "usage: shedman power [shutdown|reboot|suspend|hibernate|logout]" >&2
         exit 2
         ;;
 esac
