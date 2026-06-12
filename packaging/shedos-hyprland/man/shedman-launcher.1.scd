@@ -11,9 +11,9 @@ shedman-launcher - open the application launcher
 # DESCRIPTION
 
 Opens Walker, the ShedOS launcher (*Super+D*). Prefix searches:
-*=* calculator, *@* web search, *:* clipboard history, *!* todos;
-plain text matches installed applications.
+*=* calculator, *@* web search, *:* clipboard history, *!* todos,
+*$* fuzzy window search; plain text matches installed applications.
 
 # SEE ALSO
 
-*shedman-keybindings*(1), *shedman-browser*(1)
+*shedman-keybindings*(1), *shedman-browser*(1), *shedos-switcher*(1)
