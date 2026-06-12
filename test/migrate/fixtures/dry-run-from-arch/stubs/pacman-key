@@ -1,0 +1,3 @@
+#!/bin/sh
+printf 'pacman-key %s\n' "$*" >>"${PROBE_LOG:-/dev/null}"
+exit 1

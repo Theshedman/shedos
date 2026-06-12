@@ -1,0 +1,6 @@
+#!/bin/sh
+printf 'curl fetch-key\n' >>"${PROBE_LOG:-/dev/null}"
+# last arg is the -o target
+for last; do :; done
+echo "FAKE KEY MATERIAL" > "$last"
+exit 0

@@ -1,0 +1,3 @@
+#!/bin/sh
+echo "fpr:::::::::2095CF9F5C6DDED8ACF8583D99B38D3CAE22D820:"
+exit 0

@@ -1,0 +1,8 @@
+#!/bin/sh
+printf 'pacman %s\n' "$*" >>"${PROBE_LOG:-/dev/null}"
+case "$1 $2" in
+    "-Qq shedos-system") exit 1 ;;
+    "-Qq manjaro-release") exit 1 ;;
+    "-Qq hyprlock") exit 1 ;;
+esac
+exit 0

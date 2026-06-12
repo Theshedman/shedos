@@ -1,0 +1,10 @@
+pacman -Qq shedos-system
+pacman -Qq manjaro-release
+snapper -c root create --type single --description pre-migrate-to-packaged --userdata source=shedman-migrate
+pacman-key --list-keys 2095CF9F5C6DDED8ACF8583D99B38D3CAE22D820
+curl fetch-key
+pacman-key --add <keyfile>
+pacman-key --lsign-key 2095CF9F5C6DDED8ACF8583D99B38D3CAE22D820
+pacman -Syu --noconfirm shedos-meta
+shedman config --sync --yes
+shedman doctor

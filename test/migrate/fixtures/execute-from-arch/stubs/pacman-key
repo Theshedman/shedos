@@ -1,0 +1,8 @@
+#!/bin/sh
+# --add gets a random tmpfile path; log only the verb so the probe
+# stays diffable.
+case "$1" in
+    --add) printf 'pacman-key --add <keyfile>\n' >>"${PROBE_LOG:-/dev/null}"; exit 0 ;;
+    --list-keys) printf 'pacman-key %s\n' "$*" >>"${PROBE_LOG:-/dev/null}"; exit 1 ;;
+    *) printf 'pacman-key %s\n' "$*" >>"${PROBE_LOG:-/dev/null}"; exit 0 ;;
+esac

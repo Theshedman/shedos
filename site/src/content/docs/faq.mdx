@@ -24,6 +24,16 @@ wiki applies verbatim. ShedOS adds one signed repository for its own
 packages and the `shedman` CLI on top — it removes nothing. If you
 can do it on Arch, you can do it here.
 
+## I already run Arch — do I have to reinstall?
+
+No. `shedman migrate --from-arch` adopts a running Arch install:
+it verifies and trusts the ShedOS signing key, adds the repository,
+installs the ShedOS stack, and switches the login manager — your
+packages and files stay put, and any config a ShedOS default would
+touch lands beside yours for review instead of overwriting. Dry-run
+by default; on non-btrfs roots it works too, minus the snapshot
+machinery (which it tells you about loudly).
+
 ## Can I try it without installing?
 
 Yes — the ISO boots a full live desktop: the real Hyprland setup,

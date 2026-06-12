@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # shedman migrate; retrofit a pre-packaging ShedOS install onto the
-# packaged model.
+# packaged model — or, with --from-arch, adopt an existing Arch
+# install into ShedOS without reinstalling.
 #
 # Target audience: installs dated before the April 2026 packaging
 # cut-over (commit 2148ff0), where the system was laid down by the
@@ -45,21 +46,26 @@ if [[ "${1:-}" == "--help-summary" ]]; then
 fi
 
 if [[ "${1:-}" == "--complete-bash" || "${1:-}" == "--complete-zsh" ]]; then
-    printf '%s\n' --yes -y --detect --dry-run -n --help -h
+    printf '%s\n' --yes -y --detect --dry-run -n --from-arch --help -h
     exit 0
 fi
 
 usage() {
     cat <<EOF
-Usage: $PROG [--detect] [-n|--dry-run] [-y|--yes] [-h|--help]
+Usage: $PROG [--detect] [--from-arch] [-n|--dry-run] [-y|--yes] [-h|--help]
 
-Retrofit a pre-packaging ShedOS install onto the packaged model.
-Idempotent — runs on packaged installs are a fast no-op.
+Retrofit a pre-packaging ShedOS install onto the packaged model, or
+adopt an existing Arch install into ShedOS (--from-arch) without
+reinstalling. Idempotent — runs on packaged installs are a fast no-op.
 
 Options:
   --detect        Print the detected state (packaged | legacy) and exit 0.
-  -n, --dry-run   Print the migration plan and exit. (default)
-  -y, --yes       Execute the migration.
+  --from-arch     Adopt a vanilla Arch install: trust the ShedOS key,
+                  add the repo, install shedos-meta, become ShedOS.
+                  Your files and packages stay; config defaults land
+                  beside any files you already have.
+  -n, --dry-run   Print the plan and exit. (default)
+  -y, --yes       Execute.
   -h, --help      This message.
 EOF
 }
@@ -248,13 +254,95 @@ _verify_with_doctor() {
     fi
 }
 
+# --from-arch mutations
+
+# Rotations ship a new fingerprint here together with the keyring
+# (see the key-rotation design); verify-then-trust, never blind-add.
+SHEDOS_KEY_FPR=2095CF9F5C6DDED8ACF8583D99B38D3CAE22D820
+SHEDOS_KEY_URL=https://repo.shedos.org/shedos.gpg
+
+_check_arch_base() {
+    [[ -f "$ROOT/etc/arch-release" ]] \
+        || die "--from-arch needs an Arch Linux base (/etc/arch-release missing)"
+    if pacman -Qq manjaro-release >/dev/null 2>&1; then
+        die "Manjaro's delayed repositories aren't compatible with ShedOS packages"
+    fi
+}
+
+_check_filesystem() {
+    local fstype
+    fstype=$(findmnt -no FSTYPE / 2>/dev/null || echo unknown)
+    if [[ $fstype == btrfs ]]; then
+        log "root is btrfs — snapshots and rollback fully available"
+        return 0
+    fi
+    warn "root filesystem is $fstype, not btrfs:"
+    warn "  pre-upgrade snapshots, shedman rollback, and boot"
+    warn "  auto-recovery will be UNAVAILABLE on this machine."
+    warn "  Everything else works; a fresh ShedOS install gets you"
+    warn "  the full safety story."
+}
+
+_bootstrap_key() {
+    local dry=$1
+    if pacman-key --list-keys "$SHEDOS_KEY_FPR" >/dev/null 2>&1; then
+        log "ShedOS signing key already trusted; skipping"
+        return 0
+    fi
+    if (( dry )); then
+        log "(dry-run) fetch $SHEDOS_KEY_URL, verify fingerprint $SHEDOS_KEY_FPR,"
+        log "          pacman-key --add + --lsign-key"
+        return 0
+    fi
+    local tmp
+    tmp=$(mktemp)
+    if ! curl -fsSL --max-time 30 "$SHEDOS_KEY_URL" -o "$tmp"; then
+        rm -f "$tmp"
+        die "could not download the ShedOS signing key"
+    fi
+    local got
+    got=$(gpg --show-keys --with-colons "$tmp" 2>/dev/null \
+        | awk -F: '/^fpr:/ {print $10; exit}')
+    if [[ $got != "$SHEDOS_KEY_FPR" ]]; then
+        rm -f "$tmp"
+        die "downloaded key fingerprint mismatch (got ${got:-none}) — refusing to trust"
+    fi
+    pacman-key --add "$tmp" || { rm -f "$tmp"; die "pacman-key --add failed"; }
+    rm -f "$tmp"
+    pacman-key --lsign-key "$SHEDOS_KEY_FPR" \
+        || die "pacman-key --lsign-key failed"
+    log "ShedOS signing key verified and trusted"
+}
+
+_handle_display_manager() {
+    local dry=$1
+    local link="$ROOT/etc/systemd/system/display-manager.service"
+    local current=""
+    [[ -L $link ]] && current=$(basename "$(readlink "$link")")
+    if [[ -z $current || $current == greetd.service ]]; then
+        return 0
+    fi
+    if (( dry )); then
+        log "(dry-run) switch display manager: disable $current, enable greetd"
+        return 0
+    fi
+    log "switching display manager: $current → greetd"
+    systemctl disable "$current" >/dev/null 2>&1 \
+        || warn "could not disable $current; you may have two display managers enabled"
+    systemctl enable greetd.service >/dev/null 2>&1 \
+        || warn "could not enable greetd; enable it manually before rebooting"
+    log "your previous desktop stays installed; ShedOS boots its own session"
+}
+
 # Arg parse
 
 mode=dry-run
 detect_only=0
+from_arch=0
 while (( $# )); do
     case $1 in
         --detect)    detect_only=1 ;;
+        --from-arch) from_arch=1 ;;
         -n|--dry-run)   mode=dry-run ;;
         -y|--yes)    mode=yes ;;
         -h|--help)   usage; exit 0 ;;
@@ -275,11 +363,39 @@ if [[ $state == packaged ]]; then
     exit 0
 fi
 
-# Plan + execute
-
 dry=0
-if [[ $mode == dry-run ]]; then
-    dry=1
+[[ $mode == dry-run ]] && dry=1
+
+if (( from_arch )); then
+    # Adopt a vanilla Arch install.
+    _check_arch_base
+    if (( dry )); then
+        log "adopting this Arch install into ShedOS — plan:"
+    else
+        log "adopting this Arch install into ShedOS"
+    fi
+    _check_filesystem
+    _snapshot "$dry"
+    _bootstrap_key "$dry"
+    _fence_pacman_conf "$dry"
+    _refresh_mirrorlist "$dry"
+    _pacman_install_meta "$dry"
+    _install_aur_pkgs "$dry"
+    _handle_display_manager "$dry"
+    _seed_sync_state "$dry"
+    _verify_with_doctor "$dry"
+    if (( dry )); then
+        log "dry-run complete. Re-run with --from-arch --yes to execute."
+    else
+        log "adoption complete. Review any .pacnew/.shedosnew files"
+        log "(shedman config --review), then reboot into ShedOS."
+    fi
+    exit 0
+fi
+
+# Plan + execute (legacy pre-packaging ShedOS)
+
+if (( dry )); then
     log "detected legacy (pre-packaging) install"
     log "plan:"
 else
