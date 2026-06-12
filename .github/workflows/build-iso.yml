@@ -306,6 +306,18 @@ jobs:
           sha256sum "$ISO_NAME" > "${ISO_NAME}.sha256"
           echo "ISO_NAME=$ISO_NAME" >> "$GITHUB_ENV"
 
+      - name: Boot-assert the ISO
+        # Runs on EVERY build so dispatch builds soak the harness
+        # itself; publishing is still tag-gated below, so the release
+        # guarantee stands: no ISO publishes unbooted. Direct kernel
+        # boot with a serial console proves early userspace + squashfs
+        # are sound; the desktop is covered by the release soak.
+        # GitHub's Linux runners expose /dev/kvm; the script degrades
+        # to TCG when it's absent or broken.
+        run: |
+          pacman -S --needed --noconfirm qemu-base libarchive util-linux
+          scripts/boot-assert.sh "out/$ISO_NAME"
+
       - name: Upload ISO to R2
         # workflow_dispatch from a branch must stay private: an
         # un-tagged build would publish shedos-main-x86_64.iso, the
