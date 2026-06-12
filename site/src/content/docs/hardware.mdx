@@ -30,10 +30,15 @@ network icon opens the TUI.
 
 - **AMD / Intel** — first-class. Mesa drivers ship; Hyprland runs
   out of the box.
-- **NVIDIA** — works with the proprietary driver
-  (`nvidia_drm.modeset=1` is set when the installer detects the
-  card). Wayland + NVIDIA has sharper edges than AMD/Intel;
-  recent-generation cards on current drivers fare best.
+- **NVIDIA, Turing and newer** (GTX 16xx / RTX 20xx+) — the open
+  kernel modules install automatically and `nvidia_drm.modeset=1` is
+  set. Wayland + NVIDIA has sharper edges than AMD/Intel, but
+  current-generation cards on the open modules work well.
+- **NVIDIA, pre-Turing** (GTX 10xx and older) — NVIDIA dropped these
+  from the current driver, so the installer deliberately skips it:
+  the desktop runs on the built-in nouveau/modesetting stack and a
+  note in `/etc/shedos/nvidia-legacy-gpu` explains the AUR legacy
+  branch (`nvidia-580xx-dkms`) if you want the proprietary driver.
 
 ## Storage
 
