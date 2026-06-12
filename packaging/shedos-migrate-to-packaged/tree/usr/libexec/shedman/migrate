@@ -256,9 +256,13 @@ _verify_with_doctor() {
 
 # --from-arch mutations
 
-# Rotations ship a new fingerprint here together with the keyring
-# (see the key-rotation design); verify-then-trust, never blind-add.
-SHEDOS_KEY_FPR=2095CF9F5C6DDED8ACF8583D99B38D3CAE22D820
+# Rotations append the new fingerprint here together with the keyring
+# (docs/key-rotation.md); verify-then-trust, never blind-add. The
+# downloaded keyring may contain several keys during a rotation
+# window — every one of them must be on this list.
+SHEDOS_KEY_FPRS=(
+    2095CF9F5C6DDED8ACF8583D99B38D3CAE22D820
+)
 SHEDOS_KEY_URL=https://repo.shedos.org/shedos.gpg
 
 _check_arch_base() {
@@ -283,14 +287,23 @@ _check_filesystem() {
     warn "  the full safety story."
 }
 
+_fpr_known() {
+    local fp known
+    fp=$1
+    for known in "${SHEDOS_KEY_FPRS[@]}"; do
+        [[ $fp == "$known" ]] && return 0
+    done
+    return 1
+}
+
 _bootstrap_key() {
     local dry=$1
-    if pacman-key --list-keys "$SHEDOS_KEY_FPR" >/dev/null 2>&1; then
+    if pacman-key --list-keys "${SHEDOS_KEY_FPRS[0]}" >/dev/null 2>&1; then
         log "ShedOS signing key already trusted; skipping"
         return 0
     fi
     if (( dry )); then
-        log "(dry-run) fetch $SHEDOS_KEY_URL, verify fingerprint $SHEDOS_KEY_FPR,"
+        log "(dry-run) fetch $SHEDOS_KEY_URL, verify fingerprints,"
         log "          pacman-key --add + --lsign-key"
         return 0
     fi
@@ -300,18 +313,22 @@ _bootstrap_key() {
         rm -f "$tmp"
         die "could not download the ShedOS signing key"
     fi
-    local got
-    got=$(gpg --show-keys --with-colons "$tmp" 2>/dev/null \
-        | awk -F: '/^fpr:/ {print $10; exit}')
-    if [[ $got != "$SHEDOS_KEY_FPR" ]]; then
-        rm -f "$tmp"
-        die "downloaded key fingerprint mismatch (got ${got:-none}) — refusing to trust"
-    fi
+    # Every primary key in the download must be on the pinned list —
+    # one rogue key smuggled beside a valid one is a refusal.
+    local fps fp
+    fps=$(gpg --show-keys --with-colons "$tmp" 2>/dev/null \
+        | awk -F: '$1 == "pub" { want=1; next } want && $1 == "fpr" { print $10; want=0 }')
+    [[ -n $fps ]] || { rm -f "$tmp"; die "no keys in downloaded keyring"; }
+    while IFS= read -r fp; do
+        _fpr_known "$fp" \
+            || { rm -f "$tmp"; die "unexpected key $fp in keyring — refusing to trust"; }
+    done <<<"$fps"
     pacman-key --add "$tmp" || { rm -f "$tmp"; die "pacman-key --add failed"; }
     rm -f "$tmp"
-    pacman-key --lsign-key "$SHEDOS_KEY_FPR" \
-        || die "pacman-key --lsign-key failed"
-    log "ShedOS signing key verified and trusted"
+    while IFS= read -r fp; do
+        pacman-key --lsign-key "$fp" || die "pacman-key --lsign-key $fp failed"
+    done <<<"$fps"
+    log "ShedOS signing key(s) verified and trusted"
 }
 
 _handle_display_manager() {
@@ -403,6 +420,7 @@ else
 fi
 
 _snapshot "$dry"
+_bootstrap_key "$dry"
 _fence_pacman_conf "$dry"
 _refresh_mirrorlist "$dry"
 _remove_legacy_hyprlock "$dry"

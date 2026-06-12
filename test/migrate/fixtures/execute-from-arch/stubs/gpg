@@ -1,3 +1,4 @@
 #!/bin/sh
+echo "pub:u:255:22:99B38D3CAE22D820:1714000000:::u:::scESC::::::ed25519:::0:"
 echo "fpr:::::::::2095CF9F5C6DDED8ACF8583D99B38D3CAE22D820:"
 exit 0

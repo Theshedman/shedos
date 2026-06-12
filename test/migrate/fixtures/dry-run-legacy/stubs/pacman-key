@@ -1,0 +1,5 @@
+#!/bin/sh
+case "$1" in
+    --list-keys) exit 0 ;;   # already trusted
+esac
+exit 0
