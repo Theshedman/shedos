@@ -31,8 +31,8 @@ const hasRc =
     <div class="mx-auto max-w-[56rem] px-4 pt-16 pb-20 sm:px-6">
         <h1 class="mb-3 text-4xl font-bold tracking-tight sm:text-5xl">Download</h1>
         <p class="mb-10 max-w-2xl text-[color:var(--color-muted)]">
-            The latest ISO, with a verifiable SHA-256. Flash it,
-            boot it, and the installer handles the rest.
+            The latest ShedOS ISO, with a SHA-256 you can check before you
+            flash it.
         </p>
 
         {hasStable && (
@@ -52,7 +52,7 @@ const hasRc =
                 <div class="mb-3 flex items-baseline justify-between gap-4">
                     <h2 class="text-xl font-semibold">Testing build</h2>
                     <p class="text-sm text-[color:var(--color-muted)]">
-                        For curious users who want to help shake out the next release.
+                        The next release, a little early.
                     </p>
                 </div>
                 <DownloadBox
@@ -65,17 +65,13 @@ const hasRc =
                     tone="muted"
                 />
                 <p class="mt-3 text-sm text-[color:var(--color-muted)]">
-                    ShedOS has two channels. <strong>Stable</strong> is what most
-                    people should run. A <strong>testing</strong> ISO appears here
-                    during release-candidate windows: systems installed from it
-                    track the testing package channel, so the upcoming release
-                    gets real-world soak before promotion — the same packages,
-                    a week or two early. Found a problem? Report it on{" "}
-                    <a class="underline" href="https://github.com/Theshedman/shedos/issues">GitHub issues</a>.
-                    A testing install keeps tracking testing; reinstall from a
-                    stable ISO (or edit the <code class="font-mono">[shedos]</code>{" "}
-                    server line in <code class="font-mono">/etc/pacman.conf</code>)
-                    to switch back.
+                    A testing ISO appears here only while a release candidate is
+                    newer than the current stable. A system installed from it
+                    tracks the testing channel, so the next release gets real
+                    use before it's promoted — the same packages, a week or two
+                    ahead. Found something? Report it on{" "}
+                    <a class="underline" href="https://github.com/Theshedman/shedos/issues">GitHub</a>.
+                    To move back to stable, reinstall from a stable ISO.
                 </p>
             </div>
         )}
@@ -100,8 +96,8 @@ const hasRc =
                         1 · Verify
                     </div>
                     <p class="text-sm text-[color:var(--color-muted)]">
-                        Run <code class="font-mono text-[color:var(--color-text)]">sha256sum</code>
-                        on the ISO and compare the output to the hash above.
+                        Run <code class="code-inline">sha256sum</code>
+                        on the ISO and compare it to the hash above.
                     </p>
                 </article>
                 <article class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
@@ -109,8 +105,9 @@ const hasRc =
                         2 · Flash
                     </div>
                     <p class="text-sm text-[color:var(--color-muted)]">
-                        Write to a USB stick with <code class="font-mono text-[color:var(--color-text)]">dd</code>,
-                        Ventoy, or balenaEtcher. 8 GB or larger.
+                        Write it to a USB drive (8 GB or larger) with
+                        <code class="code-inline">dd</code>,
+                        Ventoy, or balenaEtcher.
                     </p>
                 </article>
                 <article class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
@@ -118,13 +115,17 @@ const hasRc =
                         3 · Install
                     </div>
                     <p class="text-sm text-[color:var(--color-muted)]">
-                        Boot the USB, follow the installer, and log in to a
+                        Boot the USB and follow the installer, then log in to a
                         themed Hyprland desktop.
                     </p>
                 </article>
             </div>
-            <p class="mt-6 text-sm text-[color:var(--color-muted)]">
-                Full walkthrough in <a href="/docs/getting-started">Getting started</a>.
+            <p class="mt-6 max-w-2xl text-sm text-[color:var(--color-muted)]">
+                The installer partitions the disk into Btrfs subvolumes, sets up
+                optional full-disk encryption, creates your user and Git
+                identity, sets the locale, and detects NVIDIA GPUs and any other
+                installed system for dual-boot. The full walkthrough is in
+                <a class="underline" href="/docs/getting-started">Getting started</a>.
             </p>
         </section>
 
@@ -132,8 +133,19 @@ const hasRc =
             <h2 class="text-xl font-semibold">Already installed?</h2>
             <p class="mt-3 max-w-2xl text-[color:var(--color-muted)]">
                 ShedOS is a rolling release — you don't need a new ISO.
-                See <a href="/docs/upgrading">Upgrading</a> for how the
-                in-place update works.
+                <a class="underline" href="/docs/upgrading">Upgrading</a> covers
+                how the in-place update works.
+            </p>
+        </section>
+
+        <section class="mt-16">
+            <h2 class="text-xl font-semibold">Already on Arch?</h2>
+            <p class="mt-3 max-w-2xl text-[color:var(--color-muted)]">
+                <code class="code-inline">shedman migrate --from-arch</code>
+                adopts an existing Arch install in place — it trusts the signing
+                key, adds the ShedOS repository, and installs the stack, without
+                reinstalling. It runs as a dry run until you pass
+                <code class="code-inline">--yes</code>.
             </p>
         </section>
     </div>

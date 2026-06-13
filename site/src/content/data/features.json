@@ -1,22 +1,22 @@
 [
     {
-        "title": "Dev toolchains, preinstalled",
-        "body": "Neovim (LazyVim), VS Code, Zsh, and runtimes for Python, Node, Go, Rust, and C++. Docker, Podman, and kubectl are ready on first boot.",
-        "icon": "terminal"
-    },
-    {
-        "title": "Hyprland desktop, tuned",
-        "body": "A Wayland tiling setup with Catppuccin Mocha, waybar, walker, and sensible keybindings. No dotfile archaeology required.",
-        "icon": "layout"
-    },
-    {
-        "title": "Rolling release, safe upgrades",
-        "body": "Packages update continuously from the ShedOS repository. Your edited dotfiles are never silently overwritten — conflicts surface in a merge review instead.",
+        "title": "Non-destructive updates",
+        "body": "When an update changes a config file you've edited, ShedOS keeps your version rather than overwriting it, and opens a three-way merge so you decide what stays.",
         "icon": "refresh"
     },
     {
-        "title": "BTRFS + LUKS, out of the box",
-        "body": "Subvolumes and snapshots are set up by the installer, with optional full-disk encryption. Roll back a bad upgrade in seconds.",
+        "title": "Reversible upgrades",
+        "body": "Every upgrade is a Btrfs snapshot, so an unwanted one is a single <code class=\"code-inline\">shedman rollback</code> away. A system that fails to reach the desktop three times in a row boots the last working snapshot on its own.",
         "icon": "shield"
+    },
+    {
+        "title": "Declarative configuration",
+        "body": "Services, the firewall, kernel parameters, users, and the theme are described in <code class=\"code-inline\">/etc/shedos/system.toml</code>. <code class=\"code-inline\">shedman apply</code> brings the machine in line with it; <code class=\"code-inline\">shedman doctor</code> reports anything that has drifted.",
+        "icon": "layout"
+    },
+    {
+        "title": "One command-line tool",
+        "body": "Updates, rollbacks, theming, health checks, fingerprint enrollment, and per-project databases are all <code class=\"code-inline\">shedman</code> subcommands, each with its own manual page.",
+        "icon": "terminal"
     }
 ]

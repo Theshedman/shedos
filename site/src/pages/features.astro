@@ -1,0 +1,102 @@
+---
+import BaseLayout from "~/layouts/BaseLayout.astro";
+import TechSummary from "~/components/TechSummary.astro";
+
+const capabilities = [
+    {
+        title: "Updates and recovery",
+        body: `Updating snapshots the system with Btrfs first, so a bad upgrade is one <code class="code-inline">shedman rollback</code> away rather than a reinstall. <code class="code-inline">shedman upgrade-history</code> shows what each past upgrade changed, and a machine that fails to reach the desktop three times running boots its last working snapshot on its own.`,
+    },
+    {
+        title: "Configuration that survives updates",
+        body: `When an upgrade ships a new default for a file you've already edited, ShedOS keeps your version and writes the new one beside it as a <code class="code-inline">.shedosnew</code>. <code class="code-inline">shedman config --review</code> then opens a three-way merge — yours, theirs, and the common ancestor — in the terminal or in VS Code, so you keep what you want hunk by hunk.`,
+    },
+    {
+        title: "A declarative system",
+        body: `<code class="code-inline">/etc/shedos/system.toml</code> describes services, the firewall, kernel parameters, users, and the theme. <code class="code-inline">shedman apply</code> makes the running machine match it; <code class="code-inline">shedman doctor</code> reports anything that has drifted, so you see what a change will do before you make it.`,
+    },
+    {
+        title: "One command-line tool",
+        body: `Updates, rollback, upgrade history, config review, health, status, theming, databases, fingerprints, kernels, and logs are all <code class="code-inline">shedman</code> subcommands — about two dozen, each with a manual page. Run <code class="code-inline">shedman help</code> for the list, or <code class="code-inline">man shedman-&lt;command&gt;</code> for any one of them.`,
+    },
+];
+
+const desktop = [
+    { src: "/screenshots/09-tiling.webp", caption: "Tiling windows on Hyprland." },
+    { src: "/screenshots/05-walker.webp", caption: "The walker launcher." },
+    { src: "/screenshots/03-switcher.webp", caption: "The ALT+Tab window switcher." },
+    { src: "/screenshots/04-keybindings.webp", caption: "Keybindings, a keystroke away (Super+Alt+K)." },
+    { src: "/screenshots/06a-theme.webp", caption: "Theming recolors the whole desktop at once." },
+    { src: "/screenshots/07-power.webp", caption: "The power menu." },
+];
+---
+<BaseLayout
+    title="Features"
+    description="What ShedOS does: snapshot-based recovery, configuration that survives updates, a declarative system, one CLI, and a tiling desktop."
+>
+    <section class="mx-auto max-w-[72rem] px-4 pt-16 pb-10 sm:px-6">
+        <p class="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--color-primary)]">
+            Features
+        </p>
+        <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">
+            What ShedOS does
+        </h1>
+        <p class="mt-4 max-w-2xl text-lg leading-relaxed text-[color:var(--color-muted)]">
+            The system is built so you can change it freely and recover from
+            anything. Here is what that means in practice.
+        </p>
+    </section>
+
+    <section class="mx-auto max-w-[72rem] px-4 pb-16 sm:px-6">
+        <div class="grid gap-x-12 gap-y-10 md:grid-cols-2">
+            {
+                capabilities.map((c) => (
+                    <div>
+                        <h2 class="text-lg font-semibold tracking-tight">
+                            {c.title}
+                        </h2>
+                        <p
+                            class="mt-3 leading-relaxed text-[color:var(--color-muted)]"
+                            set:html={c.body}
+                        ></p>
+                    </div>
+                ))
+            }
+        </div>
+    </section>
+
+    <section class="border-t border-[var(--color-border)]">
+        <div class="mx-auto max-w-[72rem] px-4 py-16 sm:px-6">
+            <h2 class="text-xl font-semibold tracking-tight sm:text-2xl">
+                The desktop
+            </h2>
+            <p class="mt-3 max-w-2xl leading-relaxed text-[color:var(--color-muted)]">
+                A tiling Hyprland session, set up and themed — gestures, a
+                launcher, an ALT+Tab switcher, a keybinding reference a
+                keystroke away, and theming that recolors everything at once.
+            </p>
+            <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {
+                    desktop.map((d) => (
+                        <figure class="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+                            <img
+                                src={d.src}
+                                width="1920"
+                                height="1080"
+                                alt={d.caption}
+                                class="block w-full"
+                                loading="lazy"
+                                decoding="async"
+                            />
+                            <figcaption class="px-4 py-3 text-sm text-[color:var(--color-muted)]">
+                                {d.caption}
+                            </figcaption>
+                        </figure>
+                    ))
+                }
+            </div>
+        </div>
+    </section>
+
+    <TechSummary />
+</BaseLayout>

@@ -3,50 +3,54 @@ import BaseLayout from "~/layouts/BaseLayout.astro";
 ---
 <BaseLayout
     title="About"
-    description="A developer-first Arch Linux distribution."
+    description="ShedOS is an operating system for software developers."
 >
     <article class="prose mx-auto max-w-3xl px-4 py-16 sm:px-6">
         <h1>About ShedOS</h1>
 
         <p>
-            ShedOS is a developer-first Linux distribution built on Arch. It
-            ships a tuned Hyprland desktop, a working developer toolchain,
-            and a rolling upgrade path that respects the files you've edited.
+            ShedOS is an operating system for software developers. It ships a
+            tiling Hyprland desktop and a full development environment, already
+            configured, and it treats the machine as something you can change
+            freely and always take back.
         </p>
 
         <h2>Why it exists</h2>
 
         <p>
-            Most distributions choose between two tradeoffs: stable and
-            opinionated, or rolling and DIY. The first pins you to old
-            software; the second pins you to a hobby. ShedOS aims for the
-            middle — current software, a working desktop on first boot, and
-            one command to stay up to date.
+            A workstation should be ready the moment it boots, keep the
+            configuration you give it, and recover when something goes wrong.
+            ShedOS is built so that it does. The desktop and toolchain come
+            configured. Your edits survive upgrades. Every upgrade is a
+            snapshot you can roll back in one command, and a system that fails
+            to reach the desktop several times in a row returns to the last
+            working snapshot on its own.
         </p>
 
         <h2>What's in the box</h2>
 
         <ul>
-            <li>Hyprland on Wayland, with waybar, mako, walker, and the shedos-screensaver lock.</li>
-            <li>Neovim (LazyVim), VS Code, and Zsh preconfigured.</li>
+            <li>A tiling Hyprland desktop on Wayland — waybar, mako, walker, and a themed lock screen.</li>
+            <li>Neovim (LazyVim), VS Code, and Zsh, configured.</li>
             <li>Language runtimes for Python, Node, Go, Rust, and C++.</li>
-            <li>Docker and Kubernetes tooling (kubectl, minikube, helm) ready on first boot.</li>
-            <li>BTRFS with snapshots; LUKS encryption optional at install time.</li>
+            <li>Docker and Kubernetes tooling — kubectl, minikube, and helm.</li>
+            <li>A Btrfs root with automatic snapshots; LUKS encryption optional at install time.</li>
+            <li><code>shedman</code> — one command-line tool for updates, rollback, configuration, theming, and more.</li>
         </ul>
 
         <h2>Source and license</h2>
 
         <p>
-            Source lives at
-            <a href="https://github.com/Theshedman/shedos">github.com/Theshedman/shedos</a>
-            and is GPL-3.0. Branding assets under <code>branding/</code> are
-            not covered by that license — reach out before re-using them.
+            The source is at
+            <a href="https://github.com/Theshedman/shedos">github.com/Theshedman/shedos</a>,
+            under GPL-3.0. Branding assets under <code>branding/</code> are not
+            covered by that license — ask before reusing them.
         </p>
 
         <h2>Contact</h2>
 
         <ul>
-            <li>Issues and PRs — <a href="https://github.com/Theshedman/shedos/issues">GitHub issues</a>.</li>
+            <li>Issues and pull requests on <a href="https://github.com/Theshedman/shedos/issues">GitHub</a>.</li>
         </ul>
     </article>
 </BaseLayout>

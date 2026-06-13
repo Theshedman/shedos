@@ -2,12 +2,91 @@
 import BaseLayout from "~/layouts/BaseLayout.astro";
 import Hero from "~/components/Hero.astro";
 import FeatureGrid from "~/components/FeatureGrid.astro";
-import TechSummary from "~/components/TechSummary.astro";
 import SecondaryCTA from "~/components/SecondaryCTA.astro";
+
+const shots = [
+    {
+        title: "Three-way merge for config conflicts",
+        body: "When your edits and an upstream change touch the same file, ShedOS shows both and lets you merge them hunk by hunk, instead of choosing one version wholesale.",
+        img: "/screenshots/10-merge.webp",
+        alt: "The shedman config review tool showing a three-way merge of a configuration file.",
+    },
+    {
+        title: "The system in one file",
+        body: '<code class="code-inline">/etc/shedos/system.toml</code> describes services, the firewall, kernel options, users, and the theme. Run <code class="code-inline">shedman apply</code> and the machine matches what it says.',
+        img: "/screenshots/11-config.webp",
+        alt: "system.toml open in an editor, declaring system services and settings.",
+    },
+    {
+        title: "A configured environment",
+        body: "Editors, language runtimes, and containers are installed and configured before your first login.",
+        img: "/screenshots/08-terminal.webp",
+        alt: "A ShedOS terminal running the shedman CLI alongside an editor.",
+    },
+];
 ---
 <BaseLayout title="ShedOS">
     <Hero />
+    <section aria-label="The ShedOS desktop">
+        <div class="mx-auto max-w-[72rem] px-4 pb-8 sm:px-6">
+            <figure
+                class="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl shadow-black/20"
+            >
+                <img
+                    src="/screenshots/01-desktop.webp"
+                    width="1920"
+                    height="1080"
+                    alt="The ShedOS desktop: a tiling Hyprland session with waybar, a themed terminal, and the application launcher."
+                    class="block w-full"
+                    loading="lazy"
+                    decoding="async"
+                />
+            </figure>
+            <p class="mt-3 text-center text-sm text-[color:var(--color-muted)]">
+                A tiling Hyprland desktop — themed, and ready on first boot.
+            </p>
+        </div>
+    </section>
     <FeatureGrid />
-    <TechSummary />
+    <section
+        aria-label="Inside ShedOS"
+        class="border-t border-[var(--color-border)]"
+    >
+        <div class="mx-auto max-w-[72rem] px-4 py-20 sm:px-6">
+            <div class="flex flex-col gap-16 sm:gap-24">
+                {
+                    shots.map((s, i) => (
+                        <div class="grid items-center gap-8 md:grid-cols-2 md:gap-12">
+                            <figure
+                                class:list={[
+                                    "overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl shadow-black/10",
+                                    i % 2 === 1 && "md:order-2",
+                                ]}
+                            >
+                                <img
+                                    src={s.img}
+                                    width="1920"
+                                    height="1080"
+                                    alt={s.alt}
+                                    class="block w-full"
+                                    loading="lazy"
+                                    decoding="async"
+                                />
+                            </figure>
+                            <div class:list={[i % 2 === 1 && "md:order-1"]}>
+                                <h3 class="text-xl font-semibold tracking-tight sm:text-2xl">
+                                    {s.title}
+                                </h3>
+                                <p
+                                    class="mt-3 leading-relaxed text-[color:var(--color-muted)]"
+                                    set:html={s.body}
+                                ></p>
+                            </div>
+                        </div>
+                    ))
+                }
+            </div>
+        </div>
+    </section>
     <SecondaryCTA />
 </BaseLayout>

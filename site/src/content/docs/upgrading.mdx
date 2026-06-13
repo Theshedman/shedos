@@ -7,11 +7,11 @@ section: Guide
 import CalloutBox from "~/components/CalloutBox.astro";
 
 ShedOS is a rolling release. Once installed, you never reinstall —
-updates flow from the ShedOS repository through `pacman -Syu`.
+`shedman update` pulls in new packages whenever you choose.
 
-What sets the upgrade apart: your dotfiles are safe. The system tracks
-which files it shipped and what you've edited, and it never silently
-overwrites your changes.
+Your edited dotfiles stay safe. The system tracks which files it
+shipped and what you've changed, and never silently overwrites your
+edits.
 
 ## The flow
 
@@ -25,7 +25,7 @@ Nothing destructive runs without an explicit `y`. Every upgrade
 interactively lists what it's about to do. While you review the
 pending lists, a stale mirrorlist (older than four hours) is
 re-ranked in the background and installed after you confirm; and
-when ShedOS's own packages changed — not just upstream Arch — the
+when ShedOS's own packages changed — not just upstream ones — the
 run ends with a "ShedOS updated" summary and a notification linking
 the [changelog](/changelog).
 

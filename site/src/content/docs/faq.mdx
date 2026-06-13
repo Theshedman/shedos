@@ -8,21 +8,20 @@ import CalloutBox from "~/components/CalloutBox.astro";
 
 ## What is ShedOS, in one paragraph?
 
-A developer workstation OS built on Arch Linux. You boot the
-installer; ten minutes later you have a tuned Hyprland desktop, a
-complete development toolchain (Neovim/LazyVim, VS Code, zsh, Docker
-and Kubernetes tools, per-user PostgreSQL, language runtimes, Claude
-Code), and — this is the part nobody else ships — an update system
-with snapshots, rollback, a testing channel, and config merges, so
-the machine stays good for years, not weeks.
+An operating system for software developers. You boot the installer;
+ten minutes later you have a Hyprland desktop, a complete development
+toolchain (Neovim/LazyVim, VS Code, zsh, Docker and Kubernetes tools,
+per-user PostgreSQL, language runtimes, Claude Code), and an update
+system with snapshots, rollback, a testing channel, and config merges,
+so the machine stays good for years, not weeks.
 
-## Is it really Arch? Can I use the AUR and the wiki?
+## Can I use pacman, the AUR, and my usual tools?
 
-Yes, genuinely. pacman is pacman, the official repos are untouched,
-`shedman install <pkg>` reaches the AUR through yay, and the Arch
-wiki applies verbatim. ShedOS adds one signed repository for its own
-packages and the `shedman` CLI on top — it removes nothing. If you
-can do it on Arch, you can do it here.
+Yes. pacman and the standard repositories work as they always do, and
+`shedman install <pkg>` reaches the AUR through yay. ShedOS adds one
+signed repository for its own packages and the `shedman` CLI on top —
+it removes nothing and locks nothing down. The tools you already know
+still work.
 
 ## I already run Arch — do I have to reinstall?
 
@@ -59,7 +58,7 @@ four layers:
    newest snapshot — no keypress, no recovery USB — and a desktop
    notification explains what happened and how to make it permanent.
 
-No other Arch-based distribution has all four.
+Those four layers together are the core of what ShedOS is.
 
 ## What happens to my config edits when ShedOS updates a default?
 
@@ -94,12 +93,11 @@ already done.
 
 ## What's the AI story?
 
-Claude Code ships preinstalled — terminal-native AI that reads your
-repo, writes code, runs commands, and is there on first boot (and on
-the live USB). ShedOS treats AI tooling as part of the developer
-baseline, the same as git or a compiler, and the roadmap leans
-further in. You bring your own account; nothing runs without you
-starting it.
+Claude Code ships preinstalled — a terminal AI that reads your repo,
+writes code, and runs commands, there on first boot and on the live
+USB. It's treated as part of the developer baseline, like git or a
+compiler. You bring your own account, and nothing runs until you
+start it.
 
 ## Why Hyprland?
 
@@ -113,10 +111,9 @@ three-weekend rice.
 
 ## I don't like something it ships. Can I remove it?
 
-Yes — it's your machine and it's still pacman.
-`shedman uninstall <pkg>` removes anything (with a confirmation and
-the dependency closure shown first). Swap the browser, the editor,
-the launcher; the system doesn't fight you.
+Yes — it's your machine. `shedman uninstall <pkg>` removes anything,
+showing the dependency closure and asking first. Swap the browser,
+the editor, the launcher; the system doesn't fight you.
 
 ## How does theming work?
 
@@ -145,13 +142,13 @@ listed in plain text in `/etc/pacman.d/mirrorlist`.
 
 ## How is it different from Omarchy / Garuda / EndeavourOS / Manjaro?
 
-Short version: Omarchy curates a similar desktop but has no
-snapshot, rollback, testing-channel, or config-merge story; Garuda
-has snapshots but is a gaming-first KDE distro, not a dev
-workstation; EndeavourOS is deliberately near-vanilla (you build
-everything); Manjaro trades update delay for stability and breaks
-AUR assumptions doing it. The full breakdown with a feature matrix
-is on the [compare page](/compare).
+Short version: Omarchy curates a similar Hyprland desktop, but
+without the three-way config merge, the declarative `system.toml`, or
+a single OS-wide CLI; Garuda has automatic snapshots but is a
+gaming-focused KDE distribution; EndeavourOS is deliberately minimal,
+leaving the desktop and toolchain to you; Manjaro holds packages back
+for stabilization. The full, sourced breakdown is on the
+[compare page](/compare).
 
 ## What about gaming?
 
