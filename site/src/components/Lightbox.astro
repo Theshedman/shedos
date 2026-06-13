@@ -1,0 +1,76 @@
+---
+// Site-wide image lightbox. Any <img data-zoom> on the page opens its
+// full-size source here on click (or Enter/Space when focused); Esc, the
+// close button, or a click on the backdrop dismisses it. Vanilla — no
+// runtime dependency, and a no-op on pages with no zoomable images.
+---
+<div
+    id="lightbox"
+    class="lightbox"
+    data-open="false"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Enlarged screenshot"
+    aria-hidden="true"
+>
+    <button type="button" class="lightbox__close" aria-label="Close">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+    </button>
+    <figure class="lightbox__frame">
+        <img class="lightbox__img" src="" alt="" />
+        <figcaption class="lightbox__cap"></figcaption>
+    </figure>
+</div>
+<script>
+    const box = document.getElementById("lightbox");
+    if (box) {
+        const img = box.querySelector<HTMLImageElement>(".lightbox__img")!;
+        const cap = box.querySelector<HTMLElement>(".lightbox__cap")!;
+        const closeBtn = box.querySelector<HTMLButtonElement>(".lightbox__close")!;
+        let lastFocus: HTMLElement | null = null;
+
+        const open = (src: string, alt: string) => {
+            img.src = src;
+            img.alt = alt;
+            cap.textContent = alt;
+            box.dataset.open = "true";
+            box.setAttribute("aria-hidden", "false");
+            document.documentElement.style.overflow = "hidden";
+            closeBtn.focus();
+        };
+        const close = () => {
+            box.dataset.open = "false";
+            box.setAttribute("aria-hidden", "true");
+            document.documentElement.style.overflow = "";
+            img.src = "";
+            if (lastFocus) lastFocus.focus();
+        };
+
+        document.querySelectorAll<HTMLImageElement>("img[data-zoom]").forEach((el) => {
+            el.tabIndex = 0;
+            el.setAttribute("role", "button");
+            el.setAttribute("aria-label", el.alt ? `Enlarge: ${el.alt}` : "Enlarge image");
+            const trigger = () => {
+                lastFocus = el;
+                open(el.currentSrc || el.src, el.alt);
+            };
+            el.addEventListener("click", trigger);
+            el.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    trigger();
+                }
+            });
+        });
+
+        box.addEventListener("click", (e) => {
+            if (e.target === box || e.target === img) close();
+        });
+        closeBtn.addEventListener("click", close);
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && box.dataset.open === "true") close();
+        });
+    }
+</script>
