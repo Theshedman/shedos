@@ -45,7 +45,7 @@ import tomlkit.exceptions as tomlkit_exc
 SCHEMA_VERSION = 1
 
 DEFAULT_PALETTE = "catppuccin-mocha-blue"
-DEFAULT_WALLPAPER = "/usr/share/shedos/wallpapers/dusk.png"
+DEFAULT_WALLPAPER = "/usr/share/shedos/wallpapers/lumen.png"
 DEFAULT_FONT_UI = "Inter 11"
 DEFAULT_FONT_MONO = "JetBrainsMono Nerd Font"
 
