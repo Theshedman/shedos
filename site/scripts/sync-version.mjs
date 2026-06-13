@@ -28,8 +28,6 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const siteRoot = path.resolve(here, "..");
 const repoRoot = path.resolve(siteRoot, "..");
 
-const versionFile = fs.readFileSync(path.join(repoRoot, "VERSION"), "utf8").trim();
-
 const STABLE_RE = /^\d{4}\.\d{2}\.\d{2}$/;
 const RC_RE = /^\d{4}\.\d{2}\.\d{2}-rc\d+$/;
 
@@ -47,18 +45,6 @@ function gitTags() {
     } catch {
         return [];
     }
-}
-
-function dedup(list) {
-    const seen = new Set();
-    const out = [];
-    for (const v of list) {
-        if (v && !seen.has(v)) {
-            seen.add(v);
-            out.push(v);
-        }
-    }
-    return out;
 }
 
 function dateOf(version) {
@@ -131,7 +117,9 @@ const rcCandidates = tags.filter((t) => RC_RE.test(t));
 const stable = await resolveNewest(stableCandidates);
 let rc = await resolveNewest(rcCandidates);
 
-if (stable && rc && dateOf(rc.version) < dateOf(stable.version)) {
+if (stable && rc && dateOf(rc.version) <= dateOf(stable.version)) {
+    // Same date means this RC is the one that became the current stable —
+    // there's nothing newer to test, so hide the testing channel.
     rc = null;
 }
 
