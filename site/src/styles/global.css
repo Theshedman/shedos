@@ -315,3 +315,94 @@ code, pre, kbd {
 @media (prefers-reduced-motion: reduce) {
     .lightbox { transition: none; }
 }
+
+/* ---- Terminal walkthrough (download + getting-started) --------------- */
+.dlsteps > * + * { margin-top: 1.25rem; }
+.dlsteps__skip,
+.alts__sub,
+.dlsteps__foot {
+    font-size: 0.85rem;
+    line-height: 1.65;
+    color: var(--color-muted);
+}
+
+.term {
+    border: 1px solid #313244;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #1e1e2e;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+}
+.term__bar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.9rem;
+    background: #181825;
+    border-bottom: 1px solid #313244;
+}
+.term__dots { display: inline-flex; gap: 0.4rem; }
+.term__dot { height: 0.72rem; width: 0.72rem; border-radius: 9999px; }
+.term__title {
+    margin: 0 auto;
+    padding-right: 2.4rem; /* offset the dots so the title reads centered */
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    color: #6c7086;
+}
+.term__body {
+    padding: 1.15rem 1.25rem;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    line-height: 1.85;
+    color: #cdd6f4;
+    background: #1e1e2e;
+}
+@media (min-width: 640px) {
+    .term__body { font-size: 0.82rem; padding: 1.4rem 1.5rem; }
+}
+.term__step { position: relative; }
+.term__step + .term__step { margin-top: 1.6rem; }
+.term__cmt { color: #7f849c; padding-right: 4.75rem; }
+.term__pline { color: #6c7086; }
+.term__cline {
+    color: #cdd6f4;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+.term__out { margin-top: 0.5rem; overflow-x: auto; }
+.term__outline { white-space: pre; color: #7f849c; }
+.term .t-conn { color: #6c7086; }
+.term .t-dir { color: #89b4fa; font-weight: 600; }
+.term .t-arr { color: #a6e3a1; font-weight: 600; }
+.term .t-out { color: #7f849c; }
+.term .t-ok { color: #a6e3a1; font-weight: 600; }
+.term .t-note { color: #f9e2af; }
+
+.term__copy {
+    position: absolute;
+    top: -0.15rem;
+    right: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    border: 1px solid #45475a;
+    background: #313244;
+    color: #bac2de;
+    font-family: var(--font-sans);
+    font-size: 0.7rem;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.55;
+    transition: opacity 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.term__step:hover .term__copy,
+.term__step:focus-within .term__copy { opacity: 1; }
+.term__copy:hover { color: #cdd6f4; border-color: #585b70; }
+.term__step[data-copied="1"] .term__copy {
+    color: #a6e3a1;
+    border-color: #a6e3a1;
+    opacity: 1;
+}

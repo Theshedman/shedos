@@ -1,0 +1,264 @@
+---
+// The canonical "make the install USB" walkthrough: a styled terminal
+// with a per-step copy button (yielding the clean, runnable command —
+// not the prompt or the sample output), plus the two notes that go with
+// it (which drive is the USB, and the dd warning) and the GUI
+// alternatives. Used on the download page and in the getting-started
+// guide so both show exactly the same thing.
+//
+// The version-bearing strings come from the caller (the generated
+// version manifest), so the commands always match the current release.
+// The drive names (nvme0n1, sdb) are illustrative — reading your own is
+// what step 3 is for.
+interface Cmd {
+    display: string; // shown at the prompt; may wrap with a trailing backslash
+    copy: string;    // the runnable one-liner the copy button yields
+    output?: string; // sample output, newline-separated
+}
+interface Step {
+    n: number;
+    label: string;
+    cmds: Cmd[];
+}
+
+interface Props {
+    isoName: string;
+    isoUrl: string;
+    sha256Url: string;
+    cwd?: string;
+}
+const { isoName, isoUrl, sha256Url, cwd = "~/Downloads" } = Astro.props;
+const shaName = `${isoName}.sha256`;
+
+const steps: Step[] = [
+    {
+        n: 1,
+        label: "Download the latest ShedOS stable ISO",
+        cmds: [
+            {
+                display: `curl -fL --retry 5 --retry-all-errors -C - -O \\\n     ${isoUrl}`,
+                copy: `curl -fL --retry 5 --retry-all-errors -C - -O ${isoUrl}`,
+                output: "######################################################### 100.0%",
+            },
+        ],
+    },
+    {
+        n: 2,
+        label: "Verify it against the published checksum",
+        cmds: [
+            { display: `curl -fLO ${sha256Url}`, copy: `curl -fLO ${sha256Url}` },
+            {
+                display: `sha256sum -c ${shaName}`,
+                copy: `sha256sum -c ${shaName}`,
+                output: `${isoName}: OK`,
+            },
+        ],
+    },
+    {
+        n: 3,
+        label: "Find your USB stick — not your system disk",
+        cmds: [
+            {
+                display: "lsblk -o NAME,SIZE,TYPE,MOUNTPOINTS",
+                copy: "lsblk -o NAME,SIZE,TYPE,MOUNTPOINTS",
+                output: [
+                    "NAME          SIZE TYPE MOUNTPOINTS",
+                    "nvme0n1     476.9G disk             ← system disk — leave it alone",
+                    "├─nvme0n1p1     1G part /boot",
+                    "└─nvme0n1p2 475.9G part /",
+                    "sdb          28.9G disk             ← your USB stick (the size matches)",
+                    "└─sdb1       28.9G part /run/media/you/SHEDOS",
+                ].join("\n"),
+            },
+        ],
+    },
+    {
+        n: 4,
+        label: "Write the ISO to the stick — this erases it",
+        cmds: [
+            {
+                display: `sudo dd if=${isoName} of=/dev/sdb bs=4M conv=fsync oflag=direct status=progress`,
+                copy: `sudo dd if=${isoName} of=/dev/sdb bs=4M conv=fsync oflag=direct status=progress`,
+                output: "2671771648 bytes (2.7 GB, 2.5 GiB) copied, 49 s, 54.5 MB/s",
+            },
+            { display: "sync", copy: "sync" },
+        ],
+    },
+];
+
+type Seg = { cls: string; text: string };
+function segs(line: string): Seg[] {
+    const i = line.indexOf("←");
+    if (i !== -1) {
+        return [
+            { cls: "t-out", text: line.slice(0, i) },
+            { cls: "t-note", text: line.slice(i) },
+        ];
+    }
+    if (line.endsWith(": OK")) {
+        return [
+            { cls: "t-out", text: line.slice(0, -4) },
+            { cls: "t-ok", text: ": OK" },
+        ];
+    }
+    return [{ cls: "t-out", text: line }];
+}
+const copyFor = (s: Step) => s.cmds.map((c) => c.copy).join("\n");
+
+interface Tool {
+    name: string;
+    platforms: string[];
+    desc: string;
+    url: string;
+}
+// Verified June 2026. Ordered so the people who can't run dd — anyone on
+// Windows — meet their options first.
+const tools: Tool[] = [
+    { name: "balenaEtcher", platforms: ["Windows", "macOS", "Linux"], desc: "Point-and-click image writer — the easy choice on Windows and macOS.", url: "https://etcher.balena.io" },
+    { name: "Rufus", platforms: ["Windows"], desc: "The classic Windows USB writer: tiny, fast, no install.", url: "https://rufus.ie" },
+    { name: "Ventoy", platforms: ["Windows", "Linux"], desc: "Keep several ISOs on one stick and pick which to boot.", url: "https://www.ventoy.net" },
+    { name: "GNOME Disks", platforms: ["Linux"], desc: "Already on GNOME systems — its “Restore Disk Image…” action.", url: "https://apps.gnome.org/DiskUtility/" },
+    { name: "Impression", platforms: ["Linux"], desc: "A focused, modern GTK image writer.", url: "https://apps.gnome.org/Impression/" },
+    { name: "Popsicle", platforms: ["Linux"], desc: "Pop!_OS’s flasher — writes to several sticks at once.", url: "https://github.com/pop-os/popsicle" },
+];
+---
+<div class="dlsteps">
+    <div class="dlsteps__skip">
+        Already have the ISO — say, from the Download button? Skip step 1 and
+        start at step 2.
+    </div>
+
+    <div class="term">
+        <div class="term__bar" aria-hidden="true">
+            <span class="term__dots">
+                <span class="term__dot" style="background:#f38ba8"></span>
+                <span class="term__dot" style="background:#f9e2af"></span>
+                <span class="term__dot" style="background:#a6e3a1"></span>
+            </span>
+            <span class="term__title">you@shedos — {cwd}</span>
+        </div>
+        <div class="term__body">
+            {steps.map((s) => (
+                <div class="term__step" data-copy={copyFor(s)}>
+                    <button type="button" class="term__copy" aria-label={`Copy step ${s.n}`}>
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect x="9" y="9" width="11" height="11" rx="2" />
+                            <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+                        </svg>
+                        <span class="term__copy-text">Copy</span>
+                    </button>
+                    <div class="term__cmt"># {s.n} · {s.label}</div>
+                    {s.cmds.map((c) => (
+                        <>
+                            <div class="term__pline"><span class="t-conn">╭─</span>{" "}<span class="t-dir">{cwd}</span></div>
+                            <div class="term__cline"><span class="t-conn">╰─</span><span class="t-arr">❯</span>{" "}{c.display}</div>
+                            {c.output && (
+                                <div class="term__out">
+                                    {c.output.split("\n").map((line) => (
+                                        <div class="term__outline">{segs(line).map((g) => <span class={g.cls}>{g.text}</span>)}</div>
+                                    ))}
+                                </div>
+                            )}
+                        </>
+                    ))}
+                </div>
+            ))}
+        </div>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+        <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 text-sm leading-relaxed text-[color:var(--color-muted)]">
+            <div class="mb-1.5 font-semibold text-[color:var(--color-text)]">Which one is the USB? (step 3)</div>
+            Your system disk is the one with partitions mounted on
+            <code class="code-inline">/</code> and
+            <code class="code-inline">/boot</code> — usually the big internal
+            <code class="code-inline">nvme0n1</code> or
+            <code class="code-inline">sda</code>. The USB stick is the device
+            that only shows up once you plug it in, and its size matches the
+            stick. Write to the whole disk
+            (<code class="code-inline">/dev/sdb</code>), never a partition
+            (<code class="code-inline">/dev/sdb1</code>).
+        </div>
+        <div
+            class="rounded-xl border p-5 text-sm leading-relaxed"
+            style="border-color: color-mix(in srgb, var(--color-alert) 40%, var(--color-border)); background: color-mix(in srgb, var(--color-alert) 6%, var(--color-surface));"
+        >
+            <div class="mb-1.5 font-semibold" style="color: var(--color-alert)">
+                dd won't ask twice
+            </div>
+            <span class="text-[color:var(--color-muted)]">
+                It writes straight to whatever
+                <code class="code-inline">of=</code> names. Read the device back
+                before you press enter — aim it at the wrong disk and you
+                overwrite the one you're working from, with no undo.
+            </span>
+        </div>
+    </div>
+
+    <div class="alts border-t border-[var(--color-border)] pt-6">
+        <div class="text-base font-semibold text-[color:var(--color-text)]">
+            Rather not use the terminal?
+        </div>
+        <div class="alts__sub mt-1">
+            <code class="code-inline">dd</code> is the Linux and macOS route —
+            there's no <code class="code-inline">dd</code> on Windows. Coming
+            from Windows, or if you'd just rather click, any of these writes the
+            same ISO. Each opens in a new tab.
+        </div>
+        <div class="mt-4 grid gap-3 sm:grid-cols-2">
+            {tools.map((t) => (
+                <div class="group relative rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 transition-colors hover:border-[var(--color-primary)] focus-within:border-[var(--color-primary)]">
+                    <a
+                        href={t.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="absolute inset-0 z-10 rounded-xl"
+                        aria-label={`${t.name} — opens in a new tab`}
+                    ></a>
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="font-semibold text-[color:var(--color-text)]">{t.name}</span>
+                        <svg
+                            class="shrink-0 text-[color:var(--color-muted)] transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[color:var(--color-primary)]"
+                            viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
+                        >
+                            <path d="M7 17 17 7M9 7h8v8" />
+                        </svg>
+                    </div>
+                    <div class="mt-2 flex flex-wrap gap-1.5">
+                        {t.platforms.map((p) => (
+                            <span class="rounded-full border border-[var(--color-border-2)] px-2 py-0.5 text-[0.66rem] text-[color:var(--color-muted)]">{p}</span>
+                        ))}
+                    </div>
+                    <div class="mt-2 text-sm leading-snug text-[color:var(--color-muted)]">{t.desc}</div>
+                </div>
+            ))}
+        </div>
+        <div class="dlsteps__foot mt-4">
+            On Linux or macOS you can skip <code class="code-inline">dd</code>
+            from the terminal too: the image is a hybrid ISO, so
+            <code class="code-inline">cp {isoName} /dev/sdb &amp;&amp; sync</code>
+            works.
+        </div>
+    </div>
+</div>
+<script>
+    document.querySelectorAll<HTMLElement>(".term__step").forEach((step) => {
+        const btn = step.querySelector<HTMLButtonElement>(".term__copy");
+        const label = step.querySelector<HTMLElement>(".term__copy-text");
+        const text = step.dataset.copy;
+        if (!btn || !text) return;
+        btn.addEventListener("click", async () => {
+            try {
+                await navigator.clipboard.writeText(text);
+                step.dataset.copied = "1";
+                if (label) label.textContent = "Copied";
+                window.setTimeout(() => {
+                    delete step.dataset.copied;
+                    if (label) label.textContent = "Copy";
+                }, 1400);
+            } catch {
+                /* clipboard unavailable */
+            }
+        });
+    });
+</script>

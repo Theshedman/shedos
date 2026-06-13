@@ -4,55 +4,37 @@ description: Download, flash, install, and land on a configured desktop.
 order: 10
 section: Guide
 ---
-import CalloutBox from "~/components/CalloutBox.astro";
+import DownloadSteps from "~/components/DownloadSteps.astro";
+import { STABLE_ISO_NAME, STABLE_ISO_URL, STABLE_SHA256_URL } from "~/generated/version";
 
 ShedOS ships as a single bootable ISO. Flash it to a USB stick, run the
 installer, and reboot into a configured Hyprland desktop with your
 toolchain already installed.
 
-## 1. Download
+## Make the install USB
 
-Grab the latest ISO and its SHA-256 from the [download page](/download).
+<DownloadSteps
+    isoName={STABLE_ISO_NAME}
+    isoUrl={STABLE_ISO_URL}
+    sha256Url={STABLE_SHA256_URL}
+/>
 
-## 2. Verify
-
-```sh
-sha256sum shedos-YYYY.MM.DD-x86_64.iso
-```
-
-The hash must match the one on the download page. If it doesn't, the
-file is corrupted — do not boot it.
-
-## 3. Flash
-
-```sh
-sudo dd if=shedos-YYYY.MM.DD-x86_64.iso of=/dev/sdX bs=4M status=progress conv=fsync
-```
-
-Ventoy, Rufus, and balenaEtcher also work.
-
-<CalloutBox kind="warn">
-`dd` will not ask for confirmation. Double-check the target device —
-writing to the wrong disk wipes it.
-</CalloutBox>
-
-## 4. Install
+## Run the installer
 
 Boot the USB from your firmware's boot menu. The installer walks you
-through partitioning, user creation, and locale. ShedOS defaults are
-pre-seeded.
+through partitioning, user creation, and locale, with ShedOS defaults
+pre-seeded. Your Git identity (name and email) is collected on the user
+page, alongside the account you create.
 
-## 5. First boot
+## First boot
 
-The machine boots to the ShedOS greeter — log in with the account
-you created (there is no autologin on installed systems). Your git
-identity (name + email) is configured during install — the
-installer's user page collects it alongside your account. The desktop
-(Hyprland, waybar, mako, kitty) boots already themed and ready.
+The machine boots to the ShedOS greeter — log in with the account you
+created (there is no autologin on installed systems). The desktop —
+Hyprland, waybar, mako, kitty — comes up already themed and ready.
 
-On your first login a short welcome tour overlays the desktop and
-walks you through the essentials — `Esc` skips it, and `shedman
-tour` replays it any time.
+On your first login a short welcome tour overlays the desktop and walks
+you through the essentials. `Esc` skips it, and `shedman tour` replays it
+any time.
 
 ## Next
 
