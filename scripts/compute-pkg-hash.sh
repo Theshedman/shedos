@@ -47,6 +47,25 @@ if [[ $pkg == shedos-system && -f $root/packages/aur-bundled.txt ]]; then
     sibling_paths+=("packages/aur-bundled.txt")
 fi
 
+# Emit a PKGBUILD for hashing with its top-of-file metadata comments and
+# blank lines normalized away, so editing a doc comment no longer bumps
+# pkgrel and rebuilds the package. Everything from the first build function
+# onward is emitted verbatim, so any change to prepare()/build()/package()
+# — down to text inside a heredoc that happens to start with '#' — still
+# changes the hash. Only the PKGBUILD gets this; the tree/ files that
+# actually ship stay byte-for-byte (cat, below), because a comment edit
+# there changes the installed file and a rebuild is correct.
+_emit_pkgbuild() {
+    awk '
+        !in_code && ($0 ~ /^[A-Za-z_][A-Za-z0-9_+-]*[ \t]*\(\)[ \t]*\{?[ \t]*$/ || $0 ~ /^function[ \t]/) { in_code = 1 }
+        in_code { print; next }
+        /^[ \t]*#/ { next }
+        { sub(/[ \t]+$/, "") }
+        /^[ \t]*$/ { next }
+        { print }
+    ' "$1"
+}
+
 cd "$root"
 {
     # Hash the package itself plus any workspace path-dep siblings.
@@ -66,6 +85,8 @@ cd "$root"
             # (e.g. /usr/lib/systemd/user/foo.service) that doesn't
             # exist in the checkout.
             readlink "$f"
+        elif [[ $f == */PKGBUILD ]]; then
+            _emit_pkgbuild "$f"
         else
             cat "$f"
         fi
