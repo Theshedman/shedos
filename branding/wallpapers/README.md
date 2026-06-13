@@ -1,91 +1,67 @@
 # ShedOS Wallpapers
 
-Custom wallpapers for ShedOS featuring geometric patterns and Catppuccin Mocha color scheme.
+The shipped wallpaper set lives in
+`packaging/shedos-branding/tree/usr/share/shedos/wallpapers/`. Each
+wallpaper is 4K (3840×2160, 16:9) and ships with a `*-blurred`
+companion the greeter and lock screen render behind their UI. Switch
+between them with `shedman theme set wallpaper <path>`.
 
-## Wallpapers
+## Default
 
-### shedos-default.png (4K - 3840x2160)
-**Primary wallpaper** with gentle geometric circles in the desktop
-theme palette. (The BRAND colors are defined in
-`branding/new_assets/ShedOS-Color palette.pdf` — Electric Blue
-`#007FFF` primary, Pure White, Alert Red, Classic Black; the colors
-below are the Catppuccin Mocha *theme* accents the desktop ships
-with, not the brand palette.)
-- Base gradient: `#1e1e2e` → `#11111b` (Catppuccin Mocha base/crust)
-- Accent colors:
-  - Catppuccin Blue (#89b4fa) - default theme accent
-  - Sapphire (#74c7ec) - complementary
-  - Lavender (#b4befe) - complementary
+**lumen** — a luminous violet-and-magenta light ribbon. Set as the
+default in `system.toml [theme]` and as the renderer fallback. Smooth
+gradient, so it ships as PNG to avoid banding.
 
-**Design:** Diagonal gradient with three soft, blurred circular patterns positioned asymmetrically for visual interest. Modern, minimal aesthetic that doesn't distract from desktop content.
+## The set
 
-### shedos-dark.png (4K - 3840x2160)
-**Darker variant** for users who prefer deeper blacks:
-- Base gradient: `#11111b` → `#0d0d13` (darker Catppuccin tones)
-- More subtle blue accents with increased blur
+| Name | Scene |
+|---|---|
+| lumen (default) | violet/magenta light ribbon (abstract) |
+| drift | floating geometric cubes, dark teal (abstract) |
+| horizon | calm sunset over water |
+| alpenglow | mountain peaks at last light |
+| solstice | deep red sun low on the horizon |
+| stillwater | a misty pier on still water |
+| afterglow | warm sunset reflected on water |
+| shoreline | turquoise coastline from above |
+| headland | coastal mountains across a bay |
 
-## Generation
+Abstracts (lumen, drift) ship as PNG; the photographs ship as
+quality-92 JPEG — appropriate to the content and far smaller.
 
-These wallpapers were generated using ImageMagick with the following approach:
+## Licensing & credit
 
-1. **Base gradient:** Diagonal gradient from Catppuccin Mocha colors
-2. **Geometric elements:** Circular shapes with transparency and Gaussian blur
-3. **Color palette:** ShedOS brand colors with opacity for subtlety
+Every photograph is from **Unsplash**, under the
+[Unsplash License](https://unsplash.com/license): free to use,
+including commercially and in redistributed software, with no
+permission or attribution required. We credit the photographers
+regardless — they earned it:
 
-### Regenerating Wallpapers
+- horizon — Anders Jilden
+- alpenglow — Aneesh Matcha
+- solstice — Aperture Vintage
+- stillwater — Jack B
+- lumen — Milad Fakurian
+- afterglow — Peter F
+- drift — Sebastian Svenson
+- shoreline — Wade Meng
+- headland — Gerhard Venter (centre crop of a portrait original)
 
-If you want to customize or regenerate:
+This record also keeps the provenance of GPL-distributed image
+assets clear.
 
-```bash
-# Default wallpaper
-magick -size 3840x2160 \
-  -define gradient:angle=135 \
-  gradient:'#1e1e2e-#11111b' \
-  \( -size 3840x2160 xc:none \
-     -fill '#89b4fa33' -draw 'circle 960,540 1200,540' \
-     -fill '#74c7ec22' -draw 'circle 2880,1080 3120,1080' \
-     -fill '#b4befe22' -draw 'circle 1920,1620 2160,1620' \
-     -blur 0x80 \) \
-  -composite \
-  shedos-default.png
+## Existing installs
 
-# Dark variant
-magick -size 3840x2160 \
-  -define gradient:angle=135 \
-  gradient:'#11111b-#0d0d13' \
-  \( -size 3840x2160 xc:none \
-     -fill '#89b4fa22' -draw 'circle 1440,810 1680,810' \
-     -fill '#74c7ec11' -draw 'circle 2400,1350 2640,1350' \
-     -blur 0x100 \) \
-  -composite \
-  shedos-dark.png
-```
+`system.toml` is a backup file, so a changed shipped default reaches
+fresh installs only. `/usr/lib/shedos/backfill-default-wallpaper.py`
+(run from the upgrade scriptlet, stamp-gated) advances installs still
+on the previous default to lumen and never touches a custom choice;
+it takes effect at the next login.
 
-## Color Reference
+## Earlier set
 
-**Catppuccin Mocha Palette:**
-- Base: `#1e1e2e`
-- Mantle: `#181825`
-- Crust: `#11111b`
-- Blue (ShedOS): `#89b4fa`
-- Sapphire: `#74c7ec`
-- Lavender: `#b4befe`
-- Text: `#cdd6f4`
-
-## Usage in Hyprland
-
-Set in `~/.config/hypr/hyprland.conf`:
-
-```
-exec-once = swww-daemon
-exec = swww img ~/.config/hypr/wallpaper.png --transition-type fade --transition-fps 60
-```
-
-Link the desired wallpaper:
-```bash
-ln -sf /usr/share/shedos/wallpapers/shedos-default.png ~/.config/hypr/wallpaper.png
-```
-
-## License
-
-Part of ShedOS - https://github.com/Theshedman/shedos
+The original geometric wallpapers (`shedos-default.png`,
+`shedos-dark.png`, `dusk.png`, `eclipse.png`, …) remain available in
+the picker. The BRAND colors are defined in
+`branding/new_assets/ShedOS-Color palette.pdf` (Electric Blue
+`#007FFF`, Pure White, Alert Red, Classic Black).
