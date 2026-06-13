@@ -27,7 +27,12 @@ makedepends=(
     'scdoc'            # renders man/*.scd → man1
 )
 depends=(
-    'shedos-system'
+    # Version floor: the Lua Hyprland config dofile()s
+    # /etc/shedos/themes/current/palette.lua, which only shedos-system
+    # >=2026.05.17 renders. Pinning it forbids the half-update where the
+    # new config meets an old renderer — that mismatch falls back to
+    # hardcoded Mocha (wrong palette) instead of the themed one.
+    'shedos-system>=2026.05.17'
     'hyprland'
     'waybar'
     'walker'
