@@ -103,6 +103,7 @@ _strip_shedos_prod_blocks() {
     [[ -f /etc/pacman.conf ]] || return 0
     sed -i \
         -e '/^# >>> shedos <<<$/,/^# <<< shedos >>>$/d' \
+        -e '/^# >>> shedostest <<<$/,/^# <<< shedostest >>>$/d' \
         -e '/^# >>> shedos-testing <<<$/,/^# <<< shedos-testing >>>$/d' \
         /etc/pacman.conf
 }

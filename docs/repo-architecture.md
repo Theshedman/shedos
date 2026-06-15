@@ -96,9 +96,12 @@ serve both channels post-promotion.
 the path-segmented migration.
 
 Users opt into the testing channel by uncommenting the
-`[shedos-testing]` block that `shedos-system`'s install scriptlet
-wrote into `/etc/pacman.conf`. See `docs/upgrading.md` for the
-walkthrough.
+`[shedostest]` block that `shedos-system`'s install scriptlet
+wrote into `/etc/pacman.conf`. Its DB is published as
+`shedostest.db` alongside `shedos.db` on `/test/` — the section
+name must match the DB filename, and `/test/` keeps `shedos.db`
+too for RC-ISO installs whose `[shedos]` already tracks `/test`.
+See `docs/upgrading.md` for the walkthrough.
 
 **Why `/iso/` is flat.** An earlier layout nested by tag
 (`/iso/v<tag>/<file>`). That worked but made browsing harder and

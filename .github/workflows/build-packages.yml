@@ -552,6 +552,15 @@ jobs:
           else
               echo "Push or RC tag: publishing dist/x86_64/ → /test/x86_64/"
               rclone sync dist/x86_64/ "r2:$R2_BUCKET/test/x86_64/" --progress
+              # Mirror the DB under the [shedostest] name on /test only, so a
+              # stable box can opt into the canary by enabling [shedostest]
+              # (pacman fetches <repo>.db). Same bytes, signature still valid.
+              # Kept out of dist/ so the /rc snapshot and /stable stay clean.
+              for ext in db db.sig files files.sig; do
+                  [[ -f "dist/x86_64/shedos.$ext" ]] \
+                      && rclone copyto "dist/x86_64/shedos.$ext" \
+                          "r2:$R2_BUCKET/test/x86_64/shedostest.$ext"
+              done
               if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
                   echo "RC tag $GITHUB_REF_NAME: freezing snapshot at /rc/$GITHUB_REF_NAME/x86_64/"
                   rclone copy dist/x86_64/ "r2:$R2_BUCKET/rc/$GITHUB_REF_NAME/x86_64/" --progress

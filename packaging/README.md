@@ -40,7 +40,7 @@ confuse, so:
 |---|---|---|
 | `[shedos-repo]` | `archiso/shedos-repo/` on the build host (ephemeral) | Holds AUR + shedos-* packages pre-built during ISO assembly so `mkarchiso` can resolve them via `file://`. Never shipped. |
 | `[shedos]` (stable) | `https://repo.shedos.org/stable/$arch` (signed, persistent, on R2) | The production repo. Installed systems pull `pacman -Syu` from here. Updated only on stable tag promotions. |
-| `[shedos-testing]` | `https://repo.shedos.org/test/$arch` | Always-fresh channel. Receives every push to `main` and every RC. Stable tag promotes its contents to `[shedos]` (no rebuild). |
+| `[shedostest]` | `https://repo.shedos.org/test/$arch` (DB published as `shedostest.db`) | Always-fresh channel. Receives every push to `main` and every RC. Stable tag promotes its contents to `[shedos]` (no rebuild). |
 
 The ISO's `/etc/pacman.conf` has both blocks during `mkarchiso`. The
 installed system only has `[shedos]` — `shedos-system`'s `post_install`

@@ -468,11 +468,11 @@ that receives RC packages (built from `v<date>-rcN` tags) before they
 reach the stable repo. Stable cuts also publish to the testing
 channel, so opting in only changes behavior during RC windows.
 
-To opt in, add a `[pacman.repos.shedos-testing]` stanza to
+To opt in, add a `[pacman.repos.shedostest]` stanza to
 `/etc/shedos/system.toml`:
 
 ```toml
-[pacman.repos.shedos-testing]
+[pacman.repos.shedostest]
 server   = "https://repo.shedos.org/test/$arch"
 siglevel = "Required DatabaseRequired"
 ```
@@ -483,13 +483,13 @@ packages from the testing repo when they're newer than what's in
 stable.
 
 To opt back out, remove the stanza from `system.toml` and re-apply:
-`shedman apply` strips the `[shedos-testing]` block from
+`shedman apply` strips the `[shedostest]` block from
 `pacman.conf`. Already-installed RC packages stay installed (they're
 just regular packages from pacman's perspective); the next stable
 cut overwrites them.
 
 > Alternatively, the `shedos-system` install scriptlet writes a
-> commented-out `[shedos-testing]` block to `/etc/pacman.conf`. You
+> commented-out `[shedostest]` block to `/etc/pacman.conf`. You
 > can uncomment that block by hand if you'd rather not go through
 > `shedman apply`.
 
