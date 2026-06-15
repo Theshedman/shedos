@@ -11,8 +11,8 @@
 # as the source of truth for "what's on a fresh install".
 
 pkgname=shedos-meta
-pkgver=2026.05.17
-pkgrel=3
+pkgver=2026.06.15
+pkgrel=2
 pkgdesc='ShedOS meta-package — installs the full default ShedOS environment'
 arch=('any')
 url='https://github.com/Theshedman/shedos'
@@ -874,6 +874,7 @@ depends=(
     'perl-libwww'
     'perl-lwp-mediatypes'
     'perl-mailtools'
+    'perl-mime-base32'
     'perl-net-http'
     'perl-timedate'
     'perl-try-tiny'
