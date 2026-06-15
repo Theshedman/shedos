@@ -1,7 +1,13 @@
 ---
 import BaseLayout from "~/layouts/BaseLayout.astro";
-import DownloadBox from "~/components/DownloadBox.astro";
-import DownloadSteps from "~/components/DownloadSteps.astro";
+import Section from "~/components/Section.astro";
+import Eyebrow from "~/components/Eyebrow.astro";
+import Btn from "~/components/Btn.astro";
+import Dlbox from "~/components/Dlbox.astro";
+import Terminal from "~/components/Terminal.astro";
+import TermStep from "~/components/TermStep.astro";
+import AltCard from "~/components/AltCard.astro";
+import Callout from "~/components/Callout.astro";
 import {
     STABLE_VERSION,
     STABLE_ISO_NAME,
@@ -24,115 +30,209 @@ const hasStable =
 
 const hasRc =
     !!RC_VERSION && !!RC_ISO_NAME && !!RC_ISO_URL && !!RC_SHA256_URL;
+
+const stableShaName = `${STABLE_ISO_NAME}.sha256`;
+const rcShaName = `${RC_ISO_NAME}.sha256`;
+
+const alts = [
+    {
+        name: "balenaEtcher",
+        href: "https://etcher.balena.io",
+        platforms: ["Windows", "macOS", "Linux"],
+        desc: "Point-and-click image writer — the easy choice on Windows and macOS.",
+    },
+    {
+        name: "Rufus",
+        href: "https://rufus.ie",
+        platforms: ["Windows"],
+        desc: "The classic Windows USB writer: tiny, fast, no install.",
+    },
+    {
+        name: "Ventoy",
+        href: "https://www.ventoy.net",
+        platforms: ["Windows", "Linux"],
+        desc: "Keep several ISOs on one stick and pick which to boot.",
+    },
+    {
+        name: "GNOME Disks",
+        href: "https://apps.gnome.org/DiskUtility/",
+        platforms: ["Linux"],
+        desc: "Already on GNOME systems — its “Restore Disk Image…” action.",
+    },
+    {
+        name: "Impression",
+        href: "https://apps.gnome.org/Impression/",
+        platforms: ["Linux"],
+        desc: "A focused, modern GTK image writer.",
+    },
+    {
+        name: "Popsicle",
+        href: "https://github.com/pop-os/popsicle",
+        platforms: ["Linux"],
+        desc: "Pop!_OS's flasher — writes to several sticks at once.",
+    },
+];
 ---
 <BaseLayout
     title="Download"
     description="Download the latest ShedOS ISO with a verifiable SHA-256."
 >
-    <div class="mx-auto max-w-[56rem] px-4 pt-16 pb-20 sm:px-6">
-        <h1 class="mb-3 text-4xl font-bold tracking-tight sm:text-5xl">Download</h1>
-        <p class="mb-10 max-w-2xl text-[color:var(--color-muted)]">
-            The latest ShedOS ISO, with a SHA-256 you can check before you
-            flash it.
-        </p>
+    <section class="grid-bg" style="border-bottom:1px solid var(--border);">
+        <div class="container page-head">
+            <Eyebrow>Download</Eyebrow>
+            <h1 style="margin-top:.9rem;">Get ShedOS</h1>
+            <p class="lead">The latest ShedOS ISO, with a SHA-256 you can check before you flash it.</p>
+        </div>
+    </section>
 
-        {hasStable && (
-            <DownloadBox
-                label="Stable"
-                version={STABLE_VERSION!}
-                isoName={STABLE_ISO_NAME!}
-                isoUrl={STABLE_ISO_URL!}
-                sha256={STABLE_SHA256}
-                sha256Url={STABLE_SHA256_URL!}
-                tone="primary"
-            />
-        )}
-
-        {hasRc && (
-            <div class="mt-10">
-                <div class="mb-3 flex items-baseline justify-between gap-4">
-                    <h2 class="text-xl font-semibold">Testing build</h2>
-                    <p class="text-sm text-[color:var(--color-muted)]">
-                        The next release, a little early.
-                    </p>
-                </div>
-                <DownloadBox
-                    label="Testing"
-                    version={RC_VERSION!}
-                    isoName={RC_ISO_NAME!}
-                    isoUrl={RC_ISO_URL!}
-                    sha256={RC_SHA256}
-                    sha256Url={RC_SHA256_URL!}
-                    tone="muted"
-                />
-                <p class="mt-3 text-sm text-[color:var(--color-muted)]">
-                    A testing ISO appears here only while a release candidate is
-                    newer than the current stable. A system installed from it
-                    tracks the testing channel, so the next release gets real
-                    use before it's promoted — the same packages, a week or two
-                    ahead. Found something? Report it on{" "}
-                    <a class="underline" href="https://github.com/Theshedman/shedos/issues">GitHub</a>.
-                    To move back to stable, reinstall from a stable ISO.
-                </p>
-            </div>
-        )}
-
-        <section class="mt-16">
-            <h2 class="text-xl font-semibold">System requirements</h2>
-            <div class="mt-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-                <ul class="grid gap-2 text-sm text-[color:var(--color-muted)] md:grid-cols-2">
-                    <li><strong class="text-[color:var(--color-text)]">CPU:</strong> any x86_64 processor.</li>
-                    <li><strong class="text-[color:var(--color-text)]">RAM:</strong> 8 GB recommended (the installer requires 6 GB usable).</li>
-                    <li><strong class="text-[color:var(--color-text)]">Disk:</strong> 20 GB minimum; SSD recommended.</li>
-                    <li><strong class="text-[color:var(--color-text)]">Firmware:</strong> UEFI or legacy BIOS; GPT disks on both.</li>
-                </ul>
-            </div>
-        </section>
-
-        <section class="mt-16">
-            <h2 class="text-xl font-semibold">Make the install USB</h2>
-            <p class="mt-3 max-w-2xl text-[color:var(--color-muted)]">
-                Four commands from a fresh download to a bootable stick — these
-                use the current stable release, v{STABLE_VERSION}. Copy each step
-                with the button on its right.
-            </p>
+    <section class="section" style="padding-top:3rem;">
+        <div class="container" style="max-width:60rem;">
             {hasStable && (
-                <div class="mt-6">
-                    <DownloadSteps
-                        isoName={STABLE_ISO_NAME!}
-                        isoUrl={STABLE_ISO_URL!}
-                        sha256Url={STABLE_SHA256_URL!}
-                    />
+                <div class="dlbox primary">
+                    <div class="dlbox-head">
+                        <div>
+                            <div class="label">Stable</div>
+                            <div class="ver" style="margin-top:.35rem;">ShedOS v{STABLE_VERSION}</div>
+                            <div class="iso">{STABLE_ISO_NAME}</div>
+                        </div>
+                        <a class="btn btn-primary" href={STABLE_ISO_URL}>
+                            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 3a1 1 0 0 1 1 1v7.586l2.293-2.293a1 1 0 0 1 1.414 1.414l-4 4a1 1 0 0 1-1.414 0l-4-4a1 1 0 1 1 1.414-1.414L9 11.586V4a1 1 0 0 1 1-1Zm-6 12a1 1 0 0 1 1-1h10a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1Z"/></svg>
+                            Download ISO
+                        </a>
+                    </div>
+                    <div class="dlbox-body">
+                        <div class="sha">
+                            <span class="mono" style="color:var(--text);font-weight:600;">SHA-256</span>
+                            {STABLE_SHA256 ? (
+                                <code>{STABLE_SHA256}</code>
+                            ) : (
+                                <a class="mono" href={STABLE_SHA256_URL} style="font-size:.78rem;">fetch from the .sha256 sibling to verify</a>
+                            )}
+                            <a class="mono" href={STABLE_SHA256_URL} style="font-size:.78rem;">.sha256 ↓</a>
+                        </div>
+                    </div>
                 </div>
             )}
-            <p class="mt-6 max-w-2xl text-sm text-[color:var(--color-muted)]">
-                Then boot the USB and follow the installer: it partitions the
-                disk into Btrfs subvolumes, sets up optional full-disk
-                encryption, creates your user and Git identity, sets the locale,
-                and detects NVIDIA GPUs and any other installed system for
-                dual-boot. The full walkthrough is in
-                <a class="underline" href="/docs/getting-started">Getting started</a>.
-            </p>
-        </section>
+            <p class="muted" style="margin-top:1rem;font-size:.9rem;">ShedOS is a rolling release — a testing ISO appears here only while a release candidate is newer than the current stable.</p>
 
-        <section class="mt-16">
-            <h2 class="text-xl font-semibold">Already installed?</h2>
-            <p class="mt-3 max-w-2xl text-[color:var(--color-muted)]">
-                ShedOS is a rolling release — you don't need a new ISO.
-                <a class="underline" href="/docs/upgrading">Upgrading</a> covers
-                how the in-place update works.
-            </p>
-        </section>
+            {hasRc && (
+                <div class="dlbox" style="margin-top:1.6rem;">
+                    <div class="dlbox-head">
+                        <div>
+                            <div class="label">Testing</div>
+                            <div class="ver" style="margin-top:.35rem;">ShedOS v{RC_VERSION}</div>
+                            <div class="iso">{RC_ISO_NAME}</div>
+                        </div>
+                        <a class="btn btn-ghost" href={RC_ISO_URL}>
+                            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 3a1 1 0 0 1 1 1v7.586l2.293-2.293a1 1 0 0 1 1.414 1.414l-4 4a1 1 0 0 1-1.414 0l-4-4a1 1 0 1 1 1.414-1.414L9 11.586V4a1 1 0 0 1 1-1Zm-6 12a1 1 0 0 1 1-1h10a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1Z"/></svg>
+                            Download ISO
+                        </a>
+                    </div>
+                    <div class="dlbox-body">
+                        <div class="sha">
+                            <span class="mono" style="color:var(--text);font-weight:600;">SHA-256</span>
+                            {RC_SHA256 ? (
+                                <code>{RC_SHA256}</code>
+                            ) : (
+                                <a class="mono" href={RC_SHA256_URL} style="font-size:.78rem;">fetch from the .sha256 sibling to verify</a>
+                            )}
+                            <a class="mono" href={RC_SHA256_URL} style="font-size:.78rem;">.sha256 ↓</a>
+                        </div>
+                    </div>
+                    <p class="muted" style="margin-top:1rem;font-size:.9rem;padding:0 1.6rem 1.2rem;">A system installed from the testing ISO tracks the testing channel, so the next release gets real use before it's promoted — the same packages, a week or two ahead. Found something? Report it on <a href="https://github.com/Theshedman/shedos/issues">GitHub</a>. To move back to stable, reinstall from a stable ISO.</p>
+                </div>
+            )}
+        </div>
+    </section>
 
-        <section class="mt-16">
-            <h2 class="text-xl font-semibold">Already on Arch?</h2>
-            <p class="mt-3 max-w-2xl text-[color:var(--color-muted)]">
-                <code class="code-inline">shedman migrate --from-arch</code>
-                adopts an existing Arch install in place — it trusts the signing
-                key, adds the ShedOS repository, and installs the stack, without
-                reinstalling. It runs as a dry run until you pass
-                <code class="code-inline">--yes</code>.
-            </p>
-        </section>
-    </div>
+    <section class="section bordered">
+        <div class="container" style="max-width:60rem;">
+            <h2 style="font-size:1.4rem;">System requirements</h2>
+            <div class="dlbox" style="margin-top:1.2rem;padding:1.4rem 1.6rem;">
+                <ul class="reqs">
+                    <li><strong>CPU:</strong> any x86_64 processor.</li>
+                    <li><strong>RAM:</strong> 8 GB recommended (installer requires 6 GB usable).</li>
+                    <li><strong>Disk:</strong> 20 GB minimum; SSD recommended.</li>
+                    <li><strong>Firmware:</strong> UEFI or legacy BIOS; GPT disks on both.</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container" style="max-width:60rem;">
+            <h2 style="font-size:1.4rem;">Make the install USB</h2>
+            <p class="muted" style="margin-top:.7rem;max-width:42rem;">Four steps from a fresh download to a bootable stick — these use the current stable release, v{STABLE_VERSION}. Copy each step with the button on its right.</p>
+
+            <div style="margin-top:1.6rem;">
+                <div class="dlsteps-skip">Already have the ISO — say, from the Download button above? Skip step 1 and start at step 2.</div>
+                <Terminal title="you@shedos — ~/Downloads">
+                    <TermStep copy={`curl -fL --retry 5 --retry-all-errors -C - -O ${STABLE_ISO_URL}`}>
+                        <div class="cmt"># 1 · Download the latest ShedOS stable ISO</div>
+                        <div class="term-pline"><span class="t-conn">╭─</span> <span class="t-dir">~/Downloads</span></div>
+                        <div class="term-cline"><span class="t-conn">╰─</span><span class="t-arr">❯</span> <span class="cmd">curl -fL --retry 5 --retry-all-errors -C - -O \
+     {STABLE_ISO_URL}</span></div>
+                        <div class="term-out"><div class="term-outline">######################################################### 100.0%</div></div>
+                    </TermStep>
+                    <TermStep copy={`curl -fLO ${STABLE_SHA256_URL}\nsha256sum -c ${stableShaName}`}>
+                        <div class="cmt"># 2 · Verify it against the published checksum</div>
+                        <div class="term-pline"><span class="t-conn">╭─</span> <span class="t-dir">~/Downloads</span></div>
+                        <div class="term-cline"><span class="t-conn">╰─</span><span class="t-arr">❯</span> <span class="cmd">curl -fLO {STABLE_SHA256_URL}</span></div>
+                        <div class="term-pline"><span class="t-conn">╭─</span> <span class="t-dir">~/Downloads</span></div>
+                        <div class="term-cline"><span class="t-conn">╰─</span><span class="t-arr">❯</span> <span class="cmd">sha256sum -c {stableShaName}</span></div>
+                        <div class="term-out"><div class="term-outline"><span class="t-out">{STABLE_ISO_NAME}</span><span class="t-ok">: OK</span></div></div>
+                    </TermStep>
+                    <TermStep copy="lsblk -o NAME,SIZE,TYPE,MOUNTPOINTS">
+                        <div class="cmt"># 3 · Find your USB stick — not your system disk</div>
+                        <div class="term-pline"><span class="t-conn">╭─</span> <span class="t-dir">~/Downloads</span></div>
+                        <div class="term-cline"><span class="t-conn">╰─</span><span class="t-arr">❯</span> <span class="cmd">lsblk -o NAME,SIZE,TYPE,MOUNTPOINTS</span></div>
+                        <div class="term-out"><div class="term-outline"><span class="t-out">NAME          SIZE TYPE MOUNTPOINTS</span></div><div class="term-outline"><span class="t-out">nvme0n1     476.9G disk             </span><span class="t-note">← system disk — leave it alone</span></div><div class="term-outline"><span class="t-out">├─nvme0n1p1     1G part /boot</span></div><div class="term-outline"><span class="t-out">└─nvme0n1p2 475.9G part /</span></div><div class="term-outline"><span class="t-out">sdb          28.9G disk             </span><span class="t-note">← your USB stick (the size matches)</span></div><div class="term-outline"><span class="t-out">└─sdb1       28.9G part /run/media/you/SHEDOS</span></div></div>
+                    </TermStep>
+                    <TermStep copy={`sudo dd if=${STABLE_ISO_NAME} of=/dev/sdb bs=4M conv=fsync oflag=direct status=progress\nsync`}>
+                        <div class="cmt"># 4 · Write the ISO to the stick — this erases it</div>
+                        <div class="term-pline"><span class="t-conn">╭─</span> <span class="t-dir">~/Downloads</span></div>
+                        <div class="term-cline"><span class="t-conn">╰─</span><span class="t-arr">❯</span> <span class="cmd">sudo dd if={STABLE_ISO_NAME} of=/dev/sdb bs=4M conv=fsync oflag=direct status=progress</span></div>
+                        <div class="term-out"><div class="term-outline">2671771648 bytes (2.7 GB, 2.5 GiB) copied, 49 s, 54.5 MB/s</div></div>
+                        <div class="term-pline"><span class="t-conn">╭─</span> <span class="t-dir">~/Downloads</span></div>
+                        <div class="term-cline"><span class="t-conn">╰─</span><span class="t-arr">❯</span> <span class="cmd">sync</span></div>
+                    </TermStep>
+                </Terminal>
+
+                <div class="usb-notes">
+                    <Callout variant="note" label="Which one is the USB? (step 3)">Your system disk is the one with partitions mounted on <code class="code-inline">/</code> and <code class="code-inline">/boot</code> — usually the big internal <code class="code-inline">nvme0n1</code> or <code class="code-inline">sda</code>. The USB stick is the device that only shows up once you plug it in, and its size matches the stick. Write to the whole disk (<code class="code-inline">/dev/sdb</code>), never a partition (<code class="code-inline">/dev/sdb1</code>).</Callout>
+                    <Callout variant="warn" label="dd won't ask twice">It writes straight to whatever <code class="code-inline">of=</code> names. Read the device back before you press enter — aim it at the wrong disk and you overwrite the one you're working from, with no undo.</Callout>
+                </div>
+
+                <div class="alts">
+                    <h3>Rather not use the terminal?</h3>
+                    <div class="sub"><code class="code-inline">dd</code> is the Linux and macOS route — there's no <code class="code-inline">dd</code> on Windows. Coming from Windows, or if you'd just rather click, any of these writes the same ISO. Each opens in a new tab.</div>
+                    <div class="alt-grid">
+                        {alts.map((a) => (
+                            <AltCard name={a.name} href={a.href} platforms={a.platforms} desc={a.desc} />
+                        ))}
+                    </div>
+                    <div class="foot">On Linux or macOS you can skip <code class="code-inline">dd</code> from the terminal too: the image is a hybrid ISO, so <code class="code-inline">cp {STABLE_ISO_NAME} /dev/sdb &amp;&amp; sync</code> works.</div>
+                </div>
+            </div>
+
+            <p class="muted" style="margin-top:1.5rem;max-width:46rem;font-size:.92rem;">Then boot the USB and follow the installer: it partitions the disk into Btrfs subvolumes, sets up optional full-disk encryption, creates your user and Git identity, sets the locale, and detects NVIDIA GPUs and any other installed system for dual-boot. The full walkthrough is in <a href="/docs/getting-started">Getting started</a>.</p>
+        </div>
+    </section>
+
+    <section class="section bordered">
+        <div class="container" style="max-width:60rem;">
+            <div class="cards cols-2" style="gap:2rem;">
+                <div>
+                    <h2 style="font-size:1.25rem;">Already installed?</h2>
+                    <p class="muted" style="margin-top:.7rem;">ShedOS is a rolling release — you don't need a new ISO. <a href="/docs/upgrading">Upgrading</a> covers how the in-place update works.</p>
+                </div>
+                <div>
+                    <h2 style="font-size:1.25rem;">Already on Arch?</h2>
+                    <p class="muted" style="margin-top:.7rem;"><code class="code-inline">shedman migrate --from-arch</code> adopts an existing Arch install in place — it trusts the signing key, adds the ShedOS repository, and installs the stack, without reinstalling. It runs as a dry run until you pass <code class="code-inline">--yes</code>.</p>
+                </div>
+            </div>
+        </div>
+    </section>
 </BaseLayout>
+</content>
+</invoke>
