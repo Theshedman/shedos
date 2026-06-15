@@ -318,6 +318,43 @@ jobs:
           pacman -S --needed --noconfirm qemu-base libarchive util-linux
           scripts/boot-assert.sh "out/$ISO_NAME"
 
+      - name: Build the base install image
+        # Mirror the Calamares install onto a qcow2 from the same squashfs
+        # this ISO ships, so the boot harnesses below run against a real
+        # installed ShedOS. The privileged container has nbd + chroot.
+        run: |
+          pacman -S --needed --noconfirm edk2-ovmf libguestfs squashfs-tools \
+            socat libisoburn btrfs-progs dosfstools gptfdisk limine \
+            arch-install-scripts qemu-img
+          modprobe nbd max_part=8 || true
+          SHEDOS_ISO="out/$ISO_NAME" SHEDOS_BASE_IMAGE_OUT=out/base.qcow2 \
+            scripts/build-base-image.sh
+
+      - name: Emergency-recovery gate
+        # A missing-disk fstab on a real installed image must drop to the
+        # guided tool, and its fix must boot through to multi-user. Serial
+        # only, so it tolerates TCG like boot-assert.
+        run: |
+          SHEDOS_EMERGENCY_TEST_IMAGE=out/base.qcow2 scripts/emergency-boot-assert.sh
+
+      - name: Live + installed lock gate
+        # Proves any-key-unlock on the live ISO and password-required on
+        # disk. New and graphical (headless Wayland in QEMU), so it reports
+        # without blocking until it is proven green on a dispatch run; drop
+        # continue-on-error to make it a hard gate once it is.
+        continue-on-error: true
+        run: |
+          SHEDOS_LIVE_ISO="out/$ISO_NAME" SHEDOS_INSTALLED_IMAGE=out/base.qcow2 \
+            scripts/live-iso-lock-assert.sh
+
+      - name: Upload lock-harness artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lock-harness-artifacts
+          path: out/lock-artifacts/*.ppm
+          if-no-files-found: ignore
+
       - name: Upload ISO to R2
         # workflow_dispatch from a branch must stay private: an
         # un-tagged build would publish shedos-main-x86_64.iso, the
