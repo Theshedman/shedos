@@ -343,6 +343,9 @@ jobs:
         # on disk. Non-blocking so a failure can't stop publishing.
         continue-on-error: true
         run: |
+          # virtio-gpu-gl-pci + egl-headless need the GL/EGL/virgl runtime
+          # that qemu-base doesn't pull; without it qemu exits at startup.
+          pacman -S --needed --noconfirm virglrenderer mesa libglvnd
           SHEDOS_LIVE_ISO="out/$ISO_NAME" SHEDOS_INSTALLED_IMAGE=out/base.qcow2 \
             scripts/live-iso-lock-assert.sh
 
@@ -351,7 +354,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: lock-harness-artifacts
-          path: out/lock-artifacts/*.ppm
+          path: out/lock-artifacts/*
           if-no-files-found: ignore
 
       - name: Upload ISO to R2
