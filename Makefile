@@ -369,18 +369,8 @@ prepare: check-root check-deps generate-packages
 	@mkdir -p $(BUILD_DIR)/airootfs/etc
 	@cp branding/issue $(BUILD_DIR)/airootfs/etc/issue
 	@cp branding/motd $(BUILD_DIR)/airootfs/etc/motd
-	@# Bake Claude Code into /etc/skel from the official installer (pinned).
-	@# The installer's launcher is an absolute symlink; we relativize it so
-	@# it resolves under each user's $$HOME. Inert bytes in the squashfs.
 	@echo -e "$(GREEN)Baking Claude Code $(CLAUDE_CODE_VERSION) into /etc/skel...$(NC)"
-	@rm -rf $(BUILD_DIR)/claude-stage && mkdir -p $(BUILD_DIR)/claude-stage
-	@HOME=$(abspath $(BUILD_DIR))/claude-stage bash -c 'curl -fsSL https://claude.ai/install.sh | bash -s $(CLAUDE_CODE_VERSION)'
-	@test -d $(BUILD_DIR)/claude-stage/.local/share/claude/versions/$(CLAUDE_CODE_VERSION) \
-		|| { echo -e "$(RED)Claude Code $(CLAUDE_CODE_VERSION) did not install$(NC)" >&2; exit 1; }
-	@mkdir -p $(BUILD_DIR)/airootfs/etc/skel/.local/bin $(BUILD_DIR)/airootfs/etc/skel/.local/share
-	@cp -a $(BUILD_DIR)/claude-stage/.local/share/claude $(BUILD_DIR)/airootfs/etc/skel/.local/share/claude
-	@ln -sfn ../share/claude/versions/$(CLAUDE_CODE_VERSION) $(BUILD_DIR)/airootfs/etc/skel/.local/bin/claude
-	@rm -rf $(BUILD_DIR)/claude-stage
+	@bash scripts/bake-claude-code.sh $(CLAUDE_CODE_VERSION) $(BUILD_DIR)/airootfs/etc/skel
 	@# Calamares installer configuration
 	@mkdir -p $(BUILD_DIR)/airootfs/etc/calamares
 	@cp installer/calamares/settings.conf $(BUILD_DIR)/airootfs/etc/calamares/ 2>/dev/null || true
