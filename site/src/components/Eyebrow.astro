@@ -1,0 +1,7 @@
+---
+interface Props {
+  noRule?: boolean;
+}
+const { noRule } = Astro.props;
+---
+<span class:list={["eyebrow", noRule && "no-rule"]}><slot /></span>

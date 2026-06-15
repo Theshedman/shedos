@@ -1,0 +1,14 @@
+---
+interface Props {
+  surface?: boolean;
+  bordered?: boolean;
+  grid?: boolean;
+  id?: string;
+}
+const { surface, bordered, grid, id } = Astro.props;
+---
+<section id={id} class:list={["section", surface && "surface", bordered && "bordered", grid && "grid-bg"]}>
+  <div class="container">
+    <slot />
+  </div>
+</section>

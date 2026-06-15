@@ -1,0 +1,9 @@
+---
+import { STABLE_VERSION } from "~/generated/version.ts";
+
+interface Props {
+  version?: string;
+}
+const { version = STABLE_VERSION } = Astro.props;
+---
+<span class="version-pill"><span class="dot"></span><span class="v">v{version}</span><span class="sep"></span>Stable</span>
