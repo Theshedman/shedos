@@ -1,94 +1,152 @@
 ---
 import BaseLayout from "~/layouts/BaseLayout.astro";
-import Hero from "~/components/Hero.astro";
-import FeatureGrid from "~/components/FeatureGrid.astro";
-import SecondaryCTA from "~/components/SecondaryCTA.astro";
-
-const shots = [
-    {
-        title: "Three-way merge for config conflicts",
-        body: "When your edits and an upstream change touch the same file, ShedOS shows both and lets you merge them hunk by hunk, instead of choosing one version wholesale.",
-        img: "/screenshots/10-merge.webp",
-        alt: "The shedman config review tool showing a three-way merge of a configuration file.",
-    },
-    {
-        title: "The system in one file",
-        body: '<code class="code-inline">/etc/shedos/system.toml</code> describes services, the firewall, kernel options, users, and the theme. Run <code class="code-inline">shedman apply</code> and the machine matches what it says.',
-        img: "/screenshots/11-config.webp",
-        alt: "system.toml open in an editor, declaring system services and settings.",
-    },
-    {
-        title: "A configured environment",
-        body: "Editors, language runtimes, and containers are installed and configured before your first login.",
-        img: "/screenshots/08-terminal.webp",
-        alt: "A ShedOS terminal running the shedman CLI alongside an editor.",
-    },
-];
+import Section from "~/components/Section.astro";
+import Eyebrow from "~/components/Eyebrow.astro";
+import Btn from "~/components/Btn.astro";
+import VersionPill from "~/components/VersionPill.astro";
+import Frame from "~/components/Frame.astro";
+import CardGrid from "~/components/CardGrid.astro";
+import Card from "~/components/Card.astro";
+import Showcase from "~/components/Showcase.astro";
+import TechGrid from "~/components/TechGrid.astro";
+import CtaBand from "~/components/CtaBand.astro";
+import Terminal from "~/components/Terminal.astro";
 ---
-<BaseLayout title="ShedOS">
-    <Hero />
-    <section aria-label="The ShedOS desktop">
-        <div class="mx-auto max-w-[72rem] px-4 pb-8 sm:px-6">
-            <figure
-                class="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl shadow-black/20"
-            >
-                <img
-                    src="/screenshots/01-desktop.webp"
-                    width="1920"
-                    height="1080"
-                    alt="The ShedOS desktop: a tiling Hyprland session with waybar, a themed terminal, and the application launcher."
-                    class="block w-full zoomable"
-                    loading="lazy"
-                    decoding="async"
-                    data-zoom
-                />
-            </figure>
-            <p class="mt-3 text-center text-sm text-[color:var(--color-muted)]">
-                A tiling Hyprland desktop — themed, and ready on first boot.
-            </p>
+<BaseLayout title="ShedOS — the operating system for software developers">
+  <header class="hero grid-bg">
+    <div class="container">
+      <div class="hero-inner">
+        <div>
+          <VersionPill />
+          <h1>The operating system for <span class="accent">software developers</span>.</h1>
+          <p class="hero-lede">
+            ShedOS comes with your editors, language runtimes, containers, and a tiling
+            desktop already configured. The changes you make are preserved across updates,
+            every upgrade can be rolled back, and a boot that fails recovers to the last
+            working snapshot on its own.
+          </p>
+          <div class="hero-cta">
+            <Btn href="download.html">
+              <svg slot="icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 3a1 1 0 0 1 1 1v7.586l2.293-2.293a1 1 0 0 1 1.414 1.414l-4 4a1 1 0 0 1-1.414 0l-4-4a1 1 0 1 1 1.414-1.414L9 11.586V4a1 1 0 0 1 1-1Zm-6 12a1 1 0 0 1 1-1h10a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1Z"/></svg>
+              Download
+            </Btn>
+            <Btn href="features.html" variant="ghost">Learn more</Btn>
+          </div>
         </div>
-    </section>
-    <FeatureGrid />
-    <section
-        aria-label="Inside ShedOS"
-        class="border-t border-[var(--color-border)]"
-    >
-        <div class="mx-auto max-w-[72rem] px-4 py-20 sm:px-6">
-            <div class="flex flex-col gap-16 sm:gap-24">
-                {
-                    shots.map((s, i) => (
-                        <div class="grid items-center gap-8 md:grid-cols-2 md:gap-12">
-                            <figure
-                                class:list={[
-                                    "overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl shadow-black/10",
-                                    i % 2 === 1 && "md:order-2",
-                                ]}
-                            >
-                                <img
-                                    src={s.img}
-                                    width="1920"
-                                    height="1080"
-                                    alt={s.alt}
-                                    class="block w-full zoomable"
-                                    loading="lazy"
-                                    decoding="async"
-                                    data-zoom
-                                />
-                            </figure>
-                            <div class:list={[i % 2 === 1 && "md:order-1"]}>
-                                <h3 class="text-xl font-semibold tracking-tight sm:text-2xl">
-                                    {s.title}
-                                </h3>
-                                <p
-                                    class="mt-3 leading-relaxed text-[color:var(--color-muted)]"
-                                    set:html={s.body}
-                                ></p>
-                            </div>
-                        </div>
-                    ))
-                }
-            </div>
-        </div>
-    </section>
-    <SecondaryCTA />
+
+        <Terminal title="ada@shed — shedman">
+<span class="term-line"><span class="dir">~</span> <span class="blue">❯</span> <span class="cmd">shedman update</span></span>
+<span class="term-line"><span class="out">:: Synchronizing package databases…</span></span>
+<span class="term-line"><span class="out">:: 23 packages to upgrade  (pacman 18 · yay 5)</span></span>
+<span class="term-line"><span class="ok">::</span> <span class="note">snapshot #143 created — pre-upgrade</span></span>
+<span class="term-line"><span class="out">==> proceed? [Y/n]</span> <span class="cmd">y</span></span>
+<span class="term-line">   <span class="blue">hyprland</span> <span class="arr">→</span> 0.50.0</span>
+<span class="term-line">   <span class="blue">mesa    </span> <span class="arr">→</span> 25.0.2</span>
+<span class="term-line">   <span class="blue">firefox </span> <span class="arr">→</span> 139.0</span>
+<span class="term-line"><span class="ok">✓ ShedOS updated.</span> <span class="out">roll back any time:</span></span>
+<span class="term-line">   <span class="cmd">shedman rollback 143</span></span>
+        </Terminal>
+      </div>
+    </div>
+  </header>
+
+  <section class="section" style="padding-top:3.5rem;padding-bottom:3.5rem;" aria-label="The ShedOS desktop">
+    <div class="container">
+      <Frame
+        src="/screenshots/01-desktop.webp"
+        alt="The ShedOS desktop: a tiling Hyprland session with waybar, a dock, and a themed wallpaper."
+      />
+      <p class="center muted" style="margin-top:1rem;font-size:.9rem;">A tiling Hyprland desktop — themed, and ready on first boot.</p>
+    </div>
+  </section>
+
+  <Section surface id="features">
+    <div class="section-head">
+      <Eyebrow>Features</Eyebrow>
+      <h2>Built for software development.</h2>
+      <p>Configured and ready from the first boot — and engineered so you can change anything and recover from everything.</p>
+    </div>
+    <CardGrid cols={2}>
+      <Card idx="01">
+        <svg slot="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 12a9 9 0 0 1-15 6.7L3 16M21 3v5h-5M3 21v-5h5"/></svg>
+        <h3>Non-destructive updates</h3>
+        <p>When an update changes a config file you've edited, ShedOS keeps your version rather than overwriting it, and opens a three-way merge so you decide what stays.</p>
+      </Card>
+      <Card idx="02">
+        <svg slot="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3zM9 12l2 2 4-4"/></svg>
+        <h3>Reversible upgrades</h3>
+        <p>Every upgrade is a Btrfs snapshot, so an unwanted one is a single <code class="code-inline">shedman rollback</code> away. A system that fails to reach the desktop three times in a row boots the last working snapshot on its own.</p>
+      </Card>
+      <Card idx="03">
+        <svg slot="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18v14H3zM3 10h18M10 10v9"/></svg>
+        <h3>Declarative configuration</h3>
+        <p>Services, the firewall, kernel parameters, users, and the theme are described in <code class="code-inline">/etc/shedos/system.toml</code>. <code class="code-inline">shedman apply</code> brings the machine in line with it; <code class="code-inline">shedman doctor</code> reports anything that has drifted.</p>
+      </Card>
+      <Card idx="04">
+        <svg slot="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v12H4zM7 10l3 2-3 2M11 14h6"/></svg>
+        <h3>One command-line tool</h3>
+        <p>Updates, rollbacks, theming, health checks, fingerprint enrollment, and per-project databases are all <code class="code-inline">shedman</code> subcommands, each with its own manual page.</p>
+      </Card>
+    </CardGrid>
+  </Section>
+
+  <Section bordered>
+    <Showcase>
+      <Frame slot="media" src="/screenshots/10-merge.webp" alt="The shedman config review tool showing a three-way merge of a configuration file." />
+      <Eyebrow>Config conflicts</Eyebrow>
+      <h3 style="margin-top:.8rem;">Three-way merge for config conflicts</h3>
+      <p>When your edits and an upstream change touch the same file, ShedOS shows both and lets you merge them hunk by hunk, instead of choosing one version wholesale.</p>
+    </Showcase>
+
+    <Showcase flip>
+      <Frame slot="media" src="/screenshots/11-config.webp" alt="system.toml open in an editor, declaring system services and settings." />
+      <Eyebrow>Declarative</Eyebrow>
+      <h3 style="margin-top:.8rem;">The system in one file</h3>
+      <p><code class="code-inline">/etc/shedos/system.toml</code> describes services, the firewall, kernel options, users, and the theme. Run <code class="code-inline">shedman apply</code> and the machine matches what it says.</p>
+    </Showcase>
+
+    <Showcase>
+      <Frame slot="media" src="/screenshots/08-terminal.webp" alt="A ShedOS terminal running the shedman CLI alongside an editor." />
+      <Eyebrow>First boot</Eyebrow>
+      <h3 style="margin-top:.8rem;">A configured environment</h3>
+      <p>Editors, language runtimes, and containers are installed and configured before your first login. The first <code class="code-inline">git clone</code> of your day is the first command that isn't already done.</p>
+    </Showcase>
+  </Section>
+
+  <Section surface>
+    <TechGrid
+      cols={[
+        {
+          title: "System",
+          rows: [
+            ["Release model", "Rolling (x86_64)"],
+            ["Compositor", "Hyprland (Wayland)"],
+            ["Shell", "Zsh + Oh My Zsh"],
+            ["Filesystem", "BTRFS with snapshots"],
+            ["Encryption", "LUKS (optional)"],
+          ],
+        },
+        {
+          title: "Developer tools",
+          rows: [
+            ["Editors", "Neovim (LazyVim), VS Code"],
+            ["Runtimes", "Python, Node, Go, Rust, C++"],
+            ["Containers", "Docker, kubectl, minikube, helm"],
+            ["Terminal", "kitty"],
+            ["Browser", "Firefox"],
+          ],
+        },
+      ]}
+    />
+  </Section>
+
+  <Section>
+    <CtaBand grid>
+      <span slot="eyebrow" class="eyebrow no-rule" style="justify-content:center;">Try ShedOS</span>
+      <h2 style="margin-top:.7rem;">Download v2026.05.17, write it to a USB, boot.</h2>
+      <p>A full live desktop runs from the stick — the real Hyprland setup and toolchain. The installer is one click whenever you're convinced.</p>
+      <Btn slot="cta" href="download.html">Download</Btn>
+      <Btn slot="cta" href="https://github.com/Theshedman/shedos" variant="ghost">Source on GitHub</Btn>
+    </CtaBand>
+  </Section>
 </BaseLayout>
