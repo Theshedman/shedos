@@ -1,0 +1,13 @@
+---
+interface Props {
+  grid?: boolean;
+}
+const { grid } = Astro.props;
+---
+<div class:list={["cta-band", grid && "grid-bg"]}>
+  <slot name="eyebrow" />
+  <slot />
+  <div class="hero-cta">
+    <slot name="cta" />
+  </div>
+</div>

@@ -1,0 +1,14 @@
+---
+interface Props {
+  flip?: boolean;
+}
+const { flip } = Astro.props;
+---
+<div class:list={["showcase", flip && "flip"]}>
+  <div class="showcase-media">
+    <slot name="media" />
+  </div>
+  <div>
+    <slot />
+  </div>
+</div>

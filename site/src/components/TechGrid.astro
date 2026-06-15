@@ -1,0 +1,21 @@
+---
+interface Props {
+  cols: { title: string; rows: [string, string][] }[];
+}
+const { cols } = Astro.props;
+---
+<div class="tech-grid">
+  {cols.map((col) => (
+    <div class="tech-col">
+      <h3>{col.title}</h3>
+      <dl>
+        {col.rows.map(([term, detail]) => (
+          <div class="row">
+            <dt>{term}</dt>
+            <dd>{detail}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  ))}
+</div>

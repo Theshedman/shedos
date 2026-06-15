@@ -1,0 +1,23 @@
+---
+interface Props {
+  idx?: string;
+  centered?: boolean;
+  linkcard?: boolean;
+  href?: string;
+  title?: string;
+}
+const { idx, centered, linkcard, href, title } = Astro.props;
+const hasIcon = Astro.slots.has("icon");
+const hasLink = Astro.slots.has("link");
+const Tag = linkcard && href ? "a" : "div";
+---
+<Tag
+  class:list={["card", centered && "centered", linkcard && "linkcard"]}
+  {...(linkcard && href ? { href } : {})}
+>
+  {idx && <div class="idx" style="position:absolute;top:1.7rem;right:1.7rem;">{idx}</div>}
+  {hasIcon && <div class="ico"><slot name="icon" /></div>}
+  {title && <h3>{title}</h3>}
+  <slot />
+  {hasLink && <slot name="link" />}
+</Tag>
