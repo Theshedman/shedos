@@ -4,37 +4,82 @@ description: Download, flash, install, and land on a configured desktop.
 order: 10
 section: Guide
 ---
-import DownloadSteps from "~/components/DownloadSteps.astro";
+import Terminal from "~/components/Terminal.astro";
+import TermStep from "~/components/TermStep.astro";
+import AltCard from "~/components/AltCard.astro";
+import Callout from "~/components/Callout.astro";
 import { STABLE_ISO_NAME, STABLE_ISO_URL, STABLE_SHA256_URL } from "~/generated/version";
 
-ShedOS ships as a single bootable ISO. Flash it to a USB stick, run the
-installer, and reboot into a configured Hyprland desktop with your
-toolchain already installed.
+export const stableShaName = `${STABLE_ISO_NAME}.sha256`;
+
+<h1 style="margin-top:.7rem;">Getting started</h1>
+
+ShedOS ships as a single bootable ISO. Flash it to a USB stick, run the installer, and reboot into a configured Hyprland desktop with your toolchain already installed.
 
 ## Make the install USB
 
-<DownloadSteps
-    isoName={STABLE_ISO_NAME}
-    isoUrl={STABLE_ISO_URL}
-    sha256Url={STABLE_SHA256_URL}
-/>
+<div style="margin:1.2rem 0;">
+    <div class="dlsteps-skip">Already have the ISO — say, from the <a href="/download">Download</a> page? Skip step 1 and start at step 2.</div>
+    <Terminal title="you@shedos — ~/Downloads">
+        <TermStep copy={`curl -fL --retry 5 --retry-all-errors -C - -O ${STABLE_ISO_URL}`}>
+            <div class="cmt"># 1 · Download the latest ShedOS stable ISO</div>
+            <div class="term-pline"><span class="t-conn">╭─</span> <span class="t-dir">{"~/Downloads"}</span></div>
+            <div class="term-cline"><span class="t-conn">╰─</span><span class="t-arr">❯</span> <span class="cmd">{`curl -fL --retry 5 --retry-all-errors -C - -O \\\n     ${STABLE_ISO_URL}`}</span></div>
+            <div class="term-out"><div class="term-outline">######################################################### 100.0%</div></div>
+        </TermStep>
+        <TermStep copy={`curl -fLO ${STABLE_SHA256_URL}\nsha256sum -c ${stableShaName}`}>
+            <div class="cmt"># 2 · Verify it against the published checksum</div>
+            <div class="term-pline"><span class="t-conn">╭─</span> <span class="t-dir">{"~/Downloads"}</span></div>
+            <div class="term-cline"><span class="t-conn">╰─</span><span class="t-arr">❯</span> <span class="cmd">curl -fLO {STABLE_SHA256_URL}</span></div>
+            <div class="term-pline"><span class="t-conn">╭─</span> <span class="t-dir">{"~/Downloads"}</span></div>
+            <div class="term-cline"><span class="t-conn">╰─</span><span class="t-arr">❯</span> <span class="cmd">sha256sum -c {stableShaName}</span></div>
+            <div class="term-out"><div class="term-outline"><span class="t-out">{STABLE_ISO_NAME}</span><span class="t-ok">: OK</span></div></div>
+        </TermStep>
+        <TermStep copy="lsblk -o NAME,SIZE,TYPE,MOUNTPOINTS">
+            <div class="cmt"># 3 · Find your USB stick — not your system disk</div>
+            <div class="term-pline"><span class="t-conn">╭─</span> <span class="t-dir">{"~/Downloads"}</span></div>
+            <div class="term-cline"><span class="t-conn">╰─</span><span class="t-arr">❯</span> <span class="cmd">lsblk -o NAME,SIZE,TYPE,MOUNTPOINTS</span></div>
+            <div class="term-out"><div class="term-outline"><span class="t-out">NAME          SIZE TYPE MOUNTPOINTS</span></div><div class="term-outline"><span class="t-out">nvme0n1     476.9G disk             </span><span class="t-note">← system disk — leave it alone</span></div><div class="term-outline"><span class="t-out">├─nvme0n1p1     1G part /boot</span></div><div class="term-outline"><span class="t-out">└─nvme0n1p2 475.9G part /</span></div><div class="term-outline"><span class="t-out">sdb          28.9G disk             </span><span class="t-note">← your USB stick (the size matches)</span></div><div class="term-outline"><span class="t-out">└─sdb1       28.9G part /run/media/you/SHEDOS</span></div></div>
+        </TermStep>
+        <TermStep copy={`sudo dd if=${STABLE_ISO_NAME} of=/dev/sdb bs=4M conv=fsync oflag=direct status=progress\nsync`}>
+            <div class="cmt"># 4 · Write the ISO to the stick — this erases it</div>
+            <div class="term-pline"><span class="t-conn">╭─</span> <span class="t-dir">{"~/Downloads"}</span></div>
+            <div class="term-cline"><span class="t-conn">╰─</span><span class="t-arr">❯</span> <span class="cmd">sudo dd if={STABLE_ISO_NAME} of=/dev/sdb bs=4M conv=fsync oflag=direct status=progress</span></div>
+            <div class="term-out"><div class="term-outline">2671771648 bytes (2.7 GB, 2.5 GiB) copied, 49 s, 54.5 MB/s</div></div>
+            <div class="term-pline"><span class="t-conn">╭─</span> <span class="t-dir">{"~/Downloads"}</span></div>
+            <div class="term-cline"><span class="t-conn">╰─</span><span class="t-arr">❯</span> <span class="cmd">sync</span></div>
+        </TermStep>
+    </Terminal>
+
+    <div class="usb-notes">
+        <Callout variant="note" label="Which one is the USB? (step 3)">Your system disk is the one with partitions mounted on <code class="code-inline">/</code> and <code class="code-inline">/boot</code> — usually the big internal <code class="code-inline">nvme0n1</code> or <code class="code-inline">sda</code>. The USB stick is the device that only shows up once you plug it in, and its size matches the stick. Write to the whole disk (<code class="code-inline">/dev/sdb</code>), never a partition (<code class="code-inline">/dev/sdb1</code>).</Callout>
+        <Callout variant="warn" label="dd won't ask twice">It writes straight to whatever <code class="code-inline">of=</code> names. Read the device back before you press enter — aim it at the wrong disk and you overwrite the one you're working from, with no undo.</Callout>
+    </div>
+
+    <div class="alts">
+        <h3>Rather not use the terminal?</h3>
+        <div class="sub"><code class="code-inline">dd</code> is the Linux and macOS route — there's no <code class="code-inline">dd</code> on Windows. Coming from Windows, or if you'd just rather click, any of these writes the same ISO. Each opens in a new tab.</div>
+        <div class="alt-grid">
+            <AltCard name="balenaEtcher" href="https://etcher.balena.io" platforms={["Windows", "macOS", "Linux"]} desc="Point-and-click image writer — the easy choice on Windows and macOS." />
+            <AltCard name="Rufus" href="https://rufus.ie" platforms={["Windows"]} desc="The classic Windows USB writer: tiny, fast, no install." />
+            <AltCard name="Ventoy" href="https://www.ventoy.net" platforms={["Windows", "Linux"]} desc="Keep several ISOs on one stick and pick which to boot." />
+            <AltCard name="GNOME Disks" href="https://apps.gnome.org/DiskUtility/" platforms={["Linux"]} desc="Already on GNOME systems — its “Restore Disk Image…” action." />
+            <AltCard name="Impression" href="https://apps.gnome.org/Impression/" platforms={["Linux"]} desc="A focused, modern GTK image writer." />
+            <AltCard name="Popsicle" href="https://github.com/pop-os/popsicle" platforms={["Linux"]} desc="Pop!_OS's flasher — writes to several sticks at once." />
+        </div>
+        <div class="foot">On Linux or macOS you can skip <code class="code-inline">dd</code> from the terminal too: the image is a hybrid ISO, so <code class="code-inline">cp {STABLE_ISO_NAME} /dev/sdb && sync</code> works.</div>
+    </div>
+</div>
 
 ## Run the installer
 
-Boot the USB from your firmware's boot menu. The installer walks you
-through partitioning, user creation, and locale, with ShedOS defaults
-pre-seeded. Your Git identity (name and email) is collected on the user
-page, alongside the account you create.
+Boot the USB from your firmware's boot menu. The installer walks you through partitioning, user creation, and locale, with ShedOS defaults pre-seeded. Your Git identity (name and email) is collected on the user page, alongside the account you create.
 
 ## First boot
 
-The machine boots to the ShedOS greeter — log in with the account you
-created (there is no autologin on installed systems). The desktop —
-Hyprland, waybar, mako, kitty — comes up already themed and ready.
+The machine boots to the ShedOS greeter — log in with the account you created (there is no autologin on installed systems). The desktop — Hyprland, waybar, mako, kitty — comes up already themed and ready.
 
-On your first login a short welcome tour overlays the desktop and walks
-you through the essentials. `Esc` skips it, and `shedman tour` replays it
-any time.
+On your first login a short welcome tour overlays the desktop and walks you through the essentials. `Esc` skips it, and `shedman tour` replays it any time.
 
 ## Next
 
