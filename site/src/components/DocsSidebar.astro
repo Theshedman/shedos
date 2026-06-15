@@ -1,6 +1,12 @@
 ---
 import { getCollection } from "astro:content";
 
+interface Props {
+    current?: string;
+}
+
+const { current } = Astro.props;
+
 const entries = (await getCollection("docs")).sort(
     (a, b) => a.data.order - b.data.order,
 );
@@ -11,37 +17,20 @@ for (const e of entries) {
     if (!sections.has(key)) sections.set(key, []);
     sections.get(key)!.push(e);
 }
-
-const pathname = new URL(Astro.request.url).pathname.replace(/\/$/, "");
 ---
-<nav aria-label="Docs navigation" class="text-sm">
+<aside class="docs-side">
     {[...sections.entries()].map(([label, items]) => (
-        <section class="mb-6">
-            <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider text-[color:var(--color-muted)]">
-                {label}
-            </h3>
-            <ul class="space-y-0.5">
-                {items.map((e) => {
-                    const href = `/docs/${e.id}`;
-                    const active = pathname === href;
-                    return (
-                        <li>
-                            <a
-                                href={href}
-                                class:list={[
-                                    "block rounded-md px-3 py-1.5 transition",
-                                    active
-                                        ? "bg-[var(--color-surface)] text-[color:var(--color-text)] font-medium"
-                                        : "text-[color:var(--color-muted)] hover:bg-[var(--color-surface)] hover:text-[color:var(--color-text)]",
-                                ]}
-                                aria-current={active ? "page" : undefined}
-                            >
-                                {e.data.title}
-                            </a>
-                        </li>
-                    );
-                })}
-            </ul>
-        </section>
+        <>
+            <div class="grp">{label}</div>
+            {items.map((e) => (
+                <a
+                    href={`/docs/${e.id}`}
+                    class={e.id === current ? "active" : undefined}
+                    aria-current={e.id === current ? "page" : undefined}
+                >
+                    {e.data.title}
+                </a>
+            ))}
+        </>
     ))}
-</nav>
+</aside>

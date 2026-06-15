@@ -1,31 +1,49 @@
 ---
+import { getCollection } from "astro:content";
 import BaseLayout from "./BaseLayout.astro";
 import DocsSidebar from "~/components/DocsSidebar.astro";
+import DocFoot from "~/components/DocFoot.astro";
+
+interface NavLink {
+    href: string;
+    label: string;
+}
 
 interface Props {
     title: string;
     description?: string;
     section?: string;
+    prev?: NavLink;
+    next?: NavLink;
 }
-const { title, description, section } = Astro.props;
+
+const { title, description, section, prev: prevProp, next: nextProp } = Astro.props;
+
+// Derive current slug from pathname: /docs/<slug>
+const pathname = Astro.url.pathname.replace(/\/$/, "");
+const currentSlug = pathname.replace(/^\/docs\//, "");
+
+// Compute prev/next from sorted collection if not provided by caller
+const entries = (await getCollection("docs")).sort(
+    (a, b) => a.data.order - b.data.order,
+);
+const idx = entries.findIndex((e) => e.id === currentSlug);
+const prev = prevProp ?? (idx > 0
+    ? { href: `/docs/${entries[idx - 1].id}`, label: entries[idx - 1].data.title }
+    : undefined);
+const next = nextProp ?? (idx >= 0 && idx < entries.length - 1
+    ? { href: `/docs/${entries[idx + 1].id}`, label: entries[idx + 1].data.title }
+    : undefined);
 ---
 <BaseLayout title={title} description={description ?? title}>
-    <div class="mx-auto grid max-w-[80rem] gap-10 px-4 py-10 sm:px-6 md:grid-cols-[14rem_1fr]">
-        <aside class="md:sticky md:top-20 md:self-start">
-            <DocsSidebar />
-        </aside>
-        <article class="prose min-w-0">
-            {section && (
-                <div class="mb-2 text-xs uppercase tracking-wider text-[color:var(--color-primary)]">
-                    {section}
-                </div>
-            )}
-            <h1 class="!mt-0 text-4xl font-bold tracking-tight sm:text-5xl">{title}</h1>
-            {description && (
-                <p class="!mt-3 text-lg text-[color:var(--color-muted)]">{description}</p>
-            )}
-            <hr />
-            <slot />
-        </article>
-    </div>
+    <section class="section" style="padding-top:2.5rem;">
+        <div class="container docs-shell">
+            <DocsSidebar current={currentSlug} />
+            <article class="prose">
+                {section && <span class="eyebrow">{section}</span>}
+                <slot />
+                <DocFoot prev={prev} next={next} />
+            </article>
+        </div>
+    </section>
 </BaseLayout>
