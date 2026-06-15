@@ -1,0 +1,60 @@
+---
+interface Row {
+  feat: string;
+  detail?: string;
+  cells: string[];
+}
+
+interface Props {
+  head: string[];
+  rows: Row[];
+  own?: number;
+  legend?: boolean;
+}
+
+const { head, rows, own, legend } = Astro.props;
+
+const GLYPHS: Record<string, string> = {
+  y: "✓",
+  p: "~",
+  n: "—",
+};
+---
+
+<div class="table-wrap">
+  <table class="matrix">
+    <thead>
+      <tr>
+        {head.map((col, i) => (
+          <th class:list={[i > 0 && "center", own !== undefined && i === own && "own"]}>{col}</th>
+        ))}
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map((row) => (
+        <tr>
+          <td>
+            <div class="feat">{row.feat}</div>
+            {row.detail && <div class="detail">{row.detail}</div>}
+          </td>
+          {row.cells.map((cell) => {
+            const sym = GLYPHS[cell];
+            return sym !== undefined ? (
+              <td class="center"><span class:list={["sym", cell]}>{sym}</span></td>
+            ) : (
+              <td>{cell}</td>
+            );
+          })}
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
+{legend && (
+  <p class="legend">
+    <span><span class="sym">✓</span> yes, by default</span>
+    <span><span class="sym">~</span> partial — with setup, or a different form of it</span>
+    <span><span class="sym">—</span> not part of it</span>
+  </p>
+)}

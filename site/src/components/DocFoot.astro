@@ -1,0 +1,18 @@
+---
+interface NavLink {
+  href: string;
+  label: string;
+}
+
+interface Props {
+  prev?: NavLink;
+  next?: NavLink;
+}
+
+const { prev, next } = Astro.props;
+---
+
+<div class="doc-foot">
+  {prev && <a href={prev.href}>← {prev.label}</a>}
+  {next && <a href={next.href}>{next.label} →</a>}
+</div>

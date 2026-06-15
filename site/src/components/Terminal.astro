@@ -1,0 +1,17 @@
+---
+interface Props {
+  title?: string;
+}
+
+const { title } = Astro.props;
+---
+
+<div class="term">
+  <div class="term-bar">
+    <span class="term-dots"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+    <span class="term-title">{title}</span>
+  </div>
+  <div class="term-body">
+    <slot />
+  </div>
+</div>

@@ -1,0 +1,24 @@
+---
+interface Props {
+  primary?: boolean;
+  label?: string;
+  ver?: string;
+  iso?: string;
+}
+
+const { primary, label, ver, iso } = Astro.props;
+---
+
+<div class:list={["dlbox", primary && "primary"]}>
+  <div class="dlbox-head">
+    <div>
+      {label && <div class="label">{label}</div>}
+      {ver && <div class="ver">{ver}</div>}
+      {iso && <div class="iso">{iso}</div>}
+    </div>
+    <slot name="action" />
+  </div>
+  <div class="dlbox-body">
+    <slot />
+  </div>
+</div>

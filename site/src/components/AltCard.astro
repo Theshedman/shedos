@@ -1,0 +1,24 @@
+---
+interface Props {
+  name: string;
+  href: string;
+  platforms: string[];
+  desc: string;
+}
+
+const { name, href, platforms, desc } = Astro.props;
+---
+
+<div class="alt-card">
+  <a class="cover" href={href} target="_blank" rel="noopener noreferrer" aria-label={`${name} — opens in a new tab`}></a>
+  <div class="ah">
+    <span class="nm">{name}</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 17 17 7M9 7h8v8"/>
+    </svg>
+  </div>
+  <div class="plats">
+    {platforms.map((p) => <span class="pl">{p}</span>)}
+  </div>
+  <div class="ad">{desc}</div>
+</div>

@@ -1,0 +1,12 @@
+---
+interface Props {
+  copy: string;
+}
+
+const { copy } = Astro.props;
+---
+
+<div class="term-step">
+  <button class="term-copy" data-copy={copy}><span class="lbl">Copy</span></button>
+  <slot />
+</div>
