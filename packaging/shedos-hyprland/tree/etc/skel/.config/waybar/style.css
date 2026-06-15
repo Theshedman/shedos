@@ -204,6 +204,23 @@ window#waybar>box {
     font-weight: bold;
 }
 
+/* Boot-safety tiers outrank drift. warning = an fstab mount lacks nofail
+ * and can wedge a future boot: solid amber block, like #custom-health. */
+#custom-doctor.warning {
+    background: @yellow;
+    color: @base;
+    font-weight: bold;
+}
+
+/* critical = a disk did not mount this boot; loudest treatment, blinking
+ * red, matching #custom-health.critical. */
+#custom-doctor.critical {
+    background: @red;
+    color: @base;
+    font-weight: bold;
+    animation: blink 0.5s linear infinite alternate;
+}
+
 #battery {
     color: @teal;
 }
