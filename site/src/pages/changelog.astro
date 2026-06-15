@@ -1,49 +1,28 @@
 ---
 import BaseLayout from "~/layouts/BaseLayout.astro";
+import ChangelogEntry from "~/components/ChangelogEntry.astro";
 import { RELEASES } from "~/generated/changelog";
 ---
 <BaseLayout
-    title="Changelog"
-    description="What shipped in each ShedOS release."
+  title="Changelog"
+  description="What shipped in each ShedOS release."
 >
-    <article class="mx-auto max-w-3xl px-4 py-16 sm:px-6">
-        <h1 class="text-3xl font-bold">Changelog</h1>
-        <p class="mt-3 text-[color:var(--color-muted)]">
-            One entry per stable release; release candidates roll up into
-            the stable that follows them. The same notes appear on each
-            <a class="underline" href="https://github.com/Theshedman/shedos/releases">GitHub Release</a>.
-        </p>
+  <section class="grid-bg" style="border-bottom:1px solid var(--border);">
+    <div class="container page-head">
+      <span class="eyebrow">Changelog</span>
+      <h1 style="margin-top:.9rem;">Changelog</h1>
+      <p class="lead">One entry per stable release; release candidates roll up into the stable that follows them. The same notes appear on each <a href="https://github.com/Theshedman/shedos/releases">GitHub Release</a>.</p>
+    </div>
+  </section>
 
-        {RELEASES.length === 0 && (
-            <p class="mt-10 text-[color:var(--color-muted)]">
-                No release history available in this build.
-            </p>
-        )}
+  <section class="section" style="padding-top:2rem;">
+    <div class="container" style="max-width:48rem;">
 
-        {RELEASES.map((r) => (
-            <section class="mt-12">
-                <div class="flex items-baseline gap-3">
-                    <h2 class="text-xl font-semibold">v{r.version}</h2>
-                    <span class="text-sm text-[color:var(--color-muted)]">{r.date}</span>
-                </div>
-                {r.groups.map((g) => (
-                    <div class="mt-4">
-                        <h3 class="text-sm font-semibold uppercase tracking-[0.1em] text-[color:var(--color-primary)]">
-                            {g.label}
-                        </h3>
-                        <ul class="mt-2 space-y-1 text-sm">
-                            {g.items.map((i) => (
-                                <li class="text-[color:var(--color-muted)]">
-                                    {i.scope && (
-                                        <code class="mr-1 rounded bg-[var(--color-surface)] px-1 font-mono text-xs text-[color:var(--color-text)]">{i.scope}</code>
-                                    )}
-                                    {i.text}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                ))}
-            </section>
-        ))}
-    </article>
+      {RELEASES.slice(0, 5).map((r, i) => (
+        <ChangelogEntry release={r} latest={i === 0} />
+      ))}
+
+      <p class="muted" style="margin-top:3rem;font-size:.92rem;">Older releases and the complete history are on <a href="https://github.com/Theshedman/shedos/releases">GitHub Releases</a>.</p>
+    </div>
+  </section>
 </BaseLayout>

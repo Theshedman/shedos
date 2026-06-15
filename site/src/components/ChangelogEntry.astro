@@ -1,0 +1,35 @@
+---
+interface Props {
+  release: {
+    version: string;
+    date: string;
+    groups: {
+      label: string;
+      items: { scope: string | null; text: string }[];
+    }[];
+  };
+  latest?: boolean;
+}
+
+const { release, latest = false } = Astro.props;
+---
+<article class="rel">
+  <div class="rel-head">
+    <h2>v{release.version}</h2>
+    <span class="date">{release.date}</span>
+    {latest && <span class="tag">Latest</span>}
+  </div>
+  {release.groups.map((g) => (
+    <div class={`grp ${g.label.toLowerCase()}`}>
+      <h3>{g.label}</h3>
+      <ul>
+        {g.items.map((item) => (
+          <li>
+            {item.scope && <span class="scope">{item.scope}</span>}
+            {item.text}
+          </li>
+        ))}
+      </ul>
+    </div>
+  ))}
+</article>
