@@ -391,7 +391,6 @@ prepare: check-root check-deps generate-packages
 	@rsync -a --delete --exclude='__pycache__' \
 		installer/calamares/modules-src/ \
 		$(BUILD_DIR)/airootfs/usr/lib/calamares/modules/
-	@chmod +x $(BUILD_DIR)/airootfs/usr/local/bin/*
 	@echo -e "$(GREEN)Build environment ready$(NC)"
 
 iso: prepare
