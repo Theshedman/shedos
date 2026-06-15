@@ -4,130 +4,85 @@ description: Rolling updates, dotfile merges, and conflict review.
 order: 20
 section: Guide
 ---
-import CalloutBox from "~/components/CalloutBox.astro";
+import Callout from "~/components/Callout.astro";
 
-ShedOS is a rolling release. Once installed, you never reinstall —
-`shedman update` pulls in new packages whenever you choose.
+<h1 style="margin-top:.7rem;">Upgrading</h1>
 
-Your edited dotfiles stay safe. The system tracks which files it
-shipped and what you've changed, and never silently overwrites your
-edits.
+ShedOS is a rolling release. Once installed, you never reinstall — <code>shedman update</code> pulls in new packages whenever you choose.
+
+Your edited dotfiles stay safe. The system tracks which files it shipped and what you've changed, and never silently overwrites your edits.
 
 ## The flow
 
 1. Waybar shows a pending-updates badge when packages are waiting.
 2. Click it, or run the updater in a terminal.
-3. Confirm. Pacman (and yay, for AUR) prompt again with their own
-   lists before anything is installed.
+3. Confirm. Pacman (and yay, for AUR) prompt again with their own lists before anything is installed.
 4. If any dotfiles need reconciling, you'll be offered the review TUI.
 
-Nothing destructive runs without an explicit `y`. Every upgrade
-interactively lists what it's about to do. While you review the
-pending lists, a stale mirrorlist (older than four hours) is
-re-ranked in the background and installed after you confirm; and
-when ShedOS's own packages changed — not just upstream ones — the
-run ends with a "ShedOS updated" summary and a notification linking
-the [changelog](/changelog).
+<Fragment set:html={String.raw`<p>Nothing destructive runs without an explicit <code>y</code>. Every upgrade interactively lists what it's about to do. While you review the pending lists, a stale mirrorlist (older than four hours) is re-ranked in the background and installed after you confirm; and when ShedOS's own packages changed — not just upstream ones — the run ends with a "ShedOS updated" summary and a notification linking the <a href="/changelog">changelog</a>.</p>`} />
 
 ## How dotfile sync works
 
-For each file ShedOS ships, three things are tracked: the pristine
-default (as installed), your live copy in `$HOME`, and a hash of the
-last version you were given. On upgrade, one of four actions runs per
-file:
+<Fragment set:html={String.raw`<p>For each file ShedOS ships, three things are tracked: the pristine default (as installed), your live copy in <code>$HOME</code>, and a hash of the last version you were given. On upgrade, one of four actions runs per file:</p>`} />
 
-| Case | Condition | Action |
-|---|---|---|
-| seed | No `$HOME` copy | Copy the default in. |
-| noop | Upstream unchanged | Nothing. |
-| auto | You haven't edited the file | Back up, install the new default. |
-| conflict | Both you and upstream changed it | Drop a sidecar file; your copy is untouched. |
+<Fragment set:html={String.raw`<table>
+  <thead><tr><th>Case</th><th>Condition</th><th>Action</th></tr></thead>
+  <tbody>
+    <tr><td>seed</td><td>No <code>$HOME</code> copy</td><td>Copy the default in.</td></tr>
+    <tr><td>noop</td><td>Upstream unchanged</td><td>Nothing.</td></tr>
+    <tr><td>auto</td><td>You haven't edited the file</td><td>Back up, install the new default.</td></tr>
+    <tr><td>conflict</td><td>Both you and upstream changed it</td><td>Drop a sidecar file; your copy is untouched.</td></tr>
+  </tbody>
+</table>`} />
 
-A file you edited is never overwritten. The only write to your live
-copy is the `auto` case, which requires a byte-for-byte match with the
-last-known version.
+<Fragment set:html={String.raw`<p>A file you edited is never overwritten. The only write to your live copy is the <code>auto</code> case, which requires a byte-for-byte match with the last-known version.</p>`} />
 
 ## Resolving conflicts
 
-After an upgrade with conflicts, the updater offers to launch a
-full-screen merge review:
+After an upgrade with conflicts, the updater offers to launch a full-screen merge review:
 
-- **Three-pane diff** (YOURS · BASE · THEIRS) when a base snapshot is
-  available; two-pane otherwise.
-- **Per-hunk**: take yours, take theirs, take both, skip, undo.
-- **Whole-file**: take all yours, take all theirs.
-- **Atomic save**: your file is backed up, the sidecar is removed, and
-  the manifest advances. A crash mid-save can't corrupt the live file.
+<Fragment set:html={String.raw`<ul>
+  <li><strong>Three-pane diff</strong> (YOURS · BASE · THEIRS) when a base snapshot is available; two-pane otherwise.</li>
+  <li><strong>Per-hunk</strong>: take yours, take theirs, take both, skip, undo.</li>
+  <li><strong>Whole-file</strong>: take all yours, take all theirs.</li>
+  <li><strong>Atomic save</strong>: your file is backed up, the sidecar is removed, and the manifest advances. A crash mid-save can't corrupt the live file.</li>
+</ul>`} />
 
-Single-sided hunks are pre-marked, so trivial conflicts collapse to a
-single keystroke.
+Single-sided hunks are pre-marked, so trivial conflicts collapse to a single keystroke.
 
 ## Rolling back an upgrade
 
-Every `shedman update` run brackets the upgrade with a pre- and
-post-snapshot of `/` (btrfs, via snapper). If an upgrade breaks
-something, restoring the pre-state is two commands:
+<Fragment set:html={String.raw`<p>Every <code>shedman update</code> run brackets the upgrade with a pre- and post-snapshot of <code>/</code> (btrfs, via snapper). If an upgrade breaks something, restoring the pre-state is two commands:</p>`} />
 
-```sh
-shedman update --list-snapshots
-shedman update --rollback <N>
-```
+<Fragment set:html={String.raw`<pre><code>shedman update --list-snapshots
+shedman update --rollback &lt;N&gt;</code></pre>`} />
 
-Pick the pre-upgrade snapshot number from the list. A reboot applies
-the rollback. `$HOME` is intentionally **not** rolled back — your work
-since the upgrade is preserved. Run `shedman rollback --undo` before
-rebooting if you change your mind.
+<Fragment set:html={String.raw`<p>Pick the pre-upgrade snapshot number from the list. A reboot applies the rollback. <code>$HOME</code> is intentionally <strong>not</strong> rolled back — your work since the upgrade is preserved. Run <code>shedman rollback --undo</code> before rebooting if you change your mind.</p>`} />
 
-Before a risky change of your own, take a manual checkpoint:
-`shedman snapshot <label>`. Checkpoints list with `shedman snapshot
---list`, appear in `shedman upgrade-history`, and restore through
-the same `shedman rollback` path.
+<Fragment set:html={String.raw`<p>Before a risky change of your own, take a manual checkpoint: <code>shedman snapshot &lt;label&gt;</code>. Checkpoints list with <code>shedman snapshot --list</code>, appear in <code>shedman upgrade-history</code>, and restore through the same <code>shedman rollback</code> path.</p>`} />
 
-And if a boot ever goes truly wrong — three consecutive boots that
-never reach the login screen — the system recovers itself: it boots
-a safe, writable copy of the newest snapshot automatically and a
-desktop notification explains what happened and how to make the
-recovery permanent.
+And if a boot ever goes truly wrong — three consecutive boots that never reach the login screen — the system recovers itself: it boots a safe, writable copy of the newest snapshot automatically and a desktop notification explains what happened and how to make the recovery permanent.
 
-<CalloutBox kind="note">
-Snapshots live on the same disk. For full data resilience, pair
-snapshots with an offsite backup (`borg`, `restic`, etc.).
-</CalloutBox>
+<Callout variant="note" label="Note">Snapshots live on the same disk. For full data resilience, pair snapshots with an offsite backup (<code>borg</code>, <code>restic</code>, etc.).</Callout>
 
 ## Opting files out of dotfile sync
 
-If you've customised a file and want ShedOS to stop tracking it
-entirely, add a matcher to `~/.config/shedos/sync-exclude`:
+<Fragment set:html={String.raw`<p>If you've customised a file and want ShedOS to stop tracking it entirely, add a matcher to <code>~/.config/shedos/sync-exclude</code>:</p>`} />
 
-```sh
-install -Dm644 /usr/share/shedos/sync-exclude.example \
-  ~/.config/shedos/sync-exclude
-```
+<Fragment set:html={String.raw`<pre><code>install -Dm644 /usr/share/shedos/sync-exclude.example \
+  ~/.config/shedos/sync-exclude</code></pre>`} />
 
-One glob per line, `#` for comments. Globs match against the path
-relative to `$HOME`:
+<Fragment set:html={String.raw`<p>One glob per line, <code>#</code> for comments. Globs match against the path relative to <code>$HOME</code>:</p>`} />
 
-```
-.config/hypr/hyprland.conf   # keep my bindings — never drop a .shedosnew
-.config/waybar/*             # opt an entire directory out
-```
+<Fragment set:html={String.raw`<pre><code>.config/hypr/hyprland.conf   # keep my bindings — never drop a .shedosnew
+.config/waybar/*             # opt an entire directory out</code></pre>`} />
 
-Excluded paths are never seeded, auto-updated, or flagged as
-conflicts. Any leftover state (manifest hash, base snapshot,
-`.shedosnew` sidecar) from before the exclude is auto-purged on the
-next `shedman config --sync` run. Your live file is never touched.
+Excluded paths are never seeded, auto-updated, or flagged as conflicts. Any leftover state from before the exclude is auto-purged on the next <code>shedman config --sync</code> run. Your live file is never touched.
 
 ## FAQ
 
-**Can I skip the config sync?** Yes — answer `N` at the sync prompt.
-Packages stay upgraded; dotfiles are unchanged.
+<Fragment set:html={String.raw`<p><strong>Can I skip the config sync?</strong> Yes — answer <code>N</code> at the sync prompt. Packages stay upgraded; dotfiles are unchanged.</p>`} />
 
-**A config file has a `.shedosnew` sibling. What is it?** That's the
-upstream version of a file you've edited. Open the merge review from
-the updater, or diff and reconcile it manually.
+<Fragment set:html={String.raw`<p><strong>A config file has a <code>.shedosnew</code> sibling. What is it?</strong> That's the upstream version of a file you've edited. Open the merge review from the updater, or diff and reconcile it manually.</p>`} />
 
-**What if the rollback snapshot is missing?** `shedman update
---list-snapshots` shows everything snapper knows about. If the
-pre-snapshot was cleaned up (retention policy) or snapper was
-disabled, rollback isn't available for that upgrade — reinstalling
-affected packages from the ShedOS repo is the fallback.
+<Fragment set:html={String.raw`<p><strong>What if the rollback snapshot is missing?</strong> <code>shedman update --list-snapshots</code> shows everything snapper knows about. If the pre-snapshot was cleaned up or snapper was disabled, rollback isn't available for that upgrade — reinstalling affected packages from the ShedOS repo is the fallback.</p>`} />
