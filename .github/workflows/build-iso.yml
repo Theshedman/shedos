@@ -29,12 +29,10 @@ jobs:
     container:
       image: archlinux:latest
       options: --privileged
-      # Mount the host root so we can free disk space before pacstrap.
-      # ubuntu-latest ships ~30 GB of preinstalled toolchains we don't
-      # need (dotnet, android-sdk, ghc, hostedtoolcache, …); pacstrap
-      # filled the workspace partition before we trimmed them.
+      # only the toolchain trees we trim below, not / (ownership warning)
       volumes:
-        - /:/host
+        - /usr:/host/usr
+        - /opt:/host/opt
 
     env:
       R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com

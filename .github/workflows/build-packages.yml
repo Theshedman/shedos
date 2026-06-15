@@ -40,12 +40,10 @@ jobs:
     container:
       image: archlinux:latest
       options: --privileged
-      # Mount the host root so we can free disk space before makepkg
-      # builds. ubuntu-latest ships ~30 GB of preinstalled toolchains
-      # (dotnet, android-sdk, ghc, …) we don't need; trim them up front
-      # to keep the workspace from filling on a cold cache.
+      # only the toolchain trees we trim below, not / (ownership warning)
       volumes:
-        - /:/host
+        - /usr:/host/usr
+        - /opt:/host/opt
 
     env:
       R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
