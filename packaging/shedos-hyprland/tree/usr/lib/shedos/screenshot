@@ -3,22 +3,30 @@
 # grim pipelines got wrong: the save directory may not exist, a
 # cancelled slurp selection must abort quietly instead of erroring
 # grim, and a silent save deserves a notification.
+#
+# region/full hand the capture to swappy for annotation; its Save/Copy
+# buttons write to $shots and close the window (early_exit + save_dir in
+# the shipped swappy config). We pre-create $shots because swappy won't
+# abort if it can't make the directory itself.
 
 set -euo pipefail
+
+shots="$HOME/Pictures/screenshots"
 
 case "${1:-}" in
     region)
         geom=$(slurp) || exit 0
+        mkdir -p "$shots"
         grim -g "$geom" - | swappy -f -
         ;;
     full)
+        mkdir -p "$shots"
         grim - | swappy -f -
         ;;
     save)
         geom=$(slurp) || exit 0
-        dir="$(xdg-user-dir PICTURES 2>/dev/null || echo "$HOME/Pictures")/Screenshots"
-        mkdir -p "$dir"
-        file="$dir/$(date +%Y-%m-%d_%H-%M-%S).png"
+        mkdir -p "$shots"
+        file="$shots/$(date +%Y-%m-%d_%H-%M-%S).png"
         grim -g "$geom" "$file"
         notify-send -e -a screenshot -i "$file" "Screenshot saved" "${file/#"$HOME"/\~}"
         ;;
