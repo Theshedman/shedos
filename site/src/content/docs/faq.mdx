@@ -4,183 +4,94 @@ description: What ShedOS is, what makes it different, and the questions switcher
 order: 40
 section: Guide
 ---
-import CalloutBox from "~/components/CalloutBox.astro";
+
+<h1 style="margin-top:.7rem;">FAQ</h1>
 
 ## What is ShedOS, in one paragraph?
 
-An operating system for software developers. You boot the installer;
-ten minutes later you have a Hyprland desktop, a complete development
-toolchain (Neovim/LazyVim, VS Code, zsh, Docker and Kubernetes tools,
-per-user PostgreSQL, language runtimes, Claude Code), and an update
-system with snapshots, rollback, a testing channel, and config merges,
-so the machine stays good for years, not weeks.
+An operating system for software developers. You boot the installer; ten minutes later you have a Hyprland desktop, a complete development toolchain (Neovim/LazyVim, VS Code, zsh, Docker and Kubernetes tools, per-user PostgreSQL, language runtimes, Claude Code), and an update system with snapshots, rollback, a testing channel, and config merges, so the machine stays good for years, not weeks.
 
 ## Can I use pacman, the AUR, and my usual tools?
 
-Yes. pacman and the standard repositories work as they always do, and
-`shedman install <pkg>` reaches the AUR through yay. ShedOS adds one
-signed repository for its own packages and the `shedman` CLI on top —
-it removes nothing and locks nothing down. The tools you already know
-still work.
+<Fragment set:html={String.raw`<p>Yes. pacman and the standard repositories work as they always do, and <code>shedman install &lt;pkg&gt;</code> reaches the AUR through yay. ShedOS adds one signed repository for its own packages and the <code>shedman</code> CLI on top — it removes nothing and locks nothing down. The tools you already know still work.</p>`} />
 
 ## I already run Arch — do I have to reinstall?
 
-No. `shedman migrate --from-arch` adopts a running Arch install:
-it verifies and trusts the ShedOS signing key, adds the repository,
-installs the ShedOS stack, and switches the login manager — your
-packages and files stay put, and any config a ShedOS default would
-touch lands beside yours for review instead of overwriting. Dry-run
-by default; on non-btrfs roots it works too, minus the snapshot
-machinery (which it tells you about loudly).
+<Fragment set:html={String.raw`<p>No. <code>shedman migrate --from-arch</code> adopts a running Arch install: it verifies and trusts the ShedOS signing key, adds the repository, installs the ShedOS stack, and switches the login manager — your packages and files stay put, and any config a ShedOS default would touch lands beside yours for review instead of overwriting. Dry-run by default; on non-btrfs roots it works too, minus the snapshot machinery (which it tells you about loudly).</p>`} />
 
 ## Can I try it without installing?
 
-Yes — the ISO boots a full live desktop: the real Hyprland setup,
-the real toolchain, even Claude Code, running from the USB stick.
-Kick the tires for an hour; the installer is one click on the
-desktop whenever you're convinced.
+Yes — the ISO boots a full live desktop: the real Hyprland setup, the real toolchain, even Claude Code, running from the USB stick. Kick the tires for an hour; the installer is one click on the desktop whenever you're convinced.
 
 ## Will an update break my system?
 
-This is the question ShedOS is *built around*, so the answer has
-four layers:
+<p>This is the question ShedOS is <em>built around</em>, so the answer has four layers:</p>
 
-1. **Tested before you get it** — every ShedOS package lands on a
-   testing channel first; the stable channel only ever receives a
-   release-candidate snapshot that survived a real soak.
-2. **Snapshot before every upgrade** — `shedman update` takes a
-   BTRFS snapshot automatically, every time.
-3. **One-command undo** — `shedman rollback` returns the system to
-   any pre-upgrade state; `shedman upgrade-history` shows every past
-   upgrade with what changed and lets you roll back from a TUI.
-4. **Self-healing boot** — if three boots in a row never reach the
-   login screen, the machine automatically boots a safe copy of the
-   newest snapshot — no keypress, no recovery USB — and a desktop
-   notification explains what happened and how to make it permanent.
+<Fragment set:html={String.raw`<ol>
+  <li><strong>Tested before you get it</strong> — every ShedOS package lands on a testing channel first; the stable channel only ever receives a release-candidate snapshot that survived a real soak.</li>
+  <li><strong>Snapshot before every upgrade</strong> — <code>shedman update</code> takes a BTRFS snapshot automatically, every time.</li>
+  <li><strong>One-command undo</strong> — <code>shedman rollback</code> returns the system to any pre-upgrade state; <code>shedman upgrade-history</code> shows every past upgrade with what changed and lets you roll back from a TUI.</li>
+  <li><strong>Self-healing boot</strong> — if three boots in a row never reach the login screen, the machine automatically boots a safe copy of the newest snapshot — no keypress, no recovery USB — and a desktop notification explains what happened.</li>
+</ol>`} />
 
 Those four layers together are the core of what ShedOS is.
 
 ## What happens to my config edits when ShedOS updates a default?
 
-The flagship feature. ShedOS ships configured dotfiles (Hyprland,
-terminal, shell, editor…) and keeps improving them — but it never
-overwrites a file you've touched. Updates are merged three-way: if
-only the shipped default changed, you get it automatically; if you
-edited the file too, the new default lands *beside* yours as a
-`.shedosnew` sidecar, a waybar pill tells you, and
-`shedman config --review` opens a per-hunk merge TUI (or VS Code with
-`--gui`). You keep your customizations *and* their improvements.
+<Fragment set:html={String.raw`<p>The flagship feature. ShedOS ships configured dotfiles (Hyprland, terminal, shell, editor…) and keeps improving them — but it never overwrites a file you've touched. Updates are merged three-way: if only the shipped default changed, you get it automatically; if you edited the file too, the new default lands <em>beside</em> yours as a <code>.shedosnew</code> sidecar, a waybar pill tells you, and <code>shedman config --review</code> opens a per-hunk merge TUI (or VS Code with <code>--gui</code>). You keep your customizations <em>and</em> their improvements.</p>`} />
 
 ## Can I bring my existing dotfiles?
 
-Yes — your `$HOME` is yours. Drop in your dotfiles and they simply
-win: ShedOS treats an edited file as user-owned and routes future
-default changes through the review flow above. A `$HOME`-level git
-repo for dotfiles works fine; the conflict scanner skips git working
-trees.
+<Fragment set:html={String.raw`<p>Yes — your <code>$HOME</code> is yours. Drop in your dotfiles and they simply win: ShedOS treats an edited file as user-owned and routes future default changes through the review flow above. A <code>$HOME</code>-level git repo for dotfiles works fine; the conflict scanner skips git working trees.</p>`} />
 
 ## What exactly ships for development?
 
-Neovim on LazyVim and VS Code, both configured. zsh with
-powerlevel10k. Docker + docker-compose, kubectl, minikube, helm,
-lazydocker. PostgreSQL with a role and database already created for
-your user. mise for per-project language runtimes (Python, Node, Go,
-Rust, and friends). git configured with your identity from the
-installer. Claude Code preinstalled. A GPU-accelerated terminal
-(kitty), `fzf`, `ripgrep`, `fd`, `eza`, and the modern CLI staples.
-The first `git clone` of your day is the first command that isn't
-already done.
+<Fragment set:html={String.raw`<p>Neovim on LazyVim and VS Code, both configured. zsh with powerlevel10k. Docker + docker-compose, kubectl, minikube, helm, lazydocker. PostgreSQL with a role and database already created for your user. mise for per-project language runtimes (Python, Node, Go, Rust, and friends). git configured with your identity from the installer. Claude Code preinstalled. A GPU-accelerated terminal (kitty), <code>fzf</code>, <code>ripgrep</code>, <code>fd</code>, <code>eza</code>, and the modern CLI staples. The first <code>git clone</code> of your day is the first command that isn't already done.</p>`} />
 
 ## What's the AI story?
 
-Claude Code ships preinstalled — a terminal AI that reads your repo,
-writes code, and runs commands, there on first boot and on the live
-USB. It's treated as part of the developer baseline, like git or a
-compiler. You bring your own account, and nothing runs until you
-start it.
+Claude Code ships preinstalled — a terminal AI that reads your repo, writes code, and runs commands, there on first boot and on the live USB. It's treated as part of the developer baseline, like git or a compiler. You bring your own account, and nothing runs until you start it.
 
 ## Why Hyprland?
 
-Because for keyboard-driven development work, a tiling Wayland
-compositor is simply faster — and Hyprland is the best of them.
-ShedOS ships it fully assembled: 90+ keybindings in a searchable
-dialog (`Super+Alt+K`), fluid 3/4-finger touchpad gestures, a
-workspace overview, themed lock/greeter/power surfaces, screen
-recording, and a dock. You get the productivity without the
-three-weekend rice.
+<Fragment set:html={String.raw`<p>Because for keyboard-driven development work, a tiling Wayland compositor is simply faster — and Hyprland is the best of them. ShedOS ships it fully assembled: 90+ keybindings in a searchable dialog (<code>Super+Alt+K</code>), fluid 3/4-finger touchpad gestures, a workspace overview, themed lock/greeter/power surfaces, screen recording, and a dock. You get the productivity without the three-weekend rice.</p>`} />
 
 ## I don't like something it ships. Can I remove it?
 
-Yes — it's your machine. `shedman uninstall <pkg>` removes anything,
-showing the dependency closure and asking first. Swap the browser,
-the editor, the launcher; the system doesn't fight you.
+<Fragment set:html={String.raw`<p>Yes — it's your machine. <code>shedman uninstall &lt;pkg&gt;</code> removes anything, showing the dependency closure and asking first. Swap the browser, the editor, the launcher; the system doesn't fight you.</p>`} />
 
 ## How does theming work?
 
-`shedman theme set palette <name>` recolors the *entire* desktop
-live — window borders, terminal, notifications, launcher, bar, lock
-screen, greeter, GTK apps — no logout. Wallpaper and fonts are one
-command each. Palettes are plain TOML files; adding your own is
-trivial.
+<Fragment set:html={String.raw`<p><code>shedman theme set palette &lt;name&gt;</code> recolors the <em>entire</em> desktop live — window borders, terminal, notifications, launcher, bar, lock screen, greeter, GTK apps — no logout. Wallpaper and fonts are one command each. Palettes are plain TOML files; adding your own is trivial.</p>`} />
 
 ## What's the security story?
 
-Defaults you'd have to build yourself elsewhere: sudo requires your
-password (no silent wheel group), AppArmor is enforcing from the
-first boot, LUKS2 full-disk encryption is a checkbox in the
-installer, the lock screen fails closed (a crash locks, never
-unlocks), and a fingerprint enrolled once (`shedman fingerprint
-enroll`) works at the greeter, the lock screen, and sudo. Every
-ShedOS package is GPG-signed and pacman verifies it.
+<Fragment set:html={String.raw`<p>Defaults you'd have to build yourself elsewhere: sudo requires your password (no silent wheel group), AppArmor is enforcing from the first boot, LUKS2 full-disk encryption is a checkbox in the installer, the lock screen fails closed (a crash locks, never unlocks), and a fingerprint enrolled once (<code>shedman fingerprint enroll</code>) works at the greeter, the lock screen, and sudo. Every ShedOS package is GPG-signed and pacman verifies it.</p>`} />
 
 ## Is there telemetry?
 
-No. Nothing phones home, ever. The installer is fully offline and
-doesn't geo-probe (you pick your timezone on a map). The only
-self-initiated network traffic is package updates from mirrors
-listed in plain text in `/etc/pacman.d/mirrorlist`.
+<Fragment set:html={String.raw`<p>No. Nothing phones home, ever. The installer is fully offline and doesn't geo-probe (you pick your timezone on a map). The only self-initiated network traffic is package updates from mirrors listed in plain text in <code>/etc/pacman.d/mirrorlist</code>.</p>`} />
 
 ## How is it different from Omarchy / Garuda / EndeavourOS / Manjaro?
 
-Short version: Omarchy curates a similar Hyprland desktop, but
-without the three-way config merge, the declarative `system.toml`, or
-a single OS-wide CLI; Garuda has automatic snapshots but is a
-gaming-focused KDE distribution; EndeavourOS is deliberately minimal,
-leaving the desktop and toolchain to you; Manjaro holds packages back
-for stabilization. The full, sourced breakdown is on the
-[compare page](/compare).
+<Fragment set:html={String.raw`<p>Short version: Omarchy curates a similar Hyprland desktop, but without the three-way config merge, the declarative <code>system.toml</code>, or a single OS-wide CLI; Garuda has automatic snapshots but is a gaming-focused KDE distribution; EndeavourOS is deliberately minimal, leaving the desktop and toolchain to you; Manjaro holds packages back for stabilization. The full, sourced breakdown is on the <a href="/compare">compare page</a>.</p>`} />
 
 ## What about gaming?
 
-ShedOS is a developer workstation first. Steam and friends install
-normally from the repos (`shedman install steam`) and run fine on
-the same Mesa/NVIDIA stack — but nothing gaming-specific is
-preinstalled or tuned. If gaming is the primary use, Garuda or
-CachyOS optimize for that out of the box.
+<Fragment set:html={String.raw`<p>ShedOS is a developer workstation first. Steam and friends install normally from the repos (<code>shedman install steam</code>) and run fine on the same Mesa/NVIDIA stack — but nothing gaming-specific is preinstalled or tuned. If gaming is the primary use, Garuda or CachyOS optimize for that out of the box.</p>`} />
 
 ## What hardware do I need?
 
-6 GB RAM and 20 GB disk minimum (installer-enforced), UEFI or legacy
-BIOS, and WiFi works on first boot on virtually all laptops — the
-firmware for Atheros, Realtek, Mediatek, Marvell, Broadcom and Intel
-ships in base. Details, including the GPU and fingerprint-reader
-story, on the [hardware page](/docs/hardware).
+<Fragment set:html={String.raw`<p>6 GB RAM and 20 GB disk minimum (installer-enforced), UEFI or legacy BIOS, and WiFi works on first boot on virtually all laptops — the firmware for Atheros, Realtek, Mediatek, Marvell, Broadcom and Intel ships in base. Details, including the GPU and fingerprint-reader story, on the <a href="/docs/hardware">hardware page</a>.</p>`} />
 
 ## How often are releases? Do I reinstall?
 
-Never reinstall — it's a rolling release. `shedman update` (or the
-waybar pill) brings everything current whenever you choose. Stable
-releases are cut after their release candidates survive a soak;
-the [changelog](/changelog) shows exactly what shipped in each.
+<Fragment set:html={String.raw`<p>Never reinstall — it's a rolling release. <code>shedman update</code> (or the waybar pill) brings everything current whenever you choose. Stable releases are cut after their release candidates survive a soak; the <a href="/changelog">changelog</a> shows exactly what shipped in each.</p>`} />
 
 ## Is it free?
 
-Free and open source, GPL-3.0, developed in one repository —
-packages, installer, desktop, and this site. No paid tier, no
-account, no strings.
+Free and open source, GPL-3.0, developed in one repository — packages, installer, desktop, and this site. No paid tier, no account, no strings.
 
 ## Something's broken / I have an idea
 
-[Community page](/community) — bug reports with `shedman status`
-output and your version (`pacman -Qi shedos-meta`) get fixed
-fastest. Ideas and questions live in GitHub Discussions.
+<Fragment set:html={String.raw`<p><a href="/community">Community page</a> — bug reports with <code>shedman status</code> output and your version (<code>pacman -Qi shedos-meta</code>) get fixed fastest. Ideas and questions live in GitHub Discussions.</p>`} />

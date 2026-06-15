@@ -5,150 +5,92 @@ order: 30
 section: Reference
 ---
 
-The `Super` key (the Windows/Command key on most keyboards) is the
-ShedOS modifier. Every desktop shortcut starts there. This page is
-generated from the same metadata `shedman keybindings` reads — press
-`Super` + `Alt` + `K` on a running system for the live, searchable version.
+<h1 style="margin-top:.7rem;">Keybindings</h1>
+
+<p>The <code>Super</code> key (the Windows/Command key on most keyboards) is the ShedOS modifier. Every desktop shortcut starts there. This page is generated from the same metadata <code>shedman keybindings</code> reads — press <kbd class="key">Super</kbd> + <kbd class="key">Alt</kbd> + <kbd class="key">K</kbd> on a running system for the live, searchable version.</p>
 
 ## Applications
 
-| Keys | Action |
-|---|---|
-| `Super` + `Return` | Open a new terminal window |
-| `Super` + `Shift` + `Return` | Open a terminal that floats above tiled windows |
-| `Super` + `D` | Search and launch installed applications |
-| `Super` + `E` | Open Visual Studio Code |
-| `Super` + `N` | Open a new file manager window |
-| `Super` + `A` | Open Postman |
-| `Super` + `B` | Open the default web browser in a new window |
-| `Super` + `C` | Browse and paste from clipboard history |
-| `Super` + `Alt` + `J` | Open the ShedOS log viewer |
-| `Super` + `Alt` + `K` | Show this keybindings dialog |
-| `Super` + `Shift` + `U` | Review past system upgrades |
-| `Super` + `Shift` + `P` | Pick a color from anywhere on the screen |
+<Fragment set:html={String.raw`<table><thead><tr><th>Keys</th><th>Action</th></tr></thead><tbody>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">Return</kbd></td><td>Open a new terminal window</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">Shift</kbd> + <kbd class="key">Return</kbd></td><td>Open a terminal that floats above tiled windows</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">D</kbd></td><td>Search and launch installed applications</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">E</kbd></td><td>Open Visual Studio Code</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">N</kbd></td><td>Open a new file manager window</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">A</kbd></td><td>Open Postman</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">B</kbd></td><td>Open the default web browser in a new window</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">C</kbd></td><td>Browse and paste from clipboard history</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">Alt</kbd> + <kbd class="key">J</kbd></td><td>Open the ShedOS log viewer</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">Alt</kbd> + <kbd class="key">K</kbd></td><td>Show this keybindings dialog</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">Shift</kbd> + <kbd class="key">U</kbd></td><td>Review past system upgrades</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">Shift</kbd> + <kbd class="key">P</kbd></td><td>Pick a color from anywhere on the screen</td></tr>
+</tbody></table>`} />
 
-## Windows & Tiling
+## Windows & tiling
 
-| Keys | Action |
-|---|---|
-| `Super` + `Q` | Close the focused window |
-| `Alt` + `Tab` | Cycle open windows (most recent first); release Alt to switch |
-| `Shift` + `Alt` + `Tab` | Cycle the switcher in reverse |
-| `Super` + `V` | Switch the focused window between tiled and floating |
-| `Super` + `F` | Maximize the focused window to full screen |
-| `Super` + `M` | Take the focused window full size with no decorations |
-| `Super` + `P` | Treat a tiled window as floating within its slot |
-| `Super` + `J` | Move keyboard focus to the window below (vim binding) |
-| `Super` + `O` | Switch the tile-split direction at the focused location |
-| `Super` + `H` | Move keyboard focus to the window on the left (vim binding) |
-| `Super` + `left` | Move keyboard focus to the window on the left |
-| `Super` + `L` | Move keyboard focus to the window on the right (vim binding) |
-| `Super` + `right` | Move keyboard focus to the window on the right |
-| `Super` + `K` | Move keyboard focus to the window above (vim binding) |
-| `Super` + `up` | Move keyboard focus to the window above |
-| `Super` + `Shift` + `J` | Swap the focused window with its lower neighbour (vim binding) |
-| `Super` + `down` | Move keyboard focus to the window below |
-| `Super` + `Shift` + `H` | Swap the focused window with its left neighbour (vim binding) |
-| `Super` + `Shift` + `left` | Swap the focused window with its left neighbour |
-| `Super` + `Shift` + `L` | Swap the focused window with its right neighbour (vim binding) |
-| `Super` + `Shift` + `right` | Swap the focused window with its right neighbour |
-| `Super` + `Shift` + `K` | Swap the focused window with its upper neighbour (vim binding) |
-| `Super` + `Shift` + `up` | Swap the focused window with its upper neighbour |
-| `Super` + `Shift` + `down` | Swap the focused window with its lower neighbour |
-| `Super` + `Ctrl` + `H` | Shrink the focused window's width (vim binding) |
-| `Super` + `Ctrl` + `left` | Shrink the focused window's width |
-| `Super` + `Ctrl` + `L` | Grow the focused window's width (vim binding) |
-| `Super` + `Ctrl` + `right` | Grow the focused window's width |
-| `Super` + `Ctrl` + `K` | Shrink the focused window's height (vim binding) |
-| `Super` + `Ctrl` + `up` | Shrink the focused window's height |
-| `Super` + `Ctrl` + `J` | Grow the focused window's height (vim binding) |
-| `Super` + `Ctrl` + `down` | Grow the focused window's height |
-| `Super` + `mouse:272` | Hold Super and click-drag with left mouse to move a window |
-| `Super` + `mouse:273` | Hold Super and click-drag with right mouse to resize a window |
+<Fragment set:html={String.raw`<table><thead><tr><th>Keys</th><th>Action</th></tr></thead><tbody>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">Q</kbd></td><td>Close the focused window</td></tr>
+  <tr><td><kbd class="key">Alt</kbd> + <kbd class="key">Tab</kbd></td><td>Cycle open windows (most recent first); release Alt to switch</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">V</kbd></td><td>Switch the focused window between tiled and floating</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">F</kbd></td><td>Maximize the focused window to full screen</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">M</kbd></td><td>Take the focused window full size with no decorations</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">O</kbd></td><td>Switch the tile-split direction at the focused location</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">H</kbd>/<kbd class="key">J</kbd>/<kbd class="key">K</kbd>/<kbd class="key">L</kbd></td><td>Move keyboard focus left / down / up / right (vim bindings; arrows work too)</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">Shift</kbd> + <kbd class="key">H/J/K/L</kbd></td><td>Swap the focused window with its neighbour in that direction</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">Ctrl</kbd> + <kbd class="key">H/J/K/L</kbd></td><td>Shrink or grow the focused window's width / height</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + drag (LMB / RMB)</td><td>Hold Super and click-drag to move (left) or resize (right) a window</td></tr>
+</tbody></table>`} />
 
 ## Workspaces
 
-| Keys | Action |
-|---|---|
-| `Super` + `1` | Switch to workspace 1 |
-| `Super` + `2` | Switch to workspace 2 |
-| `Super` + `3` | Switch to workspace 3 |
-| `Super` + `4` | Switch to workspace 4 |
-| `Super` + `5` | Switch to workspace 5 |
-| `Super` + `6` | Switch to workspace 6 |
-| `Super` + `7` | Switch to workspace 7 |
-| `Super` + `8` | Switch to workspace 8 |
-| `Super` + `9` | Switch to workspace 9 |
-| `Super` + `0` | Switch to workspace 10 |
-| `Super` + `Shift` + `1` | Move the focused window to workspace 1 |
-| `Super` + `Shift` + `2` | Move the focused window to workspace 2 |
-| `Super` + `Shift` + `3` | Move the focused window to workspace 3 |
-| `Super` + `Shift` + `4` | Move the focused window to workspace 4 |
-| `Super` + `Shift` + `5` | Move the focused window to workspace 5 |
-| `Super` + `Shift` + `6` | Move the focused window to workspace 6 |
-| `Super` + `Shift` + `7` | Move the focused window to workspace 7 |
-| `Super` + `Shift` + `8` | Move the focused window to workspace 8 |
-| `Super` + `Shift` + `9` | Move the focused window to workspace 9 |
-| `Super` + `Shift` + `0` | Move the focused window to workspace 10 |
-| `Super` + `S` | Show or hide the special scratchpad workspace |
-| `Super` + `Shift` + `S` | Move the focused window to the scratchpad workspace |
-| `Super` + `mouse_down` | Hold Super and scroll the mouse wheel down |
-| `Super` + `mouse_up` | Hold Super and scroll the mouse wheel up |
-| `Super` + `Tab` | Open the workspace grid (keyboard parity with the 3-finger swipe up gesture) |
+<Fragment set:html={String.raw`<table><thead><tr><th>Keys</th><th>Action</th></tr></thead><tbody>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">1</kbd>…<kbd class="key">0</kbd></td><td>Switch to workspace 1–10</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">Shift</kbd> + <kbd class="key">1</kbd>…<kbd class="key">0</kbd></td><td>Move the focused window to workspace 1–10</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">S</kbd></td><td>Show or hide the special scratchpad workspace</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">Shift</kbd> + <kbd class="key">S</kbd></td><td>Move the focused window to the scratchpad workspace</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + scroll</td><td>Cycle to the previous / next workspace</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">Tab</kbd></td><td>Open the workspace grid (parity with the 3-finger swipe up)</td></tr>
+</tbody></table>`} />
 
 ## System
 
-| Keys | Action |
-|---|---|
-| `Super` + `Escape` | Lock the desktop |
-| `Super` + `Shift` + `E` | Sign out of the Hyprland session |
-| `Super` + `Ctrl` + `Shift` + `R` | Re-read the Hyprland configuration |
-| `Super` + `F9` | Toggle the blue-light filter on the active display |
-| `Super` + `Shift` + `N` | Toggle notifications; critical alerts still show |
-| `Super` + `T` | Show or hide the application dock |
-| `Super` + `Alt` + `B` | Move the application dock to the bottom edge |
-| `Super` + `Alt` + `L` | Move the application dock to the left edge |
-| `Super` + `Alt` + `R` | Move the application dock to the right edge |
+<Fragment set:html={String.raw`<table><thead><tr><th>Keys</th><th>Action</th></tr></thead><tbody>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">Escape</kbd></td><td>Lock the desktop</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">Shift</kbd> + <kbd class="key">E</kbd></td><td>Sign out of the Hyprland session</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">Ctrl</kbd> + <kbd class="key">Shift</kbd> + <kbd class="key">R</kbd></td><td>Re-read the Hyprland configuration</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">F9</kbd></td><td>Toggle the blue-light filter on the active display</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">Shift</kbd> + <kbd class="key">N</kbd></td><td>Toggle notifications; critical alerts still show</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">T</kbd></td><td>Show or hide the application dock</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">Alt</kbd> + <kbd class="key">B</kbd>/<kbd class="key">L</kbd>/<kbd class="key">R</kbd></td><td>Move the dock to the bottom / left / right edge</td></tr>
+</tbody></table>`} />
 
-## Audio & Media
+## Audio & media
 
-| Keys | Action |
-|---|---|
-| `XF86AudioRaiseVolume` | Raise the system volume by 5% |
-| `XF86AudioLowerVolume` | Lower the system volume by 5% |
-| `XF86AudioMute` | Toggle audio output mute |
-| `XF86AudioMicMute` | Toggle the microphone mute |
-| `XF86AudioPlay` | Toggle media playback |
-| `XF86AudioPause` | Toggle media playback (separate Pause key on some keyboards) |
-| `XF86AudioNext` | Skip to the next track |
-| `XF86AudioPrev` | Return to the previous track |
-| `XF86MonBrightnessUp` | Raise screen brightness by 5% |
-| `XF86MonBrightnessDown` | Lower screen brightness by 5% |
+<Fragment set:html={String.raw`<table><thead><tr><th>Keys</th><th>Action</th></tr></thead><tbody>
+  <tr><td>Volume Up / Down / Mute</td><td>Raise / lower the system volume by 5%, or toggle mute</td></tr>
+  <tr><td>Mic Mute</td><td>Toggle the microphone mute</td></tr>
+  <tr><td>Play / Pause / Next / Prev</td><td>Control media playback</td></tr>
+  <tr><td>Brightness Up / Down</td><td>Raise / lower screen brightness by 5%</td></tr>
+</tbody></table>`} />
 
 ## Screenshots
 
-| Keys | Action |
-|---|---|
-| `Print` | Capture a selected region and edit it |
-| `Shift` + `Print` | Capture the entire screen and edit it |
-| `Super` + `Print` | Capture a region and save it under ~/Pictures/Screenshots |
-| `Super` + `R` | Start (or stop) a screen recording via walker prompt |
-| `Super` + `Shift` + `R` | Stop the active screen recording |
+<Fragment set:html={String.raw`<table><thead><tr><th>Keys</th><th>Action</th></tr></thead><tbody>
+  <tr><td><kbd class="key">Print</kbd></td><td>Capture a selected region and edit it</td></tr>
+  <tr><td><kbd class="key">Shift</kbd> + <kbd class="key">Print</kbd></td><td>Capture the entire screen and edit it</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">Print</kbd></td><td>Capture a region and save it under ~/Pictures/Screenshots</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">R</kbd></td><td>Start (or stop) a screen recording via walker prompt</td></tr>
+  <tr><td><kbd class="key">Super</kbd> + <kbd class="key">Shift</kbd> + <kbd class="key">R</kbd></td><td>Stop the active screen recording</td></tr>
+</tbody></table>`} />
 
 ## Touchpad gestures
 
-| Gesture | Action |
-|---|---|
-| 3-finger swipe horizontal | Slide between workspaces; carries any window held with Super+drag |
-| 3-finger swipe up | Open the workspace grid |
-| 3-finger swipe down | Close the workspace overview (opposite of 3-finger swipe up) |
-| 3-finger pinch in | Toggle fullscreen on the active window |
-| 3-finger pinch out | Toggle floating mode on the active window |
-| 4-finger swipe left | Move the active window one workspace to the left |
-| 4-finger swipe right | Move the active window one workspace to the right |
-| 4-finger swipe up | Open the workspace grid (alternative to 3-finger swipe up) |
-| 4-finger swipe down | Close the workspace overview (opposite of 4-finger swipe up) |
-| 4-finger pinch in | Open the app launcher |
-| 4-finger pinch out | Toggle the minimized special workspace to clear the screen |
-| 2-finger pinch out | Magnify the area around the cursor (accessibility zoom) |
-| 2-finger pinch in | Return the cursor area to normal magnification |
+<Fragment set:html={String.raw`<table><thead><tr><th>Gesture</th><th>Action</th></tr></thead><tbody>
+  <tr><td>3-finger swipe horizontal</td><td>Slide between workspaces; carries any window held with Super+drag</td></tr>
+  <tr><td>3-finger swipe up / down</td><td>Open / close the workspace grid</td></tr>
+  <tr><td>3-finger pinch in / out</td><td>Toggle fullscreen / floating on the active window</td></tr>
+  <tr><td>4-finger swipe left / right</td><td>Move the active window one workspace left / right</td></tr>
+  <tr><td>4-finger pinch in</td><td>Open the app launcher</td></tr>
+  <tr><td>4-finger pinch out</td><td>Toggle the minimized special workspace to clear the screen</td></tr>
+  <tr><td>2-finger pinch out / in</td><td>Magnify / restore the area around the cursor (accessibility zoom)</td></tr>
+</tbody></table>`} />

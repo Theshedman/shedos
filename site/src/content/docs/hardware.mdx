@@ -4,73 +4,45 @@ description: System requirements and hardware compatibility.
 order: 50
 section: Reference
 ---
-import CalloutBox from "~/components/CalloutBox.astro";
+import Callout from "~/components/Callout.astro";
+
+<h1 style="margin-top:.7rem;">Hardware</h1>
 
 ## Requirements
 
-| | Minimum | Recommended |
-|---|---|---|
-| CPU | any x86_64 | 4+ cores |
-| RAM | 6 GB usable (installer-enforced) | 8 GB+ |
-| Disk | 20 GB (installer-enforced) | 64 GB+ SSD, NVMe preferred |
-| Firmware | UEFI **or** legacy BIOS | UEFI |
+<Fragment set:html={String.raw`<table><thead><tr><th></th><th>Minimum</th><th>Recommended</th></tr></thead><tbody>
+  <tr><td>CPU</td><td>any x86_64</td><td>4+ cores</td></tr>
+  <tr><td>RAM</td><td>6 GB usable (installer-enforced)</td><td>8 GB+</td></tr>
+  <tr><td>Disk</td><td>20 GB (installer-enforced)</td><td>64 GB+ SSD, NVMe preferred</td></tr>
+  <tr><td>Firmware</td><td>UEFI <strong>or</strong> legacy BIOS</td><td>UEFI</td></tr>
+</tbody></table>`} />
 
-The installer refuses to start below the minimums rather than fail
-midway. Both firmwares boot from the same GPT disk layout.
+The installer refuses to start below the minimums rather than fail midway. Both firmwares boot from the same GPT disk layout.
 
 ## WiFi and networking
 
-The linux-firmware splits for **Atheros, Realtek, Mediatek, Marvell,
-Broadcom, Intel** and more ship in the base system — WiFi works on
-first boot on virtually all laptops, no wired-connection bootstrap
-needed. NetworkManager (with iwd) drives connections; the waybar
-network icon opens the TUI.
+<Fragment set:html={String.raw`<p>The linux-firmware splits for <strong>Atheros, Realtek, Mediatek, Marvell, Broadcom, Intel</strong> and more ship in the base system — WiFi works on first boot on virtually all laptops, no wired-connection bootstrap needed. NetworkManager (with iwd) drives connections; the waybar network icon opens the TUI.</p>`} />
 
 ## Graphics
 
-- **AMD / Intel** — first-class. Mesa drivers ship; Hyprland runs
-  out of the box.
-- **NVIDIA, Turing and newer** (GTX 16xx / RTX 20xx+) — the open
-  kernel modules install automatically and `nvidia_drm.modeset=1` is
-  set. Wayland + NVIDIA has sharper edges than AMD/Intel, but
-  current-generation cards on the open modules work well.
-- **NVIDIA, pre-Turing** (GTX 10xx and older) — NVIDIA dropped these
-  from the current driver, so the installer deliberately skips it:
-  the desktop runs on the built-in nouveau/modesetting stack and a
-  note in `/etc/shedos/nvidia-legacy-gpu` explains the AUR legacy
-  branch (`nvidia-580xx-dkms`) if you want the proprietary driver.
+<Fragment set:html={String.raw`<ul>
+  <li><strong>AMD / Intel</strong> — first-class. Mesa drivers ship; Hyprland runs out of the box.</li>
+  <li><strong>NVIDIA, Turing and newer</strong> (GTX 16xx / RTX 20xx+) — the open kernel modules install automatically and <code>nvidia_drm.modeset=1</code> is set. Wayland + NVIDIA has sharper edges than AMD/Intel, but current-generation cards on the open modules work well.</li>
+  <li><strong>NVIDIA, pre-Turing</strong> (GTX 10xx and older) — NVIDIA dropped these from the current driver, so the installer deliberately skips it: the desktop runs on the built-in nouveau/modesetting stack and a note in <code>/etc/shedos/nvidia-legacy-gpu</code> explains the AUR legacy branch (<code>nvidia-580xx-dkms</code>) if you want the proprietary driver.</li>
+</ul>`} />
 
 ## Storage
 
-The root filesystem is **BTRFS** by design — snapshots and
-`shedman rollback` depend on it, so the installer doesn't offer
-alternatives. Twelve subvolumes separate system, home, logs, caches
-and container data so snapshots stay small and rollbacks don't touch
-your files. LUKS2 full-disk encryption is a checkbox at install.
+<Fragment set:html={String.raw`<p>The root filesystem is <strong>BTRFS</strong> by design — snapshots and <code>shedman rollback</code> depend on it, so the installer doesn't offer alternatives. Twelve subvolumes separate system, home, logs, caches and container data so snapshots stay small and rollbacks don't touch your files. LUKS2 full-disk encryption is a checkbox at install.</p>`} />
 
 ## Laptops
 
-TLP power management, brightness/media keys, and the 2/3/4-finger
-touchpad gestures work out of the box. Fingerprint readers supported
-by `fprintd` (most Goodix, Synaptics, Elan) enroll with
-`shedman fingerprint enroll` and unlock both the lock screen and the
-greeter.
+<Fragment set:html={String.raw`<p>TLP power management, brightness/media keys, and the 2/3/4-finger touchpad gestures work out of the box. Fingerprint readers supported by <code>fprintd</code> (most Goodix, Synaptics, Elan) enroll with <code>shedman fingerprint enroll</code> and unlock both the lock screen and the greeter.</p>`} />
 
-Hibernation works on machines with a disk swap partition: pick the
-RAM-sized swap option in the installer and the resume configuration
-is wired automatically; Hibernate then appears in the power menu.
-Systems installed without it gain the wiring on a later update if a
-disk swap partition exists.
+Hibernation works on machines with a disk swap partition: pick the RAM-sized swap option in the installer and the resume configuration is wired automatically; Hibernate then appears in the power menu. Systems installed without it gain the wiring on a later update if a disk swap partition exists.
 
 ## Dual-boot
 
-The installer detects a Windows boot manager on any ESP, adds a
-Windows entry to the boot menu, and registers ShedOS with your
-firmware — both systems stay reachable.
+The installer detects a Windows boot manager on any ESP, adds a Windows entry to the boot menu, and registers ShedOS with your firmware — both systems stay reachable.
 
-<CalloutBox kind="note">
-Something not working on your hardware? Check
-[GitHub issues](https://github.com/Theshedman/shedos/issues) — a
-report with `shedman status` output and your hardware model is the
-fastest path to a fix.
-</CalloutBox>
+<Callout variant="note" label="Note"><Fragment set:html={String.raw`Something not working on your hardware? Check <a href="https://github.com/Theshedman/shedos/issues">GitHub issues</a> — a report with <code>shedman status</code> output and your hardware model is the fastest path to a fix.`} /></Callout>
