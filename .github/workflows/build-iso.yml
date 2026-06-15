@@ -318,14 +318,15 @@ jobs:
 
       - name: Build the base install image
         # Build an installed image from this ISO's squashfs for the boot
-        # tests below. Needs nbd + chroot (privileged container).
+        # tests below. Needs a loop device + chroot (privileged container);
+        # the runners' Azure kernel has no nbd module.
         # Non-blocking so a build failure can't stop publishing.
         continue-on-error: true
         run: |
           pacman -S --needed --noconfirm edk2-ovmf libguestfs squashfs-tools \
             socat libisoburn btrfs-progs dosfstools gptfdisk limine \
             arch-install-scripts qemu-img
-          modprobe nbd max_part=8 || true
+          modprobe loop || true
           SHEDOS_ISO="out/$ISO_NAME" SHEDOS_BASE_IMAGE_OUT=out/base.qcow2 \
             scripts/build-base-image.sh
 
