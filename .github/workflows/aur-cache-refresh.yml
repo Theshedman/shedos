@@ -81,6 +81,12 @@ jobs:
           # from any keyserver, instead of warn-and-skip. Unset
           # anywhere, the 3-keyserver fallback was still fail-open.
           SHEDOS_AUR_STRICT_PGP: '1'
+          # Best-effort: a package that won't rebuild (upstream broke its
+          # PKGBUILD, a transient fetch failure, an unfetchable PGP key) is
+          # recorded and skipped with its cached build left in place, rather
+          # than aborting the whole sweep. One bad -git package upstream
+          # shouldn't strand every other package's refresh for a week.
+          SHEDOS_AUR_BEST_EFFORT: '1'
         run: bash scripts/build-aur-packages.sh
 
       - name: Drop stale cache entry under primary key
