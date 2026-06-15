@@ -4,263 +4,131 @@ description: CLI reference — shedman, pacman, and yay on ShedOS.
 order: 40
 section: Reference
 ---
-import CalloutBox from "~/components/CalloutBox.astro";
+import Callout from "~/components/Callout.astro";
 
-Every ShedOS tool is reachable as a subcommand of `shedman`. Long flags
-are the canonical spelling; short flags (`-y`, `-n`, `-d`, …) are
-aliases you can use wherever they're listed below.
+<h1 style="margin-top:.7rem;">Commands</h1>
 
-<CalloutBox kind="note">
-Run `shedman` with no arguments to list every installed subcommand
-with a one-line summary. `shedman help <cmd>` and `shedman <cmd>
---help` both show a subcommand's full usage.
-</CalloutBox>
+Every ShedOS tool is reachable as a subcommand of <code>shedman</code>. Long flags are the canonical spelling; short flags (<code>-y</code>, <code>-n</code>, <code>-d</code>, …) are aliases you can use wherever they're listed below.
+
+<Callout variant="note" label="Note"><Fragment set:html={String.raw`Run <code>shedman</code> with no arguments to list every installed subcommand with a one-line summary. <code>shedman help &lt;cmd&gt;</code> and <code>shedman &lt;cmd&gt; --help</code> both show a subcommand's full usage.`} /></Callout>
 
 ## Discovery
 
-| Command | Does |
-|---|---|
-| `shedman` | List every subcommand with one-line summaries. |
-| `shedman help` | Same as above. |
-| `shedman help <cmd>` | Show `<cmd>`'s `--help`. |
-| `shedman <cmd> --help` | Same as above. |
-| `shedman version` | Print the installed `shedos-system` package version. |
+<Fragment set:html={String.raw`<table><thead><tr><th>Command</th><th>Does</th></tr></thead><tbody>
+  <tr><td><code>shedman</code></td><td>List every subcommand with one-line summaries.</td></tr>
+  <tr><td><code>shedman help &lt;cmd&gt;</code></td><td>Show <code>&lt;cmd&gt;</code>'s <code>--help</code>.</td></tr>
+  <tr><td><code>shedman version</code></td><td>Print the installed <code>shedos-system</code> package version.</td></tr>
+</tbody></table>`} />
 
-Shell tab-completion is installed for zsh, bash, and fish. In any of
-them:
-
-```sh
-shedman <tab>        # lists subcommands
-shedman update -<tab>  # lists short + long flags
-```
-
-Each shell's optdepend (`bash-completion`, `zsh`, `fish`) picks up
-the completion file automatically. Man pages are available too:
-`man shedman`, `man shedman-update`, `man shedman-apply`, etc.
-
-Third-party packages can drop their own subcommands into
-`/usr/libexec/shedman/`. See the [plugin
-guide](https://github.com/Theshedman/shedos/blob/main/docs/plugins.md)
-for the conventions (one-line summaries, completion handlers,
-naming).
+Shell tab-completion is installed for zsh, bash, and fish. Man pages are available too: <code>man shedman</code>, <code>man shedman-update</code>, <code>man shedman-apply</code>, etc. Third-party packages can drop their own subcommands into <code>/usr/libexec/shedman/</code>.
 
 ## Daily upgrades
 
-`shedman update` is the primary upgrade command. It wraps `pacman -Syu`,
-`yay -Sua` (if installed), and `shedman config --sync` into one
-interactive flow bracketed by a snapper pre/post snapshot pair.
+<code>shedman update</code> is the primary upgrade command. It wraps <code>pacman -Syu</code>, <code>yay -Sua</code> (if installed), and <code>shedman config --sync</code> into one interactive flow bracketed by a snapper pre/post snapshot pair.
 
-| Command | Does |
-|---|---|
-| `shedman update` | Interactive: list pending updates, prompt `y/N`, run pacman → yay → config sync. |
-| `shedman update -y` / `--yes` | Unattended: threads `--noconfirm` through pacman/yay and `--yes` through config sync. Conflicts still drop `.shedosnew` — never silently overwrite. |
-| `shedman update -l` / `--list-snapshots` | Print recent snapper snapshots (rollback candidates). |
-| `shedman update -r <N>` / `--rollback <N>` | Roll back to snapshot `N`. Reboot required. |
-| `shedman update --history` | Open the upgrade-history TUI. |
+<Fragment set:html={String.raw`<table><thead><tr><th>Command</th><th>Does</th></tr></thead><tbody>
+  <tr><td><code>shedman update</code></td><td>Interactive: list pending updates, prompt <code>y/N</code>, run pacman → yay → config sync.</td></tr>
+  <tr><td><code>shedman update -y</code></td><td>Unattended: threads <code>--noconfirm</code> through pacman/yay. Conflicts still drop <code>.shedosnew</code>.</td></tr>
+  <tr><td><code>shedman update -l</code></td><td>Print recent snapper snapshots (rollback candidates).</td></tr>
+  <tr><td><code>shedman update -r &lt;N&gt;</code></td><td>Roll back to snapshot <code>N</code>. Reboot required.</td></tr>
+  <tr><td><code>shedman update --history</code></td><td>Open the upgrade-history TUI.</td></tr>
+</tbody></table>`} />
 
-See [Upgrading](/docs/upgrading) for the full flow, notification model,
-and conflict semantics.
+## Dotfile sync — <code>shedman config</code>
 
-## Dotfile sync (`shedman config`)
+<Fragment set:html={String.raw`<table><thead><tr><th>Command</th><th>Does</th></tr></thead><tbody>
+  <tr><td><code>shedman config -s</code></td><td>Apply the 3-way merge interactively; prints a plan, asks <code>y/N</code>.</td></tr>
+  <tr><td><code>shedman config -s -n</code></td><td>Print what would change, do nothing.</td></tr>
+  <tr><td><code>shedman config -s --rebuild-manifest</code></td><td>Re-hash <code>$HOME</code> against current defaults.</td></tr>
+  <tr><td><code>shedman config -r</code></td><td>Open the IDE-style merge TUI for unresolved <code>.shedosnew</code> files.</td></tr>
+</tbody></table>`} />
 
-Per-file 3-way merge between pristine defaults (shipped by packages),
-your live `$HOME` copy, and the last-seen manifest. Conflicts land as
-`<file>.shedosnew` — the tool never silently overwrites your edits.
+## Rollback & checkpoints
 
-| Command | Does |
-|---|---|
-| `shedman config -s` / `--sync` | Apply the 3-way merge interactively; prints a plan, asks `y/N`. |
-| `shedman config -s -y` / `--sync --yes` | Non-interactive sync. Still drops `.shedosnew` for genuine conflicts. |
-| `shedman config -s -n` / `--sync --dry-run` | Print what would change, do nothing. |
-| `shedman config -s --rebuild-manifest` | Re-hash `$HOME` against current defaults — effectively "trust me, I'm aligned". |
-| `shedman config -r` / `--review` | Open the IDE-style merge TUI for unresolved `.shedosnew` files. |
-| `shedman config -r --file PATH` | Open the TUI directly on one file. |
-
-## Rollback (`shedman rollback`)
-
-Low-level subvolume swap. Usually you want `shedman update -r <N>`;
-this is the tool that it delegates to when you need the raw controls
-or a reboot without a preceding upgrade.
-
-| Command | Does |
-|---|---|
-| `shedman rollback <N>` | Rename `@` to `@.rollback-<ts>`, snapshot `<N>` into a fresh `@`. Reboot required. |
-| `shedman rollback -l` / `--list` | Show recent snapper snapshots and exit. |
-| `shedman rollback -u` / `--undo` | Promote the most recent `@.rollback-<ts>` back to `@`. |
-| `shedman rollback -y` / `--yes` | Skip the confirmation prompt. |
-| `shedman rollback -k` / `--keep-current` | Pair with `--undo`: keep the prior backup around. |
-
-## Checkpoints (`shedman snapshot`)
-
-The manual "before I break something" checkpoint: a btrfs snapshot
-via snapper, listed under Manual snapshots in `shedman
-upgrade-history` and restored through `shedman rollback`.
-
-| Command | Does |
-|---|---|
-| `shedman snapshot <label>` | Create a checkpoint named `<label>`; prints the snapshot number and the restore command. |
-| `shedman snapshot -l` / `--list` | List manual checkpoints. |
+<Fragment set:html={String.raw`<table><thead><tr><th>Command</th><th>Does</th></tr></thead><tbody>
+  <tr><td><code>shedman rollback &lt;N&gt;</code></td><td>Rename <code>@</code> to <code>@.rollback-&lt;ts&gt;</code>, snapshot <code>N</code> into a fresh <code>@</code>. Reboot required.</td></tr>
+  <tr><td><code>shedman rollback -l</code></td><td>Show recent snapper snapshots and exit.</td></tr>
+  <tr><td><code>shedman rollback -u</code></td><td>Promote the most recent <code>@.rollback-&lt;ts&gt;</code> back to <code>@</code>.</td></tr>
+  <tr><td><code>shedman snapshot &lt;label&gt;</code></td><td>Create a checkpoint; prints the snapshot number and the restore command.</td></tr>
+  <tr><td><code>shedman snapshot -l</code></td><td>List manual checkpoints.</td></tr>
+</tbody></table>`} />
 
 ## Observability
 
-Four waybar-backed signals. Each command prints human-readable text by
-default; click the matching waybar pill for the same action.
+Four waybar-backed signals. Click the matching waybar pill for the same action.
 
-| Command | Does |
-|---|---|
-| `shedman updates` | Pending pacman + AUR update count. |
-| `shedman conflicts` | Unresolved `.shedosnew` count. |
-| `shedman health` | Disk / memory / battery / CPU-temp / disk-SMART / btrfs-scrub summary. |
-| `shedman doctor` | Drift between `/etc/shedos/system.toml` and live state. |
-| `shedman status` | **All four signals plus a verdict line**, in one screen. |
-| `shedman status -j` / `--json` | Aggregated JSON payload (schema-versioned). |
+<Fragment set:html={String.raw`<table><thead><tr><th>Command</th><th>Does</th></tr></thead><tbody>
+  <tr><td><code>shedman updates</code></td><td>Pending pacman + AUR update count.</td></tr>
+  <tr><td><code>shedman conflicts</code></td><td>Unresolved <code>.shedosnew</code> count.</td></tr>
+  <tr><td><code>shedman health</code></td><td>Disk / memory / battery / CPU-temp / SMART / btrfs-scrub summary.</td></tr>
+  <tr><td><code>shedman doctor</code></td><td>Drift between <code>/etc/shedos/system.toml</code> and live state.</td></tr>
+  <tr><td><code>shedman status</code></td><td><strong>All four signals plus a verdict line</strong>, in one screen.</td></tr>
+  <tr><td><code>shedman status -j</code></td><td>Aggregated JSON payload (schema-versioned).</td></tr>
+</tbody></table>`} />
 
-<CalloutBox kind="info">
-`shedman status --json` is the recommended integration point for
-monitoring scripts — it passes each underlying waybar payload through
-verbatim under its signal key, plus a top-level `summary` section.
-</CalloutBox>
+## Declarative state
 
-## Declarative state (`shedman apply` / `shedman doctor`)
+<code>/etc/shedos/system.toml</code> is the source of truth for systemd units, drop-ins, pacman repos, snapper configs, and the Postgres service shape.
 
-`/etc/shedos/system.toml` is the source of truth for systemd units,
-drop-ins, pacman repos, snapper configs, and the Postgres service
-shape. `shedman apply` reconciles live state *to* the TOML;
-`shedman doctor` is the read-only drift detector.
+<Fragment set:html={String.raw`<table><thead><tr><th>Command</th><th>Does</th></tr></thead><tbody>
+  <tr><td><code>shedman apply</code></td><td>Plan, prompt, apply.</td></tr>
+  <tr><td><code>shedman apply -n</code></td><td>Plan and exit.</td></tr>
+  <tr><td><code>shedman apply --validate</code></td><td>Parse and validate the TOML; exit 0 if OK, 2 on schema error.</td></tr>
+  <tr><td><code>shedman doctor -d</code></td><td>Unified diff for every drift entry.</td></tr>
+  <tr><td><code>shedman doctor -f</code></td><td>Delegate to <code>shedman apply --yes</code>.</td></tr>
+</tbody></table>`} />
 
-| Command | Does |
-|---|---|
-| `shedman apply` | Plan, prompt, apply. |
-| `shedman apply -n` / `--dry-run` | Plan and exit. |
-| `shedman apply -y` / `--yes` | Apply without prompting. |
-| `shedman apply -c PATH` / `--config PATH` | Use a non-default TOML. |
-| `shedman apply --validate` | Parse and validate the TOML; exit 0 if OK, 2 on schema error. |
-| `shedman doctor` | Summarize drift (default human text). |
-| `shedman doctor -d` / `--diff` | Unified diff for every drift entry. |
-| `shedman doctor -j` / `--json` | JSON drift report. |
-| `shedman doctor -f` / `--fix` | Delegate to `shedman apply --yes`. |
-
-<CalloutBox kind="warn">
-`shedman apply` is intentionally **not** timer-driven — surprise
-reconciles are hostile. `shedman doctor` runs on a 6-hour user timer
-and pings the waybar pill + mako if drift appears.
-</CalloutBox>
-
-## Logs & history
-
-| Command | Does |
-|---|---|
-| `shedman logs` | Textual journalctl browser (three-pane TUI). |
-| `shedman update --history` | Snapper pre/post pair browser; `r` invokes rollback. |
+<Callout variant="warn" label="Warning"><Fragment set:html={String.raw`<code>shedman apply</code> is intentionally <strong>not</strong> timer-driven — surprise reconciles are hostile. <code>shedman doctor</code> runs on a 6-hour user timer and pings the waybar pill + mako if drift appears.`} /></Callout>
 
 ## Installation helpers
 
-| Command | Does |
-|---|---|
-| `shedman install <pkg>` | Install one or more packages. Source auto-detected: pacman first (official + `[shedos]`), then yay/AUR. |
-| `shedman install -s <query>` | Search across pacman repos and AUR. |
-| `shedman migrate --detect` | Print `packaged` or `legacy` based on current state. |
-| `shedman migrate -n` / `--dry-run` | Print the retrofit plan (default). |
-| `shedman migrate -y` / `--yes` | Execute retrofit onto pre-April-2026 installs. |
-| `shedman migrate --from-arch` | Adopt an existing Arch install into ShedOS without reinstalling: trust the signing key, add the repo, install the stack. Dry-run by default; add `--yes` to execute. |
-
-<CalloutBox kind="note">
-The legacy retrofit path is only relevant on systems installed from
-an ISO dated before April 2026 — fresh installs see "already
-packaged" and exit 0. `--from-arch` is different: it adopts a
-running Arch install into ShedOS (vanilla Arch only — Manjaro is
-refused). See the [FAQ](/docs/faq) for what adoption does and
-doesn't touch.
-</CalloutBox>
+<Fragment set:html={String.raw`<table><thead><tr><th>Command</th><th>Does</th></tr></thead><tbody>
+  <tr><td><code>shedman install &lt;pkg&gt;</code></td><td>Install one or more packages. Source auto-detected: pacman first (official + <code>[shedos]</code>), then yay/AUR.</td></tr>
+  <tr><td><code>shedman install -s &lt;query&gt;</code></td><td>Search across pacman repos and AUR.</td></tr>
+  <tr><td><code>shedman uninstall &lt;pkg&gt;</code></td><td>Remove packages + unused deps; routes pacman vs yay automatically, prompts first.</td></tr>
+  <tr><td><code>shedman migrate --from-arch</code></td><td>Adopt an existing Arch install into ShedOS without reinstalling. Dry-run by default.</td></tr>
+</tbody></table>`} />
 
 ## Desktop & session
 
-| Command | Does |
-|---|---|
-| `shedman keybindings` | Every keybinding and touchpad gesture in a searchable dialog (Super+Alt+K). |
-| `shedman launcher` | Open the Walker app launcher. |
-| `shedman dock <verb>` | Manage the dock: `toggle`, `position <edge>`, `pin`/`unpin <app>`, `pinned`, `restart`, `status`. |
-| `shedman power` | The power menu (lock / sleep / reboot / shutdown). |
-| `shedman lock` | Lock the session (logind → shedos-screensaver). |
-| `shedman screenrecord` | Start/stop screen recording (wf-recorder; waybar pill shows the live state). |
-| `shedman screensaver` | The animated SHEDOS art — terminal or fullscreen overlay. |
-| `shedman tour` | Replay the first-run welcome tour overlay (the slide intro shown automatically on first login). |
-| `shedman browser` | Launch the default web browser. |
-| `shedman theme list / get` | Show available palettes / current theme values. |
-| `shedman theme set <key> <value>` | Switch `palette`, `wallpaper`, `font_ui`, or `font_mono`; re-renders and reloads everything live. |
-| `shedman theme apply` | Re-render the theme outputs without changing values. |
+<Fragment set:html={String.raw`<table><thead><tr><th>Command</th><th>Does</th></tr></thead><tbody>
+  <tr><td><code>shedman keybindings</code></td><td>Every keybinding and gesture in a searchable dialog (Super+Alt+K).</td></tr>
+  <tr><td><code>shedman launcher</code></td><td>Open the Walker app launcher.</td></tr>
+  <tr><td><code>shedman dock &lt;verb&gt;</code></td><td>Manage the dock: <code>toggle</code>, <code>position &lt;edge&gt;</code>, <code>pin</code>/<code>unpin</code>, <code>status</code>.</td></tr>
+  <tr><td><code>shedman power</code> / <code>lock</code></td><td>The power menu / lock the session.</td></tr>
+  <tr><td><code>shedman theme set &lt;key&gt; &lt;value&gt;</code></td><td>Switch <code>palette</code>, <code>wallpaper</code>, <code>font_ui</code>, or <code>font_mono</code>; re-renders everything live.</td></tr>
+</tbody></table>`} />
 
 ## System management
 
-| Command | Does |
-|---|---|
-| `shedman kernel -l` / `--list` | Installed kernels; `*` marks the default Limine entry. |
-| `sudo shedman kernel --set-default <pkgbase>` | Make a kernel the default boot entry. |
-| `shedman services` | Table of expected services (platform set + whatever `system.toml` declares) with enabled/active state. |
-| `sudo shedman services --fix` | Enable + start anything missing; initializes the Postgres cluster if absent. |
-| `shedman datetime` | Set timezone, network time, the system clock, and the night-light schedule. |
-| `shedman db create / drop / list` | Per-project databases, run as you: `create <name>`, `drop <name>` (asks first; refuses your personal default DB), `list` (your databases, with sizes). |
-| `sudo shedman db --pg-bootstrap` | Bootstrap per-user Postgres roles + same-named default databases (also runs on boot). |
-| `shedman fingerprint list / enroll / delete / clear` | Manage fingerprint enrollments (login + sudo). |
-| `shedman uninstall <pkg>` | Remove packages + unused deps; routes pacman vs yay automatically, prompts before removing (`-y` to skip). |
-| `shedman upgrade-history` | Browse past upgrades and roll back to any snapshot. |
+<Fragment set:html={String.raw`<table><thead><tr><th>Command</th><th>Does</th></tr></thead><tbody>
+  <tr><td><code>shedman kernel -l</code></td><td>Installed kernels; <code>*</code> marks the default Limine entry.</td></tr>
+  <tr><td><code>shedman services</code></td><td>Table of expected services with enabled/active state.</td></tr>
+  <tr><td><code>shedman datetime</code></td><td>Set timezone, network time, the system clock, and the night-light schedule.</td></tr>
+  <tr><td><code>shedman db create / drop / list</code></td><td>Per-project databases, run as you.</td></tr>
+  <tr><td><code>shedman fingerprint &lt;verb&gt;</code></td><td>Manage fingerprint enrollments (login + sudo).</td></tr>
+  <tr><td><code>shedman upgrade-history</code></td><td>Browse past upgrades and roll back to any snapshot.</td></tr>
+</tbody></table>`} />
 
 ## pacman cheatsheet
 
-`shedman update` wraps `pacman -Syu` for you, but the raw commands are
-still useful for targeted work. These are the invocations a ShedOS
-user actually types:
-
-| Command | Does |
-|---|---|
-| `sudo pacman -Syu` | System upgrade (skips the config-sync step `shedman update` runs). |
-| `pacman -Ss <term>` | Search the repos for packages matching `<term>`. |
-| `sudo pacman -S <pkg>` | Install `<pkg>`. |
-| `sudo pacman -Rns <pkg>` | Remove `<pkg>` with its config + orphaned deps. |
-| `pacman -Qi <pkg>` | Inspect installed-package metadata. |
-| `pacman -Qs <term>` | Search installed packages. |
-| `pacman -Qo <path>` | Which package owns `<path>`? |
-| `pacman -Qdt` | List orphaned dependencies (candidates for removal). |
-| `sudo pacman -Fy` | Refresh the file database. |
-| `pacman -F <file>` | Which (possibly uninstalled) package ships `<file>`? |
-| `sudo pacman -Scc` | Clean the package cache (reclaim disk). |
+<Fragment set:html={String.raw`<table><thead><tr><th>Command</th><th>Does</th></tr></thead><tbody>
+  <tr><td><code>sudo pacman -Syu</code></td><td>System upgrade (skips the config-sync step).</td></tr>
+  <tr><td><code>pacman -Ss &lt;term&gt;</code></td><td>Search the repos.</td></tr>
+  <tr><td><code>sudo pacman -S &lt;pkg&gt;</code></td><td>Install a package.</td></tr>
+  <tr><td><code>sudo pacman -Rns &lt;pkg&gt;</code></td><td>Remove a package with its config + orphaned deps.</td></tr>
+  <tr><td><code>pacman -Qo &lt;path&gt;</code></td><td>Which package owns a path?</td></tr>
+  <tr><td><code>pacman -Qdt</code></td><td>List orphaned dependencies.</td></tr>
+  <tr><td><code>sudo pacman -Scc</code></td><td>Clean the package cache.</td></tr>
+</tbody></table>`} />
 
 ## yay cheatsheet (AUR)
 
-`shedman update` already runs `yay -Sua` after `pacman -Syu`. The raw
-invocations for ad-hoc AUR work:
+<Fragment set:html={String.raw`<table><thead><tr><th>Command</th><th>Does</th></tr></thead><tbody>
+  <tr><td><code>yay -Sua</code></td><td>AUR-only upgrade.</td></tr>
+  <tr><td><code>yay -S &lt;pkg&gt;</code></td><td>Install from AUR (prompts, builds, installs).</td></tr>
+  <tr><td><code>yay -Rns &lt;pkg&gt;</code></td><td>Remove an AUR package.</td></tr>
+  <tr><td><code>yay -Yc</code></td><td>Clean orphan + unneeded AUR deps.</td></tr>
+</tbody></table>`} />
 
-| Command | Does |
-|---|---|
-| `yay -Sua` | AUR-only upgrade (skips repo packages). |
-| `yay -Ss <term>` | Search AUR + repos. |
-| `yay -S <pkg>` | Install from AUR (prompts, builds, installs). |
-| `yay -Rns <pkg>` | Remove an AUR package. |
-| `yay -Yc` | Clean orphan + unneeded AUR deps. |
-| `yay -Ps` | Print AUR/pacman stats. |
-
-<CalloutBox kind="info">
-Proprietary AUR packages (Chrome, Postman, JetBrains Toolbox) are
-listed in `shedos-meta`'s `optdepends=()` and aren't installed by
-default — `shedman install <pkg>` adds any of them post-boot from any
-source (pacman or AUR) with one command. `code` (open-source VS Code
-from `extra`) ships by default.
-</CalloutBox>
-
-## Flag combining
-
-Python-backed subcommands (`apply`, `doctor`, `status`, `_config-review`,
-`logs`, `upgrade-history`) accept combined shorts:
-
-```sh
-shedman apply -yn        # same as --yes --dry-run
-shedman doctor -df       # --diff --fix
-```
-
-Bash-backed subcommands (`update`, `rollback`, `snapshot`, `config`,
-`_config-sync`, `services`, `install`, `migrate`) don't — pass them separately:
-
-```sh
-shedman update -y -l     # OK
-shedman update -yl       # → "unknown option: -yl"
-```
+<Callout label="Info"><Fragment set:html={String.raw`Proprietary AUR packages (Chrome, Postman, JetBrains Toolbox) aren't installed by default — <code>shedman install &lt;pkg&gt;</code> adds any of them post-boot from any source with one command. <code>code</code> (open-source VS Code from <code>extra</code>) ships by default.`} /></Callout>
