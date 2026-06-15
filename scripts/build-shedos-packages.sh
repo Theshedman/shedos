@@ -344,7 +344,9 @@ for dir in "${PKG_DIRS[@]}"; do
                 | LC_ALL=C sort)
             if [[ $staged_list != "$cached_list" ]]; then
                 echo "✗ $pkgname: bundled AUR set drifted; busting cache"
-                diff <(echo "$cached_list") <(echo "$staged_list") | sed 's/^/    /'
+                # diff exits 1 on differences, which is the whole point here;
+                # don't let pipefail turn the report into a fatal.
+                diff <(echo "$cached_list") <(echo "$staged_list") | sed 's/^/    /' || true
                 for c in "${cached[@]}"; do
                     rm -f "$c" "$c.sig"
                 done
