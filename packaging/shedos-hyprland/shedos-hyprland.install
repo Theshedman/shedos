@@ -40,14 +40,37 @@ _strip_live_artifacts() {
     fi
 }
 
+_migrate_surface_enablement() {
+    # Migrate existing users off the old `--global enable` model: seed each real
+    # user's wants/ from skel, drop the stale /etc/systemd/user globals. Guarded
+    # off the live build, where the seed hook already copies skel. Idempotent.
+    [[ -d /etc/calamares ]] && return 0
+    local skel_wants=/etc/skel/.config/systemd/user/graphical-session.target.wants
+    [[ -d $skel_wants ]] || return 0
+
+    local uid gid home user_wants link name
+    while IFS=: read -r _ _ uid gid _ home _; do
+        [[ -d $home ]] || continue
+        user_wants="$home/.config/systemd/user/graphical-session.target.wants"
+        install -d -o "$uid" -g "$gid" "$user_wants" 2>/dev/null || continue
+        for link in "$skel_wants"/*; do
+            name=${link##*/}
+            [[ -e "$user_wants/$name" || -L "$user_wants/$name" ]] && continue
+            cp -P "$link" "$user_wants/$name" 2>/dev/null || continue
+            chown -h "$uid:$gid" "$user_wants/$name" 2>/dev/null || true
+        done
+    done < <(getent passwd | awk -F: '$3 >= 1000 && $3 < 65000 && $6 ~ /^\/home\//')
+
+    local global_wants=/etc/systemd/user/graphical-session.target.wants
+    [[ -d $global_wants ]] || return 0
+    for link in "$skel_wants"/*; do
+        rm -f "$global_wants/${link##*/}"
+    done
+}
+
 post_install() {
     _strip_live_artifacts
-    systemctl --global enable shedos-hypr-reload.path 2>/dev/null || true
-    systemctl --global enable shedos-lock-migration.service 2>/dev/null || true
-    systemctl --global enable shedos-lua-migration.service 2>/dev/null || true
-    systemctl --global enable shedos-wallpaper.service 2>/dev/null || true
-    systemctl --global enable shedos-recovery-notify.service 2>/dev/null || true
-    systemctl --global enable hypridle.service waybar.service mako.service 2>/dev/null || true
+    _migrate_surface_enablement
     /usr/lib/shedos/sync-lockdead 2>/dev/null || true
     cat <<'EOF'
 
@@ -63,11 +86,6 @@ EOF
 
 post_upgrade() {
     _strip_live_artifacts
-    systemctl --global enable shedos-hypr-reload.path 2>/dev/null || true
-    systemctl --global enable shedos-lock-migration.service 2>/dev/null || true
-    systemctl --global enable shedos-lua-migration.service 2>/dev/null || true
-    systemctl --global enable shedos-wallpaper.service 2>/dev/null || true
-    systemctl --global enable shedos-recovery-notify.service 2>/dev/null || true
-    systemctl --global enable hypridle.service waybar.service mako.service 2>/dev/null || true
+    _migrate_surface_enablement
     /usr/lib/shedos/sync-lockdead 2>/dev/null || true
 }
