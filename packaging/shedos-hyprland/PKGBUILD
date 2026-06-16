@@ -55,6 +55,8 @@ depends=(
     'shedos-hyprland-plugin-hyprspace'   # workspace overview for the 3-finger swipe up gesture
     # Binaries the shipped configs exec directly (keybinds, autostart,
     # hypridle). Previously these rode in via the meta world list only.
+    'awww'                # wallpaper daemon for shedos-wallpaper.service + theme hook
+    'hypridle'            # idle daemon; user unit enabled via skel
     'grim'                # screenshots (Print binds)
     'slurp'               # region selection for screenshots + screenrecord
     'swappy'              # screenshot annotation editor
