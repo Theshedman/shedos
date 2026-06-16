@@ -32,10 +32,11 @@ jobs:
     environment: SHEDOS_ENV
     container:
       image: archlinux:latest
-      # No --privileged: building packages needs no loop/mount, so don't hand
-      # the build container host-kernel access (build-iso keeps it for loopback).
-      # /usr,/opt are bind-mounted only to trim the runner's preinstalled
-      # toolchains for disk; rw, but the runner is an ephemeral throwaway.
+      # --privileged is required: build-shedos-packages.sh bind-mounts the local
+      # repo to /srv for makepkg's file:// lookups, and mount needs CAP_SYS_ADMIN.
+      # (Dropping it would mean eliminating that bind-mount first.)
+      options: --privileged
+      # Mount only the toolchain trees we trim below, not / (ownership warning).
       volumes:
         - /usr:/host/usr
         - /opt:/host/opt
