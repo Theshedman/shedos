@@ -21,6 +21,7 @@ jobs:
       volumes:
         - /usr:/host/usr
         - /opt:/host/opt
+        - /mnt:/mnt
 
     env:
       R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
@@ -214,7 +215,11 @@ jobs:
           SHEDOS_ISO_TAG: ${{ github.ref_name }}
         run: |
           export SHEDOS_ISO_TAG="${SHEDOS_ISO_TAG#v}"
-          make iso SHEDOS_ISO_TAG="$SHEDOS_ISO_TAG"
+          # Build the work tree on /mnt (~74G), not /__w (~43G), so the
+          # airootfs + squashfs don't run mkarchiso out of space.
+          mkdir -p /mnt/archiso-work
+          df -h /mnt /__w || true
+          make iso WORK_DIR=/mnt/archiso-work SHEDOS_ISO_TAG="$SHEDOS_ISO_TAG"
           ls -la out/
 
       - name: Compute checksum
