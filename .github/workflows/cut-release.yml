@@ -47,6 +47,8 @@ jobs:
         with:
           token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 0
+          # Don't leave the App token in .git/config; the push step sets it explicitly.
+          persist-credentials: false
 
       - name: Trust workspace for git
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -78,6 +80,8 @@ jobs:
         run: bash scripts/reconcile-release.sh
 
       - name: Commit, tag, and push atomically
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
           git config user.name  "shedos-ci[bot]"
@@ -89,5 +93,19 @@ jobs:
               echo "manifest already in sync; tagging HEAD as-is"
           fi
           git tag -a "$TAG" -m "release: $TAG"
-          git push --atomic origin HEAD:main "refs/tags/$TAG"
+          git push --atomic \
+              "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+              HEAD:main "refs/tags/$TAG"
           echo "pushed $TAG"
+
+      # Revoke the App token so a leaked log line can't replay it.
+      - name: Revoke the App token
+        if: always() && steps.app-token.outputs.token != ''
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          curl -sS -X DELETE \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              https://api.github.com/installation/token
