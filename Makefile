@@ -29,7 +29,7 @@ YELLOW := \033[0;33m
 RED := \033[0;31m
 NC := \033[0m
 
-.PHONY: all iso clean clean-all test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages regen bump bump-today bump-check release push test-review-configs test-sync-configs test-check-health test-tui-logs test-tui-history test-apply test-apply-checkpoint test-doctor test-shedman test-status test-completions test-migrate test-man test-screenrecord test-kernel test-installer test-config test-rollback test-update test-install test-screensaver test-screensaver-rust lint-rust
+.PHONY: all iso clean clean-all test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages regen bump bump-today bump-check release release-rc release-stable _cut push test-review-configs test-sync-configs test-check-health test-tui-logs test-tui-history test-apply test-apply-checkpoint test-doctor test-shedman test-status test-completions test-migrate test-man test-screenrecord test-kernel test-installer test-config test-rollback test-update test-install test-screensaver test-screensaver-rust lint-rust
 
 all: iso
 
@@ -43,7 +43,9 @@ help:
 	@echo "  bump               Hash-aware pkgver/pkgrel bump (uses current VERSION)"
 	@echo "  bump-today         Set VERSION to today's date and run bump"
 	@echo "  bump-check         Validate manifest matches working tree; CI gate"
-	@echo "  release TAG=v...   Bump + commit + push main + tag, race-free"
+	@echo "  release-rc         Cut an rc tag in CI (reconcile + tag, drift-proof)"
+	@echo "  release-stable     Cut a stable tag in CI"
+	@echo "  release TAG=v...   Local cut escape hatch (needs ALLOW_LOCAL_CUT=1)"
 	@echo "  push               Fetch + rebase onto origin/main + push (handles CI auto-bumps)"
 	@echo "  download-packages  Download packages & freeze package state (DETERMINISTIC)"
 	@echo "  iso                Build the ShedOS ISO image (fully offline, uses frozen packages)"
@@ -128,15 +130,15 @@ bump-today:
 bump-check:
 	@./scripts/bump-version.sh --check
 
-# Cut a release tag from current main HEAD. Bumps locally first so the
-# tagged commit has a clean manifest, then pushes main + tag together.
-# Sidesteps the race where CI's auto-bump could land between an
-# unbumped main push and a tag push, leaving the tag on a stale commit.
-#
-# Usage:
-#   make release TAG=v2026.05.02-rc11    # release candidate
-#   make release TAG=v2026.05.02         # stable
+# Local escape hatch for backports / retags on a non-today date. Prefer the
+# CI cut (make release-rc); a local cut can drift from CI's closure
+# resolution, so it requires ALLOW_LOCAL_CUT=1.
 release:
+	@if [ -z "$(ALLOW_LOCAL_CUT)" ]; then \
+		echo -e "$(YELLOW)Cut in CI: make release-rc / release-stable. Local cuts can drift.$(NC)" >&2; \
+		echo -e "$(YELLOW)Force a local cut: make release TAG=$(TAG) ALLOW_LOCAL_CUT=1$(NC)" >&2; \
+		exit 1; \
+	fi
 	@if [ -z "$(TAG)" ]; then \
 		echo -e "$(RED)Usage: make release TAG=v<CalVer>[-rcN]$(NC)" >&2; exit 1; \
 	fi
@@ -166,8 +168,13 @@ release:
 		echo -e "$(YELLOW)→ VERSION $$actual_ver → $$expected_ver (from TAG)$(NC)"; \
 		echo "$$expected_ver" > VERSION; \
 	fi
-	@echo -e "$(GREEN)→ Bumping locally (idempotent)...$(NC)"
-	@./scripts/bump-version.sh "$$(cat VERSION)"
+	@if [ "$$(id -u)" = 0 ]; then \
+		echo -e "$(GREEN)→ Reconciling closure + manifest...$(NC)"; \
+		./scripts/reconcile-release.sh; \
+	else \
+		echo -e "$(YELLOW)→ not root: closure unresolved, CI's cut is authoritative$(NC)"; \
+		./scripts/bump-version.sh "$$(cat VERSION)"; \
+	fi
 	@if ! git diff --quiet -- packaging/ VERSION; then \
 		git add packaging/ VERSION; \
 		git commit -m "release: $(TAG)"; \
@@ -209,35 +216,21 @@ push:
 	@git push origin main
 	@echo -e "$(GREEN)Pushed. CI will build and publish.$(NC)"
 
-# Convenience wrappers: derive the tag from today's UTC date so a
-# stale VERSION file can never produce a wrong-dated release. Both
-# delegate to `release` which still enforces working-tree-clean,
-# branch=main, and tag-not-already-on-origin.
-#
-#   make release-stable    # tag: v<today-UTC>
-#   make release-rc        # tag: v<today-UTC>-rcN  (N = next available)
-#
-# UTC is the reference clock so the tag matches CI/R2's timestamps
-# regardless of where the cut runs from. Use `make release TAG=...`
-# directly for backports, retags, or non-today dates.
+# Cut a release in CI. cut-release.yml reconciles main and tags inside the
+# same container that validates the tag, so the cut can't land on a drifting
+# manifest. Date + rcN are computed there.
 release-stable:
-	@today="$$(date -u +%Y.%m.%d)"; \
-	tag="v$$today"; \
-	if git ls-remote --tags origin "refs/tags/$$tag" 2>/dev/null | grep -q "refs/tags/$$tag$$"; then \
-		echo -e "$(RED)Tag $$tag already exists on origin$(NC)" >&2; \
-		echo -e "$(YELLOW)Use 'make release TAG=...' to override (e.g. for a same-day re-cut on a different commit).$(NC)" >&2; \
-		exit 1; \
-	fi; \
-	$(MAKE) release TAG=$$tag
+	@$(MAKE) _cut KIND=stable
 
 release-rc:
-	@today="$$(date -u +%Y.%m.%d)"; \
-	max_n="$$(git ls-remote --tags origin "refs/tags/v$$today-rc*" 2>/dev/null \
-		| sed -nE 's|.*refs/tags/v[0-9]{4}\.[0-9]{2}\.[0-9]{2}-rc([0-9]+)$$|\1|p' \
-		| sort -n | tail -1)"; \
-	next="$${max_n:+$$((max_n + 1))}"; \
-	next="$${next:-1}"; \
-	$(MAKE) release TAG="v$$today-rc$$next"
+	@$(MAKE) _cut KIND=rc
+
+_cut:
+	@gh workflow run cut-release.yml -f kind=$(KIND)
+	@echo -e "$(GREEN)→ dispatched cut-release ($(KIND)); watching...$(NC)"
+	@sleep 5
+	@id="$$(gh run list --workflow=cut-release.yml --limit 1 --json databaseId --jq '.[0].databaseId')"; \
+	gh run watch "$$id" --exit-status
 
 build-aur:
 	@echo -e "$(GREEN)Building AUR packages...$(NC)"
