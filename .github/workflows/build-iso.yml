@@ -256,8 +256,9 @@ jobs:
         # non-blocking so a failure can't stop publishing
         continue-on-error: true
         run: |
-          # virtio-gpu-gl needs the GL/EGL/virgl runtime qemu-base doesn't pull
-          pacman -S --needed --noconfirm virglrenderer mesa libglvnd
+          # Arch splits qemu's display backends: -display egl-headless lives in
+          # qemu-ui-egl-headless, not qemu-base. virglrenderer/mesa back the GL.
+          pacman -S --needed --noconfirm qemu-ui-egl-headless virglrenderer mesa libglvnd
           SHEDOS_LIVE_ISO="out/$ISO_NAME" SHEDOS_INSTALLED_IMAGE=out/base.qcow2 \
             scripts/live-iso-lock-assert.sh
 
