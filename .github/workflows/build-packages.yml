@@ -32,8 +32,10 @@ jobs:
     environment: SHEDOS_ENV
     container:
       image: archlinux:latest
-      options: --privileged
-      # Mount only the toolchain trees we trim below, not / (ownership warning).
+      # No --privileged: building packages needs no loop/mount, so don't hand
+      # the build container host-kernel access (build-iso keeps it for loopback).
+      # /usr,/opt are bind-mounted only to trim the runner's preinstalled
+      # toolchains for disk; rw, but the runner is an ephemeral throwaway.
       volumes:
         - /usr:/host/usr
         - /opt:/host/opt
