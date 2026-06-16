@@ -27,6 +27,14 @@ _is_local() {
     esac
 }
 
+# Rewrite a checksum only where it sits as a quoted array token, first match
+# only. An unanchored s/old/new/ would rewrite the first hash-looking string
+# anywhere in the file (a comment, a URL, a _commit= pin) — wrong line.
+_sub_quoted_hash() {
+    local old=$1 new=$2
+    sed -i "0,/\\(['\"]\\)$old\\1/s//\\1$new\\1/" PKGBUILD
+}
+
 _refresh_array() {
     local src_name=$1 sha_name=$2 b2_name=$3
     declare -n src="$src_name" sha="$sha_name" b2="$b2_name"
@@ -41,11 +49,11 @@ _refresh_array() {
         old_sha="${sha[$idx]:-}"
         old_b2="${b2[$idx]:-}"
         if [[ -n $old_sha && $old_sha != SKIP && $old_sha != "$new_sha" ]]; then
-            sed -i "s/$old_sha/$new_sha/" PKGBUILD
+            _sub_quoted_hash "$old_sha" "$new_sha"
             echo "    refresh $file: sha256 $old_sha → $new_sha"
         fi
         if [[ -n $old_b2 && $old_b2 != SKIP && $old_b2 != "$new_b2" ]]; then
-            sed -i "s/$old_b2/$new_b2/" PKGBUILD
+            _sub_quoted_hash "$old_b2" "$new_b2"
             echo "    refresh $file: b2sum $old_b2 → $new_b2"
         fi
     done
