@@ -25,9 +25,6 @@ jobs:
       - name: Trust workspace for git
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
-      # The suites run unprivileged — the tools refuse root, and each suite
-      # stubs the privileged surface (pacman/systemctl/snapper/ufw/yad) and
-      # redirects its surface roots, so nothing touches the container.
       - name: Build the screensaver (its suite tests the real binary)
         run: |
           useradd -m tester
@@ -35,8 +32,6 @@ jobs:
           sudo -u tester bash -c 'cd packaging/shedos-screensaver && cargo build'
 
       - name: Run the Rust unit suites
-        # Every crate with tests: the screensaver workspace plus the
-        # single-crate overlays. Locked so CI never resolves new deps.
         run: |
           sudo -u tester bash -c '
             set -e

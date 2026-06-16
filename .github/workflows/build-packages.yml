@@ -1,10 +1,5 @@
 name: build-packages
 
-# Builds every PKGBUILD under packaging/, signs with the repo GPG key, and
-# publishes the repo DB + packages to r2:shedos-repo/{stable,test}/x86_64/.
-# Runs on pushes to main that touch package contents. Manual dispatch is
-# also allowed.
-
 on:
   push:
     branches: [main]
@@ -26,21 +21,19 @@ concurrency:
   group: repo-publish
   cancel-in-progress: false
 
-# contents: write so the auto-bump step (main pushes only) can commit
-# the refreshed PKGBUILD pkgrel + manifest back to main.
+# contents: write lets the auto-bump step push back to main.
 permissions:
   contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Secrets (SHEDOS_REPO_SIGNING_KEY, R2_*) are scoped to this environment.
-    # Without this line the `secrets.*` lookups below resolve to empty strings.
+    # Scopes the secrets.* lookups; without it they resolve to empty strings.
     environment: SHEDOS_ENV
     container:
       image: archlinux:latest
       options: --privileged
-      # only the toolchain trees we trim below, not / (ownership warning)
+      # Mount only the toolchain trees we trim below, not / (ownership warning).
       volumes:
         - /usr:/host/usr
         - /opt:/host/opt
@@ -51,9 +44,6 @@ jobs:
 
     steps:
       - name: Free host disk space
-        # Strip preinstalled toolchains we don't use so makepkg has room
-        # to build the AUR + shedos packages on a cold cache. Cheap when
-        # the cache hits (no-op).
         run: |
           df -h /__w || true
           rm -rf \
@@ -72,42 +62,28 @@ jobs:
       - name: Install build dependencies
         run: |
           pacman -Syu --noconfirm
-          # scdoc is a makedep of shedos-system (renders man/*.scd → *.1).
-          # makepkg runs with --nodeps for the pure-copy shedos-* packages,
-          # so makedeps can't be left to --syncdeps; install them directly.
+          # shedos-* build with --nodeps, so install makedeps (scdoc) directly.
           pacman -S --needed --noconfirm base-devel git sudo gnupg rclone pacman-contrib scdoc python
-          # archlinux:latest ships an empty pacman keyring. Initialize + populate
-          # the archlinux trust chain so makepkg --syncdeps can verify signed
-          # packages from core/extra during dependency resolution.
+          # archlinux:latest ships an empty keyring; populate it for --syncdeps.
           pacman-key --init
           pacman-key --populate archlinux
-          # makepkg refuses to run as root; create a build user.
+          # makepkg refuses to run as root.
           useradd -m -G wheel builder
           echo '%wheel ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/wheel
           chmod 440 /etc/sudoers.d/wheel
 
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
-          # Need the full token so the auto-bump step can push back to
-          # main; the default GITHUB_TOKEN works because permissions
-          # block above grants contents:write.
           token: ${{ secrets.GITHUB_TOKEN }}
-          # fetch-depth: 0 so we have full history for the push.
+          # Full history for the auto-bump push.
           fetch-depth: 0
 
       - name: Trust workspace for git
-        # The container runs as a different uid than the checkout owner;
-        # without this, `git ls-files` (called by compute-pkg-hash.sh) fails
-        # with "dubious ownership" on the tag-push validate step that runs
-        # before the auto-bump step's own safe.directory call.
+        # Container uid differs from checkout owner; avoids "dubious ownership".
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
-      # Resolve + render BEFORE the auto-bump so the regenerated
-      # shedos-meta PKGBUILD participates in the content hash. The old
-      # order bumped first and rendered after: a closure-only change
-      # (upstream dep graph moved) altered the PKGBUILD post-hash, the
-      # cache pre-flight saw the same ver-rel, and the new closure was
-      # discarded on every run.
+      # Resolve + render before the auto-bump so the regenerated shedos-meta
+      # PKGBUILD participates in the content hash.
       - name: Resolve shedos-meta Arch closure
         run: bash scripts/resolve-meta-closure.sh
 
@@ -115,11 +91,8 @@ jobs:
         run: bash scripts/render-meta-depends.sh
 
       - name: Auto-bump release-hashes (main + manual)
-        # Skip when the actor is the bot itself; that's the push this step
-        # just made; running again would be a no-op but still trigger build
-        # noise. Using an actor gate instead of `[skip ci]` in the commit
-        # message: `[skip ci]` would also block tag-push workflows that
-        # point at the bot's commit, which we need for `make release`.
+        # Actor gate, not [skip ci]: [skip ci] would also block the tag-push
+        # workflows on the bot's commit that `make release` needs.
         if: github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
         env:
           GIT_AUTHOR_NAME: shedos-ci[bot]
@@ -143,36 +116,23 @@ jobs:
           git push origin HEAD:main
 
       - name: Validate release-hashes manifest (tag pushes)
-        # Tag pushes must point at a commit whose manifest already
-        # matches its PKGBUILDs; CI doesn't rewrite tagged commits.
-        # If --check fails here, push to main first to trigger the
-        # auto-bump, then re-tag the resulting auto-bump commit.
+        # CI doesn't rewrite tagged commits; the manifest must already match.
         if: startsWith(github.ref, 'refs/tags/')
         run: bash scripts/bump-version.sh --check
 
       - name: Wire makepkg config
-        # System-wide drop-in, NOT a per-user file: the actual builds
-        # run as `builduser` (created fresh by build-shedos-packages.sh),
-        # so the old /home/builder/.makepkg.conf was never read —
-        # kernel builds ran at makepkg's default parallelism with debug
-        # packages enabled, a direct contributor to the cold-build wall
-        # time.
+        # System-wide drop-in: builds run as builduser, not builder, so a
+        # per-user ~/.makepkg.conf would never be read.
         run: |
           install -d /etc/makepkg.conf.d
           cat > /etc/makepkg.conf.d/99-shedos-ci.conf <<'EOF'
           BUILDENV=(!distcc color !check !sign)
-          # Override Arch's default OPTIONS to flip `debug` off. Without
-          # this, makepkg produces a sibling -debug pkg for every package
-          # carrying compiled artifacts (calamares, hyprspace, shedos-power
-          # …), which the publish step would then sign and upload to R2.
-          # We don't ship debug symbols; the disk + bandwidth cost is wasted.
+          # !debug so makepkg doesn't build -debug pkgs we'd sign and publish.
           OPTIONS=(strip docs !libtool !staticlibs emptydirs zipman purge !debug lto)
           MAKEFLAGS="-j$(nproc)"
           EOF
 
       - name: Hand the tree to the build user
-        # resolve/render moved before the auto-bump step (they feed the
-        # content hash); only the ownership flip remains here.
         run: chown -R builder:builder .
 
       - name: Import signing key
@@ -183,9 +143,6 @@ jobs:
           chmod 700 /home/builder/.gnupg
           chown -R builder:builder /home/builder/.gnupg
 
-          # Defensive pre-check: surface the common failure modes (empty
-          # secret, wrong file pasted, flattened newlines) before gpg's
-          # generic "no valid OpenPGP data" error.
           if [[ -z "$SIGNING_KEY" ]]; then
               echo "FATAL: SHEDOS_REPO_SIGNING_KEY secret is empty or unset." >&2
               exit 1
@@ -207,9 +164,8 @@ jobs:
                | awk -F: '/^fpr:/ { print $10; exit }')
           echo "GPG_FP=$FP" >> "$GITHUB_ENV"
 
-          # The signing key must be one of the committed trusted
-          # fingerprints — ANY of them, so a rotation window can sign
-          # with the new key while clients still trust both.
+          # Signing key must be a committed trusted fingerprint (any of them,
+          # so a rotation window can sign with the new key).
           if ! grep -qx "$FP" \
               <(awk 'NF && $1 !~ /^#/' packaging/shedos-keyring/tree/shedos-trusted); then
               echo "FATAL: signing key fingerprint ($FP) is not listed in"
@@ -218,22 +174,9 @@ jobs:
           fi
 
       - name: Restore AUR package cache
-        # AUR builds take ~35 min from cold. build-aur-packages.sh has a
-        # cache-trust pre-flight: if a package's .pkg.tar.zst is present in
-        # archiso/shedos-repo/ here, it skips the AUR clone AND the build
-        # entirely (cache key gates this on aur.txt content, so any restored
-        # binary was built for the current package list).
-        # That makes a cache-hit run a near-instant no-op even when AUR is
-        # totally down. Restore-keys handles partial matches (one new package
-        # doesn't invalidate the other 38). The weekly release-weekly.yml
-        # job re-pulls every package fresh under SHEDOS_AUR_FORCE_REBUILD=1
-        # so the cache doesn't drift far behind upstream.
-        #
-        # We use restore/save as separate actions (not the combined `cache`
-        # action) because the combined action's post-save is gated on
-        # `success()`; so a downstream failure would discard a successful
-        # prebuild's output. Save is triggered explicitly below with
-        # `if: always()`.
+        # Separate restore/save, not the combined cache action: its post-save
+        # is gated on success(), so a downstream failure would discard a good
+        # prebuild. Save runs below with if: always().
         id: aur-cache
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
@@ -243,25 +186,13 @@ jobs:
             aur-${{ runner.os }}-
 
       - name: Pre-build AUR packages
-        # Populates archiso/shedos-repo/ with every AUR package listed in
-        # packages/aur.txt (~38 pkgs). Output serves two purposes:
-        #   1. Satisfies makepkg --syncdeps for the shedos-* build loop below
-        #      (via [shedos-repo] registered in the next step).
-        #   2. The OSS subset is re-signed and republished to [shedos] in the
-        #      "Sign + stage OSS AUR packages" step, so installed systems can
-        #      resolve shedos-meta's depends=() from repo.shedos.org alone.
-        # The script handles root→builduser hop internally. With the cache
-        # restored above, unchanged packages skip rebuilds.
         env:
-          # Fail when a declared PGP key can't be fetched from any
-          # keyserver, instead of warn-and-skip (fail-open).
+          # Fail, don't warn-and-skip, when a declared PGP key can't be fetched.
           SHEDOS_AUR_STRICT_PGP: '1'
         run: scripts/build-aur-packages.sh
 
       - name: Save AUR package cache
-        # Unconditionally save (if we didn't already hit the exact key) so a
-        # downstream failure in the shedos-* build / sign / publish steps
-        # doesn't cost us the 35 min we just spent prebuilding AUR.
+        # Save regardless of downstream failures so the AUR prebuild survives.
         if: always() && steps.aur-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
@@ -269,12 +200,7 @@ jobs:
           key: aur-${{ runner.os }}-${{ hashFiles('packages/aur.txt') }}
 
       - name: Restore shedos-pkgs cache
-        # Per-build incremental cache for non-kernel shedos-* packages.
-        # github.sha makes the key always-miss on a fresh push;
-        # restore-keys falls back to the most recent saved cache.
-        # build-shedos-packages.sh's pre-flight skips any package whose
-        # pkgver-pkgrel matches an existing .pkg.tar.zst in
-        # archiso/shedos-repo, so unchanged packages don't rebuild.
+        # github.sha key always-misses; restore-keys falls back to the latest.
         id: shedos-pkgs-cache
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
@@ -296,42 +222,22 @@ jobs:
           fi
 
       - name: Build shedos-* packages
-        # Delegates to the same script the ISO build uses so the logic stays
-        # in one place. It:
-        #   - orders builds topologically (shedos-keyring → shedos-system →
-        #     shedos-branding → shedos-hyprland → shedos-nvim → shedos-meta),
-        #   - registers archiso/shedos-repo as [shedos-repo] in /etc/pacman.conf
-        #     and rebuilds the repo DB after every package so later builds can
-        #     resolve earlier ones via pacman,
-        #   - handles the root→builduser hop internally.
-        # After this runs, archiso/shedos-repo/ holds every package we want
-        # published (shedos-* + OSS AUR + unsigned proprietary AUR).
         run: scripts/build-shedos-packages.sh
 
       - name: Sign + stage packages for publication
-        # Walk archiso/shedos-repo/, sign each .pkg.tar.zst with the ShedOS
-        # key, and move to dist/x86_64/; UNLESS the package is listed in
-        # packages/aur-norepublish.txt (proprietary EULAs forbid third-party
-        # redistribution under our signature). Those packages are bundled
-        # into the ISO unsigned; reinstalls go via `shedman install`.
         run: |
           install -d -o builder -g builder dist/x86_64
-          # build-shedos-packages.sh emits packages as root-owned (via cp);
-          # chown so gpg running as builder can read.
           chown -R builder:builder archiso/shedos-repo
 
-          # Skip both legal-restricted entries (aur-norepublish.txt) and
-          # installer-only entries (installer-only.txt); neither should
-          # land in the public repo.
+          # aur-norepublish.txt: proprietary EULAs forbid republishing under
+          # our signature. installer-only.txt: must not reach the public repo.
           mapfile -t norepublish < <(
               grep -hEv '^\s*(#|$)' \
                   packages/aur-norepublish.txt \
                   packages/installer-only.txt
           )
 
-          # Belt-and-suspenders: even with !debug in builder's makepkg.conf
-          # above, a cache-restored -debug pkg from before that flag landed
-          # could still be present. Drop them before the loop sees them.
+          # A cache-restored -debug pkg from before the !debug flag may persist.
           rm -f archiso/shedos-repo/*-debug-*.pkg.tar.zst \
                 archiso/shedos-repo/*-debug-*.pkg.tar.zst.sig
 
@@ -354,11 +260,8 @@ jobs:
                   skipped=$((skipped+1))
                   continue
               fi
-              # Reuse cache-restored signature if present. GPG signatures
-              # don't expire, so a cached sig is just as valid as a fresh
-              # one; and rclone sync skips the re-upload because bytes
-              # don't change. Saves ~50 GPG calls + ~50 R2 PUTs per no-op
-              # build. On key rotation, manually purge the GHA cache.
+              # Reuse a cached sig; sigs don't expire. On key rotation, purge
+              # the GHA cache manually.
               if [[ -f "${pkg}.sig" ]]; then
                   echo "reuse $pkgname (cached signature)"
                   cp "$pkg" "${pkg}.sig" dist/x86_64/
@@ -369,8 +272,7 @@ jobs:
               sudo -u builder gpg --batch --detach-sign --no-armor \
                   --local-user "$GPG_FP" \
                   --output "$pkg.sig" "$pkg"
-              # cp (not mv); keep the package in archiso/shedos-repo/ so it
-              # remains in the cache snapshot for the next run.
+              # cp not mv: keep the package in the cache snapshot.
               cp "$pkg" "$pkg.sig" dist/x86_64/
               staged=$((staged+1))
           done
@@ -378,14 +280,8 @@ jobs:
           ls -la dist/x86_64/ | head -30
 
       - name: Stage cached repo DB into dist/x86_64/
-        # Restore the prior build's signed repo DB if the cache hit. The
-        # next step short-circuits when /tmp/built-pkgs.txt is empty
-        # (nothing rebuilt) and a cached DB is present.
-        #
-        # Pacman fetches `<repo>.db` (and `<repo>.files`), NOT the
-        # `.tar.gz` form, so we materialize those names alongside the
-        # archive copies. R2 stores files content-addressed so a `cp`
-        # from .tar.gz is what actually ends up at the published URL.
+        # Pacman fetches <repo>.db / <repo>.files, not the .tar.gz form, so
+        # materialize those names from the archive copies.
         run: |
           install -d -o builder -g builder dist/x86_64
           for f in shedos.db.tar.gz shedos.db.tar.gz.sig \
@@ -409,10 +305,8 @@ jobs:
 
       - name: Build repo DB
         run: |
-          # Skip repo-add only when nothing was rebuilt AND the cached
-          # DB's package count matches what's on disk. The disk-vs-DB
-          # equality is what catches deletions: built-pkgs.txt is
-          # empty but the cached DB still names files no longer in dist/.
+          # Reuse the cached DB only when nothing rebuilt AND its package
+          # count matches disk; the count check catches deletions.
           disk_count=$(ls -1 dist/x86_64/*.pkg.tar.zst 2>/dev/null | wc -l)
           db_count=0
           if [[ -f dist/x86_64/shedos.db.tar.gz ]]; then
@@ -428,20 +322,13 @@ jobs:
           fi
           echo "Rebuilding repo DB: built=$([[ -s /tmp/built-pkgs.txt ]] && wc -l </tmp/built-pkgs.txt || echo 0), disk=$disk_count, db=$db_count"
           cd dist/x86_64
-          # Wipe the cached db artifacts so repo-add rebuilds fresh.
-          # Without this, repo-add only adds entries; it never removes
-          # entries whose .pkg.tar.zst was cleaned up between builds,
-          # leading pacman to 404 on stale package names listed in db.
+          # repo-add only adds; wipe the cached DB so removed pkgs drop out.
           rm -f shedos.db shedos.db.sig shedos.db.tar.gz shedos.db.tar.gz.sig \
                 shedos.files shedos.files.sig shedos.files.tar.gz shedos.files.tar.gz.sig
           sudo -u builder repo-add --sign --key "$GPG_FP" \
               shedos.db.tar.gz *.pkg.tar.zst
-          # repo-add leaves shedos.db / shedos.files as symlinks to their
-          # .tar.gz counterparts. R2 has no symlink concept and pacman on
-          # the installed system fetches `shedos.db` as a regular object,
-          # so materialize the symlinks into real files. rm first because
-          # `cp <src> <symlink-to-src>` sees source == destination and
-          # aborts with "are the same file".
+          # repo-add leaves these as symlinks; R2 has no symlinks, so
+          # materialize real files. rm first or cp sees src == dst.
           for name in shedos.db shedos.db.sig shedos.files shedos.files.sig; do
               [[ -L $name ]] && rm -f "$name"
           done
@@ -502,8 +389,7 @@ jobs:
           echo "has_files=$has_files" >> "$GITHUB_OUTPUT"
 
       - name: Save shedos-pkgs cache
-        # has_files gate: empty caches from early failures would otherwise
-        # shadow healthy prior caches via the restore-keys prefix match.
+        # has_files gate: an empty cache would shadow healthy prior caches.
         if: always() && steps.shedos-pkgs-stage.outputs.has_files == '1'
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
@@ -518,26 +404,14 @@ jobs:
           RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           RCLONE_CONFIG_R2_ENDPOINT: ${{ env.R2_ENDPOINT }}
           RCLONE_CONFIG_R2_REGION: auto
-          # R2 API tokens scoped to a specific bucket don't have CreateBucket
-          # permission. rclone probes HeadBucket → CreateBucket on every new
-          # path; with this flag it assumes the bucket exists (which it does)
-          # and skips the probe. Without it copyto to the bucket root 403s.
+          # Bucket-scoped R2 tokens lack CreateBucket; without this, rclone's
+          # bucket probe 403s on copyto to the bucket root.
           RCLONE_S3_NO_CHECK_BUCKET: "true"
         run: |
-          # Channel routing:
-          #   * push to main           → /test/x86_64/ (from this run's dist/)
-          #   * RC tag (v<date>-rcN)   → /test/x86_64/ PLUS an immutable
-          #                              snapshot at /rc/<tag>/x86_64/ —
-          #                              the exact bits the soak exercises.
-          #   * stable tag (v<date>)   → /stable/x86_64/ via rclone copy of
-          #                              the LATEST matching RC snapshot,
-          #                              never of the live /test prefix:
-          #                              pushes to main during the soak
-          #                              replace /test, so copying it could
-          #                              ship bits that never soaked. Copy
-          #                              (not sync) so /stable keeps older
-          #                              versions for downgrade. Refuses to
-          #                              promote when no RC snapshot exists.
+          # Channel routing: push/RC tag → /test; RC tag also snapshots to
+          # /rc/<tag>; stable tag promotes the latest RC snapshot (not live
+          # /test, which the soak's main-pushes overwrite) via copy so older
+          # versions survive for downgrade.
           if [[ "$GITHUB_REF_TYPE" == "tag" ]] && [[ "$GITHUB_REF_NAME" != *-rc* ]]; then
               mapfile -t snaps < <(rclone lsf --dirs-only "r2:$R2_BUCKET/rc/" 2>/dev/null \
                   | grep -E "^${GITHUB_REF_NAME}-rc[0-9]+/$" | sort -V)
@@ -552,10 +426,8 @@ jobs:
           else
               echo "Push or RC tag: publishing dist/x86_64/ → /test/x86_64/"
               rclone sync dist/x86_64/ "r2:$R2_BUCKET/test/x86_64/" --progress
-              # Mirror the DB under the [shedostest] name on /test only, so a
-              # stable box can opt into the canary by enabling [shedostest]
-              # (pacman fetches <repo>.db). Same bytes, signature still valid.
-              # Kept out of dist/ so the /rc snapshot and /stable stay clean.
+              # Mirror the DB as [shedostest] on /test so a stable box can opt
+              # into the canary. Out of dist/ to keep /rc and /stable clean.
               for ext in db db.sig files files.sig; do
                   [[ -f "dist/x86_64/shedos.$ext" ]] \
                       && rclone copyto "dist/x86_64/shedos.$ext" \
@@ -566,7 +438,7 @@ jobs:
                   rclone copy dist/x86_64/ "r2:$R2_BUCKET/rc/$GITHUB_REF_NAME/x86_64/" --progress
               fi
           fi
-          # Ship the bootstrap pubkey at the bucket root so the migration
-          # script can fetch it without the keyring installed.
+          # Bootstrap pubkey at the bucket root; migration fetches it before
+          # the keyring is installed.
           rclone copyto packaging/shedos-keyring/tree/shedos.gpg \
               "r2:$R2_BUCKET/shedos.gpg"

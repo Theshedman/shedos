@@ -1,11 +1,5 @@
 name: build-iso
 
-# Builds the ShedOS ISO on tag push (v*). The ISO is published to R2
-# at https://repo.shedos.org/iso/. It exceeds GitHub Releases' per-file
-# size limit, so only the .sha256 + download-link release notes land
-# on GitHub. Depends on the packages workflow having already published
-# to R2.
-
 on:
   push:
     tags: ['v*']
@@ -18,18 +12,12 @@ concurrency:
 jobs:
   iso:
     runs-on: ubuntu-latest
-    # R2_* secrets live in the SHEDOS_ENV environment.
     environment: SHEDOS_ENV
-    # softprops/action-gh-release needs contents:write to create the tag's
-    # Release page. Default GITHUB_TOKEN permissions vary by repo settings
-    # (often read-only since 2023); spell it out so the ISO-build workflow
-    # doesn't break if someone tightens the org default later.
     permissions:
       contents: write
     container:
       image: archlinux:latest
       options: --privileged
-      # only the toolchain trees we trim below, not / (ownership warning)
       volumes:
         - /usr:/host/usr
         - /opt:/host/opt
@@ -40,9 +28,6 @@ jobs:
 
     steps:
       - name: Free host disk space
-        # Strip preinstalled toolchains we don't use so pacstrap has room.
-        # Without this the workspace partition fills around package
-        # ~390 of 433 (when shedos-meta + linux + linux-headers are unpacked).
         run: |
           df -h /__w || true
           rm -rf \
@@ -61,13 +46,8 @@ jobs:
       - name: Install build dependencies
         run: |
           pacman -Syu --noconfirm
-          # scdoc: shedos-system man pages. python: needed by `make`
-          # targets that the iso path may invoke.
           pacman -S --needed --noconfirm archiso base-devel git sudo rclone rsync grub scdoc python
-          # archlinux:latest ships an empty pacman keyring. Initialize +
-          # populate the archlinux trust chain so makepkg --syncdeps (invoked
-          # transitively by the AUR prebuild below) can verify signed
-          # packages from core/extra.
+          # archlinux:latest ships an empty keyring; makepkg --syncdeps needs the trust chain
           pacman-key --init
           pacman-key --populate archlinux
           sed -i 's/^BUILDENV=.*/BUILDENV=(!distcc color !check !sign)/' /etc/makepkg.conf
@@ -75,29 +55,19 @@ jobs:
 
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
-          # fetch-tags + full depth so the release-notes step can find the
-          # previous tag. On a tag push, fetch-tags defaults to false.
+          # full depth + tags so the release-notes step can find the previous tag
           fetch-depth: 0
           fetch-tags: true
 
       - name: Trust workspace for git
-        # The container runs as a different uid than the checkout owner;
-        # without this, `git ls-files` (called by compute-pkg-hash.sh) fails
-        # with "dubious ownership". Set globally so every later step that
-        # touches git in this checkout works.
+        # container uid differs from the checkout owner; avoids git "dubious ownership"
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Validate release-hashes manifest
         run: bash scripts/bump-version.sh --check
 
       - name: Verify VERSION matches tag
-        # Tags follow v<CalVer>[-rcN]. The VERSION file drives Calamares
-        # branding (Makefile lines 212-215 use $(VERSION), not the tag-aware
-        # $(ISO_VER)), so a stale VERSION ships an ISO whose installer UI
-        # disagrees with the filename. Fail fast before we burn ~35 min on
-        # AUR prebuilds + mkarchiso. Stable tags (v<CalVer>) must match
-        # VERSION exactly; RC tags (v<CalVer>-rcN) match after stripping -rcN.
-        # Skipped on workflow_dispatch from a branch; only tag builds ship.
+        # stale VERSION ships an ISO whose Calamares branding disagrees with the filename
         if: github.ref_type == 'tag'
         run: |
           tag="${GITHUB_REF_NAME#v}"
@@ -111,15 +81,7 @@ jobs:
           echo "VERSION matches tag: $actual"
 
       - name: Bake the release channel into the ISO
-        # Stable tag (v<CalVer>, no -rcN) → stable. Anything else (RC
-        # tag, branch push, workflow_dispatch) → test. The marker file
-        # rides the squashfs into every install, where shedos-system's
-        # install fence reads it to point [shedos] at /test or
-        # /stable — so an RC ISO's installs actually soak the RC
-        # packages. (The old @CHANNEL@ sed was dead: pacman.conf.in
-        # lost its placeholder and the live ISO carries no [shedos]
-        # block, so every install tracked /stable regardless of which
-        # ISO it came from.)
+        # marker rides the squashfs into installs; shedos-system points [shedos] at it
         run: |
           channel="test"
           if [[ "$GITHUB_REF_TYPE" == "tag" ]] && [[ "$GITHUB_REF_NAME" != *-rc* ]]; then
@@ -132,11 +94,7 @@ jobs:
              archiso/airootfs/etc/pacman.conf
 
       - name: Restore AUR package cache
-        # Share one cache entry with build-packages.yml: same key shape,
-        # same path (archiso/shedos-repo). Either workflow's successful
-        # prebuild warms the cache for the other. Without this the ISO
-        # build rebuilds ~38 AUR packages from source on every tag (~35 min
-        # cold); with a cache hit it's near-instant.
+        # shares the cache entry with build-packages.yml so either workflow warms the other
         id: aur-cache
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
@@ -146,23 +104,14 @@ jobs:
             aur-${{ runner.os }}-
 
       - name: Pre-build AUR dependencies
-        # shedos-hyprland depends on AUR packages (oh-my-zsh-git,
-        # zsh-theme-powerlevel10k-git, etc.). These must exist in the
-        # build-local repo BEFORE `make shedos-packages` runs makepkg
-        # --syncdeps, else dependency resolution fails. `make
-        # download-packages` invokes scripts/build-aur-packages.sh which
-        # populates archiso/shedos-repo/. With the cache restored above,
-        # unchanged packages skip rebuilds.
+        # AUR deps must be in the build-local repo before make shedos-packages resolves deps
         env:
-          # Fail when a declared PGP key can't be fetched from any
-          # keyserver, instead of warn-and-skip (fail-open).
+          # fail on an unfetchable PGP key instead of warn-and-skip
           SHEDOS_AUR_STRICT_PGP: '1'
         run: make download-packages
 
       - name: Save AUR package cache
-        # Save unconditionally when the cache key wasn't an exact hit, even
-        # if later steps fail; mirrors the build-packages.yml pattern to
-        # avoid discarding 35 min of prebuilt output on a downstream flake.
+        # save on miss even if later steps fail, so a downstream flake doesn't discard the build
         if: always() && steps.aur-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
@@ -170,9 +119,7 @@ jobs:
           key: aur-${{ runner.os }}-${{ hashFiles('packages/aur.txt') }}
 
       - name: Restore shedos-pkgs cache
-        # Per-build incremental cache for non-kernel shedos-* packages.
-        # Shares the cache prefix with build-packages.yml so a tag-pushed
-        # ISO build hits whatever the most recent push-to-main saved.
+        # shares the cache prefix with build-packages.yml's most recent push-to-main save
         id: shedos-pkgs-cache
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
@@ -182,11 +129,7 @@ jobs:
             shedos-pkgs-${{ runner.os }}-
 
       - name: Stage cached shedos packages into shedos-repo
-        # Skip .sig files: they were signed by SHEDOS_REPO_SIGNING_KEY in
-        # build-packages.yml but the iso runner doesn't import that key
-        # into its keyring, so pacstrap's keyring lookup would fail offline.
-        # archiso pacstrap only needs the .pkg.tar.zst; sigs are for the
-        # published repo (build-packages.yml's job), not the ISO build.
+        # skip .sig files: the iso runner lacks the signing key, so pacstrap would fail to verify
         run: |
           if [[ -d /tmp/shedos-pkg-cache ]]; then
               mkdir -p archiso/shedos-repo
@@ -197,16 +140,9 @@ jobs:
           fi
 
       - name: Resolve shedos-meta Arch closure
-        # Regenerates packages/.meta-closure.txt against the runner's
-        # fresh pacman db so render-meta-depends.sh (called by `make
-        # shedos-packages` below) sees the current closure. Runs as
-        # root; pacman -Sy needs it.
         run: bash scripts/resolve-meta-closure.sh
 
       - name: Build ShedOS native packages
-        # Populates archiso/shedos-repo with shedos-meta + deps so pacstrap
-        # can resolve them from the build-local repo. Also refreshes
-        # shedos-meta's depends= from packages/.
         run: make shedos-packages
 
       - name: Stage shedos packages for cache save
@@ -248,8 +184,7 @@ jobs:
           echo "has_files=$has_files" >> "$GITHUB_OUTPUT"
 
       - name: Save shedos-pkgs cache
-        # has_files gate: empty caches from early failures would otherwise
-        # shadow healthy prior caches via the restore-keys prefix match.
+        # has_files gate: an empty cache would shadow a healthy one via restore-keys prefix match
         if: always() && steps.shedos-pkgs-stage.outputs.has_files == '1'
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
@@ -263,20 +198,12 @@ jobs:
           shopt -s nullglob
           pkgs=( *.pkg.tar.zst )
           if (( ${#pkgs[@]} > 0 )); then
-              # No -R: the rm above already removed the debug files; -R
-              # would try to remove "old" package files for non-debug
-              # entries it considers superseded, which fails when those
-              # files are missing. -n skips re-adding existing entries;
-              # -p prevents lex-order downgrade as in _refresh_repo_db.
+              # no -R: it would fail trying to remove the debug files rm already deleted
               repo-add -n -p shedos-repo.db.tar.gz "${pkgs[@]}"
           fi
 
       - name: Refresh pacman cache with locally-built packages
-        # AUR pre-build can leave a stale shedos-built package in
-        # /var/cache/pacman/pkg/ whose sha256 no longer matches the
-        # freshly-rebuilt shedos-repo.db entry; mkarchiso trips on
-        # that as "invalid or corrupted package". Overwrite until
-        # builds are byte-deterministic.
+        # overwrite stale cached pkgs whose sha256 no longer matches the rebuilt repo.db
         run: |
           if [[ -d /var/cache/pacman/pkg ]]; then
               cp -fv archiso/shedos-repo/*.pkg.tar.zst /var/cache/pacman/pkg/ 2>/dev/null || true
@@ -284,12 +211,8 @@ jobs:
 
       - name: Build ISO
         env:
-          # Strip the leading "v" from the tag so the ISO filename is
-          # shedos-2026.04.21-rc2-x86_64.iso (not shedos-v2026.04.21-rc2-…).
-          # Makefile's ISO_VER picks this up and feeds it to profiledef.sh.
           SHEDOS_ISO_TAG: ${{ github.ref_name }}
         run: |
-          # github.ref_name is the full tag (e.g. v2026.04.21-rc2); strip "v".
           export SHEDOS_ISO_TAG="${SHEDOS_ISO_TAG#v}"
           make iso SHEDOS_ISO_TAG="$SHEDOS_ISO_TAG"
           ls -la out/
@@ -298,29 +221,17 @@ jobs:
         run: |
           cd out
           ISO_NAME=$(ls shedos-*.iso | head -1)
-          # Per-file .sha256 (vs a single SHA256SUMS): with a flat /iso/
-          # layout, a global SHA256SUMS would overwrite on every release.
-          # <iso>.sha256 is self-scoped and matches `sha256sum -c` UX.
+          # per-file .sha256: a global SHA256SUMS would overwrite on the flat /iso/ layout
           sha256sum "$ISO_NAME" > "${ISO_NAME}.sha256"
           echo "ISO_NAME=$ISO_NAME" >> "$GITHUB_ENV"
 
       - name: Boot-assert the ISO
-        # Runs on EVERY build so dispatch builds soak the harness
-        # itself; publishing is still tag-gated below, so the release
-        # guarantee stands: no ISO publishes unbooted. Direct kernel
-        # boot with a serial console proves early userspace + squashfs
-        # are sound; the desktop is covered by the release soak.
-        # GitHub's Linux runners expose /dev/kvm; the script degrades
-        # to TCG when it's absent or broken.
         run: |
           pacman -S --needed --noconfirm qemu-base libarchive util-linux
           scripts/boot-assert.sh "out/$ISO_NAME"
 
       - name: Build the base install image
-        # Build an installed image from this ISO's squashfs for the boot
-        # tests below. Needs a loop device + chroot (privileged container);
-        # the runners' Azure kernel has no nbd module.
-        # Non-blocking so a build failure can't stop publishing.
+        # non-blocking so a build failure can't stop publishing
         continue-on-error: true
         run: |
           pacman -S --needed --noconfirm edk2-ovmf libguestfs squashfs-tools \
@@ -331,20 +242,16 @@ jobs:
             scripts/build-base-image.sh
 
       - name: Emergency-recovery gate
-        # A missing-disk fstab must drop to the guided recovery and boot
-        # through to multi-user. Non-blocking so a failure can't stop
-        # publishing.
+        # non-blocking so a failure can't stop publishing
         continue-on-error: true
         run: |
           SHEDOS_EMERGENCY_TEST_IMAGE=out/base.qcow2 scripts/emergency-boot-assert.sh
 
       - name: Live + installed lock gate
-        # The lock takes any key on the live ISO and demands the password
-        # on disk. Non-blocking so a failure can't stop publishing.
+        # non-blocking so a failure can't stop publishing
         continue-on-error: true
         run: |
-          # virtio-gpu-gl-pci + egl-headless need the GL/EGL/virgl runtime
-          # that qemu-base doesn't pull; without it qemu exits at startup.
+          # virtio-gpu-gl needs the GL/EGL/virgl runtime qemu-base doesn't pull
           pacman -S --needed --noconfirm virglrenderer mesa libglvnd
           SHEDOS_LIVE_ISO="out/$ISO_NAME" SHEDOS_INSTALLED_IMAGE=out/base.qcow2 \
             scripts/live-iso-lock-assert.sh
@@ -358,10 +265,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Upload ISO to R2
-        # workflow_dispatch from a branch must stay private: an
-        # un-tagged build would publish shedos-main-x86_64.iso, the
-        # sweep would classify it stable, and sort -V puts 'main'
-        # last — evicting a real stable ISO.
+        # tag-only: an untagged build's shedos-main iso would sort last and evict a real stable
         if: github.ref_type == 'tag'
         env:
           RCLONE_CONFIG_R2_TYPE: s3
@@ -370,27 +274,15 @@ jobs:
           RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           RCLONE_CONFIG_R2_ENDPOINT: ${{ env.R2_ENDPOINT }}
           RCLONE_CONFIG_R2_REGION: auto
-          # R2 API tokens scoped to a single bucket don't have CreateBucket
-          # permission; skip rclone's pre-flight probe (same trick as
-          # build-packages.yml's Publish to R2 step).
+          # single-bucket R2 tokens lack CreateBucket; skip rclone's pre-flight probe
           RCLONE_S3_NO_CHECK_BUCKET: "true"
         run: |
-          # Flat layout: r2:shedos-repo/iso/shedos-<ver>-x86_64.iso
-          # Uniqueness comes from the filename itself (tag → ISO_VER), so
-          # successive releases don't overwrite and the browser download
-          # filename matches the on-disk name.
           rclone copy "out/$ISO_NAME" "r2:$R2_BUCKET/iso/" --progress
           rclone copy "out/${ISO_NAME}.sha256" "r2:$R2_BUCKET/iso/"
 
       - name: Retention sweep
-        # workflow_dispatch from a branch must stay private: an
-        # un-tagged build would publish shedos-main-x86_64.iso, the
-        # sweep would classify it stable, and sort -V puts 'main'
-        # last — evicting a real stable ISO.
+        # tag-only: an untagged build's shedos-main iso would sort last and evict a real stable
         if: github.ref_type == 'tag'
-        # Keep 2 stables + 1 RC on R2 (plus their .sha256 siblings). Rolling
-        # release = nobody wants older ISOs post-install; previous-stable is
-        # kept purely as a rollback lifeline if the newest stable ships broken.
         env:
           RCLONE_CONFIG_R2_TYPE: s3
           RCLONE_CONFIG_R2_PROVIDER: Cloudflare
@@ -403,17 +295,14 @@ jobs:
           KEEP_STABLES=2
           KEEP_RCS=1
 
-          # One-time cleanup of the old nested layout from the rc1 era
-          # (/iso/v<tag>/<file>). Safe to run every time; `rclone purge` on
-          # a non-existent path is a no-op with this flag set. Drop this step
-          # once no v*/ prefixes remain in the bucket.
+          # one-time cleanup of the old rc1-era nested layout; drop once no v*/ prefixes remain
           for legacy in $(rclone lsf "r2:$R2_BUCKET/iso/" --dirs-only 2>/dev/null \
                          | grep -E '^v[0-9]' || true); do
               echo "purging legacy nested layout: iso/$legacy"
               rclone purge "r2:$R2_BUCKET/iso/$legacy" || true
           done
 
-          # `sort -V` so rc8 < rc9 < rc10; plain sort is lexicographic.
+          # sort -V so rc8 < rc9 < rc10
           mapfile -t all_isos < <(
               rclone lsf "r2:$R2_BUCKET/iso/" --files-only \
                   --include 'shedos-*-x86_64.iso' | sort -V
@@ -428,8 +317,7 @@ jobs:
               fi
           done
 
-          # Lexicographic sort on CalVer filenames puts newest last, so
-          # "everything except the tail N" is what we delete.
+          # newest sorts last, so we delete everything except the tail N
           _sweep() {
               local keep=$1; shift
               local -a list=("$@")
@@ -448,24 +336,12 @@ jobs:
           rclone lsf "r2:$R2_BUCKET/iso/" --files-only | sort -V
 
       - name: Generate release notes
-        # workflow_dispatch from a branch must stay private: an
-        # un-tagged build would publish shedos-main-x86_64.iso, the
-        # sweep would classify it stable, and sort -V puts 'main'
-        # last — evicting a real stable ISO.
         if: github.ref_type == 'tag'
-        # Group commits since the previous tag by Conventional Commit type so
-        # the GitHub Release body shows a human-readable changelog instead of
-        # a fixed template. Output exposed as $RELEASE_NOTES (multiline env
-        # var) + $PREV_TAG (for the compare link).
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch origin --tags --force --no-recurse-submodules 2>/dev/null || true
 
-          # rc releases span back to the previous tag (rc or stable) so each
-          # rc shows what's new since the last one. Stable releases span back
-          # to the previous STABLE tag so all rc notes between roll up — the
-          # stable Release page is the source of truth for "what shipped in
-          # this CalVer", not the rc pages.
+          # rc spans to the previous tag; stable spans to the previous stable so rc notes roll up
           if [[ "$GITHUB_REF_NAME" == *-rc* ]]; then
               prev_tag=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)
           else
@@ -482,10 +358,7 @@ jobs:
               since="$prev_tag"
           fi
 
-          # Conventional Commits convention used across this repo:
-          # feat | fix | perf | revert | docs | ci | chore | release
-          # `release:` commits are pure version bumps; drop them. Everything
-          # else buckets by type; unrecognised prefixes land in "Other".
+          # drop pure version-bump commits; unrecognised prefixes land in "Other"
           mapfile -t subjects < <(git log "$range" --no-merges --pretty='%s' \
               | grep -Ev '^(release|chore\(release\)):' || true)
 
@@ -536,18 +409,11 @@ jobs:
           echo "PREV_TAG=$prev_tag" >> "$GITHUB_ENV"
 
       - name: Publish GitHub Release
-        # workflow_dispatch from a branch must stay private: an
-        # un-tagged build would publish shedos-main-x86_64.iso, the
-        # sweep would classify it stable, and sort -V puts 'main'
-        # last — evicting a real stable ISO.
+        # tag-only: an untagged build's shedos-main iso would sort last and evict a real stable
         if: github.ref_type == 'tag'
-        # The ISO exceeds GitHub Releases' per-file size limit. Attach
-        # only the per-file .sha256 + point at R2 in the body. The Release
-        # itself is still the canonical "what's in tag vX" pin.
+        # ISO exceeds GitHub's per-file limit; attach only the .sha256 and point at R2
         uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
         with:
-          # Tag convention: v<CalVer>       → stable release
-          #                 v<CalVer>-rcN   → prerelease (user-reviewed RC)
           prerelease: ${{ contains(github.ref_name, '-rc') }}
           files: out/${{ env.ISO_NAME }}.sha256
           body: |

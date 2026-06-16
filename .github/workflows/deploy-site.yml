@@ -7,35 +7,24 @@ on:
       - 'site/**'
       - 'VERSION'
       - '.github/workflows/deploy-site.yml'
-  # Fire after build-iso finishes uploading a new ISO to R2. Without this,
-  # an RC tag (which doesn't bump VERSION) never redeploys the site, and
-  # a stable release's site build races ahead of its own ISO upload; the
-  # sha256 probe in sync-version.mjs misses, and /download shows "Release
-  # candidate building" until the next site-touching push. Chaining on
-  # build-iso completion guarantees R2 is live before we rebuild.
+  # chain on build-iso so RC tags (which don't bump VERSION) redeploy and R2 is live first
   workflow_run:
     workflows: ['build-iso']
     types: [completed]
-  # Manual re-deploy from the Actions tab. Useful when a new ISO lands on
-  # repo.shedos.org and we want /download to reflect it immediately.
   workflow_dispatch:
 
-# GitHub Pages publish requires these three.
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# One Pages deploy at a time; don't cancel an in-flight deploy, let it finish.
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
   build:
-    # workflow_run fires for every completion (success OR failure); only
-    # rebuild the site when the upstream ISO build actually succeeded.
-    # Other event types (push / workflow_dispatch) pass this gate trivially.
+    # only rebuild on a successful upstream ISO build; other events pass trivially
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     defaults:
@@ -44,14 +33,7 @@ jobs:
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
-          # site/scripts/sync-version.mjs runs `git tag --sort=-v:refname`
-          # to resolve the newest published stable + RC. The default
-          # shallow clone has no tags, so pull full history.
-          #
-          # For workflow_run events, checkout@v4 defaults to the default
-          # branch (main). That's what we want; the freshest VERSION file
-          # + the newly-pushed tag (tags are global, so any checkout with
-          # fetch-depth:0 sees it).
+          # sync-version.mjs needs tags; shallow clone has none
           fetch-depth: 0
 
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
@@ -64,8 +46,6 @@ jobs:
         run: npm ci
 
       - name: Build
-        # `prebuild` runs sync-version.mjs, which probes repo.shedos.org
-        # for the newest published ISO and writes src/generated/version.ts.
         run: npm run build
 
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0

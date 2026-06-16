@@ -1,24 +1,10 @@
 name: aur-cache-refresh
 
-# Pulls every AUR package in packages/aur.txt fresh from upstream once a
-# week (Mondays, 06:00 UTC), rebuilds anything whose pkgver moved, and
-# saves the resulting archiso/shedos-repo/ to the same GHA cache key
-# build-packages.yml consumes. Independent of release-weekly.yml so a
-# slow upstream doesn't hold up release-PR creation.
-#
-# The push-driven build-packages.yml has a cache-trust pre-flight that
-# skips AUR clones whenever a cached .pkg.tar.zst is present; that's
-# what protects releases from AUR's TLS flakiness. This workflow's only
-# job is to keep that cache from drifting too far behind upstream pkgvers.
-# If aur.archlinux.org is fully down, this job fails harmlessly and the
-# previous cache stays valid.
-
 on:
   schedule:
-    - cron: '0 6 * * 1'   # Mondays, 06:00 UTC (1h ahead of release-weekly)
+    - cron: '0 6 * * 1'   # 1h ahead of release-weekly
   workflow_dispatch:
 
-# Don't pile up multiple refreshes if a previous run is still in-flight.
 concurrency:
   group: aur-cache-refresh
   cancel-in-progress: false
@@ -29,10 +15,7 @@ jobs:
     container:
       image: archlinux:latest
       options: --privileged
-    # actions:write is needed by the "Drop stale cache entry" step below
-    # so we can delete the existing aur-* cache via the gh API before
-    # saving the refreshed archive; actions/cache/save errors out on a
-    # duplicate key.
+    # actions:write lets the gh API delete the existing cache before re-save
     permissions:
       actions: write
       contents: read
@@ -41,28 +24,17 @@ jobs:
       - name: Install build dependencies
         run: |
           pacman -Syu --noconfirm
-          # base-devel + scdoc mirror what build-packages.yml installs;
-          # makepkg --nodeps means runtime depends never resolve, so
-          # makedeps must be installed up front.
-          # github-cli: archlinux:latest doesn't ship `gh`, so the
-          # cache-delete step below silently no-op'd — the save step
-          # then skipped on the duplicate key and every Monday rebuild
-          # was discarded; -git packages never moved.
+          # makepkg --nodeps won't resolve makedeps, so install them up front
           pacman -S --needed --noconfirm base-devel git sudo scdoc github-cli
           pacman-key --init
           pacman-key --populate archlinux
-          # build-aur-packages.sh creates `builduser` itself and demands
-          # passwordless sudo for it; the wheel sudoers entry below is
-          # what unblocks that path.
+          # build-aur-packages.sh's builduser needs passwordless sudo
           echo '%wheel ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/wheel
           chmod 440 /etc/sudoers.d/wheel
 
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Restore current AUR cache
-        # Restore-keys gives us the latest available cache even when the
-        # exact aur.txt hash hasn't been seen yet; that's still a useful
-        # warm start (only new entries need fresh clones).
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: archiso/shedos-repo
@@ -71,44 +43,25 @@ jobs:
             aur-${{ runner.os }}-
 
       - name: Refresh every AUR package from upstream
-        # SHEDOS_AUR_FORCE_REBUILD=1 bypasses the cache-trust pre-flight
-        # so every PKGBUILD is re-cloned. The post-clone version compare
-        # still skips makepkg for packages whose pkgver didn't move, so
-        # the actual build cost scales with how much upstream churned.
         env:
           SHEDOS_AUR_FORCE_REBUILD: '1'
-          # Fail the build when a declared PGP key can't be fetched
-          # from any keyserver, instead of warn-and-skip. Unset
-          # anywhere, the 3-keyserver fallback was still fail-open.
           SHEDOS_AUR_STRICT_PGP: '1'
-          # Best-effort: a package that won't rebuild (upstream broke its
-          # PKGBUILD, a transient fetch failure, an unfetchable PGP key) is
-          # recorded and skipped with its cached build left in place, rather
-          # than aborting the whole sweep. One bad -git package upstream
-          # shouldn't strand every other package's refresh for a week.
+          # don't let one broken upstream package strand the whole sweep
           SHEDOS_AUR_BEST_EFFORT: '1'
         run: bash scripts/build-aur-packages.sh
 
       - name: Drop stale cache entry under primary key
-        # actions/cache/save fails on a duplicate key. The push-driven
-        # build-packages.yml saved one earlier under the exact key; we
-        # need to clear it so our refreshed archive can take its place.
-        # If the key doesn't exist (first refresh ever, or aur.txt just
-        # changed), the gh delete is a harmless no-op.
+        # cache/save fails on a duplicate key, so clear it first
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CACHE_KEY: aur-${{ runner.os }}-${{ hashFiles('packages/aur.txt') }}
         run: |
-          # Native `gh cache delete` (the actions-cache extension is
-          # deprecated upstream). Failure is fine: no entry yet.
           gh cache delete "$CACHE_KEY" --repo "$GITHUB_REPOSITORY" \
               2>/dev/null || \
               echo "no existing cache entry under $CACHE_KEY (fine)"
 
       - name: Save refreshed cache
-        # Always save (even on a no-op refresh) so the cache stays
-        # bumpable on every weekly tick; keeps GHA from evicting it
-        # for inactivity (7-day TTL).
+        # save even on a no-op refresh to outrun the 7-day cache TTL
         if: always()
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
