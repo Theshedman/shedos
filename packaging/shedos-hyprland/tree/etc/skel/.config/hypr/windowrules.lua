@@ -1,5 +1,19 @@
 -- ShedOS Hyprland window rules.
 
+-- The config-review merge TUI wants as much room as the panel allows, but a
+-- fixed size clips the bars on smaller screens. Size it from the active
+-- monitor, leaving a fixed margin for the top bar + dock — they're fixed
+-- pixels, so subtracting a constant scales correctly across resolutions, and
+-- their reserved areas aren't queryable here (nor set this early) anyway.
+local function review_size()
+  local m = hl.get_active_monitor()
+  if not m then return { 1000, 650 } end
+  local scale = m.scale or 1.0
+  local w = math.min(math.floor(m.width / scale) - 120, 1600)
+  local h = math.min(math.floor(m.height / scale) - 150, 1000)
+  return { math.max(w, 800), math.max(h, 450) }
+end
+
 -- Simple floaters (no size/center)
 hl.window_rule({ name = "float-pavucontrol", match = { class = "^(pavucontrol)$" }, float = true })
 hl.window_rule({ name = "float-nm-connection-editor", match = { class = "^(nm-connection-editor)$" }, float = true })
@@ -12,7 +26,7 @@ hl.window_rule({ name = "bluetui", match = { class = "^(bluetui)$" }, float = tr
 hl.window_rule({ name = "btop", match = { class = "^(btop)$" }, float = true, size = { 800, 600 }, center = true })
 hl.window_rule({ name = "shedos-logs", match = { class = "^(shedos-logs)$" }, float = true, size = { 1100, 700 }, center = true })
 hl.window_rule({ name = "shedos-upgrade-history", match = { class = "^(shedos-upgrade-history)$" }, float = true, size = { 1000, 650 }, center = true })
-hl.window_rule({ name = "shedos-review", match = { class = "^(shedos-review)$" }, float = true, size = { 1600, 1000 }, center = true })
+hl.window_rule({ name = "shedos-review", match = { class = "^(shedos-review)$" }, float = true, size = review_size(), center = true })
 hl.window_rule({ name = "shedos-datetime", match = { class = "^(shedos-datetime)$" }, float = true, size = { 800, 640 }, center = true })
 
 -- yad dialogs (used by `shedman install`). Without this rule Hyprland
