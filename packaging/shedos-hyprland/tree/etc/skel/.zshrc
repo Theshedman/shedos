@@ -17,8 +17,11 @@ export ZSH="/usr/share/oh-my-zsh"
 export ZSH_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/oh-my-zsh"
 export ZSH_CUSTOM="${XDG_CONFIG_HOME:-$HOME/.config}/oh-my-zsh/custom"
 
-# Theme: Powerlevel10k (configured via ~/.p10k.zsh)
-ZSH_THEME="powerlevel10k/powerlevel10k"
+# Theme: Powerlevel10k. The zsh-theme-powerlevel10k package installs under
+# /usr/share/zsh-theme-powerlevel10k — not inside oh-my-zsh's theme path —
+# so it is sourced directly after oh-my-zsh loads (see below), not resolved
+# by name. Leave ZSH_THEME empty so oh-my-zsh doesn't hunt for a theme.
+ZSH_THEME=""
 
 # Plugins; only those whose tools are actually shipped in packages/*.txt.
 # Plugins for optional tools (kubectl, helm, terraform) are gated by OMZ
@@ -64,6 +67,12 @@ COMPLETION_WAITING_DOTS="true"
 DISABLE_UNTRACKED_FILES_DIRTY="true"
 
 source $ZSH/oh-my-zsh.sh
+
+# Powerlevel10k prompt, sourced straight from the package install path —
+# oh-my-zsh's ZSH_THEME lookup can't see it there. ~/.p10k.zsh (sourced at
+# the end of this file) tunes it.
+[[ -r /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme ]] \
+    && source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
 
 # ─────────────────────────────────────────────────────────────
 # Environment Variables
