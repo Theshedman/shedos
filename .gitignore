@@ -22,13 +22,15 @@ archiso/airootfs/etc/pacman.conf
 # .pkg.tar.zst is the built artifact (CI rebuilds from PKGBUILD on every tag).
 packaging/*/pkg/
 packaging/*/src/
-# Exception: shedos-greeter, shedos-prompt-ui and shedos-power are
-# single-crate Rust packages whose actual Rust sources live at
-# packaging/<pkg>/src/. Without these !-rules the makepkg-byproduct
-# rule above would silently un-track them.
+# Exception: shedos-greeter, shedos-prompt-ui, shedos-power, shedos-tour
+# and shedos-switcher are single-crate Rust packages whose actual Rust
+# sources live at packaging/<pkg>/src/. Without these !-rules the
+# makepkg-byproduct rule above would silently un-track them.
 !packaging/shedos-greeter/src/
 !packaging/shedos-prompt-ui/src/
 !packaging/shedos-power/src/
+!packaging/shedos-tour/src/
+!packaging/shedos-switcher/src/
 packaging/*/*.pkg.tar.zst
 packaging/*/*.pkg.tar.zst.sig
 # makepkg downloads remote source tarballs (source=("…tar.gz")) to the
