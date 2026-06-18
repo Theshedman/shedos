@@ -75,7 +75,7 @@ options=('!debug')
 # Pinned SHA on Theshedman/calamares `shedos` branch. When bumping,
 # update this AND verify `git log --oneline v$pkgver..$_commit` on the
 # repo shows only the ShedOS patch commits (no stray drift).
-_commit='09a8ff53a89cbf81adfba57db67ad2f4b795ba46'
+_commit='38d947e85d2c026b1e24843a08438a3fa0a65399'
 
 source=("git+https://github.com/Theshedman/calamares.git#commit=$_commit")
 # SKIP is fine here: the integrity anchor is the exact commit pin above
