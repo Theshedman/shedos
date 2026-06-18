@@ -1,0 +1,45 @@
+---
+title: Disk encryption
+description: New ShedOS installs are encrypted by default. How your keys work, how to recover, and how to opt out.
+order: 25
+section: Guide
+---
+
+<h1 style="margin-top:.7rem;">Disk encryption</h1>
+
+New ShedOS installs are **encrypted by default**. The whole system — your files, your home, the swap used for hibernation — sits inside a LUKS2 container, so a lost, stolen, or seized machine gives up nothing without your key. You can turn it off at install time if you want to.
+
+## Your two keys
+
+At the partitioning step you set a **passphrase**. You type it once per boot to unlock the disk. ShedOS also generates a **recovery key** — a long random code shown on its own screen during the install, with a checkbox you have to tick to confirm you wrote it down.
+
+These are the only two ways in. There is no backdoor and no reset:
+
+- The **passphrase** is what you use day to day.
+- The **recovery key** is the spare. If you forget the passphrase, it is the one other thing that unlocks the disk.
+
+Write the recovery key down and keep it somewhere safe and separate from the machine — a password manager on another device, or paper in a drawer. **If you lose both the passphrase and the recovery key, the data is gone.** Nobody — not you, not us — can recover it. That is the point of encryption.
+
+## Unlocking at boot
+
+Every boot stops at a prompt before the system starts. Type your passphrase (or the recovery key) and it continues to the login screen as normal. Hibernation works too: the resume image is written to encrypted swap and unlocked the same way.
+
+## Turning encryption off
+
+At the **partitioning** step of the installer, the "Encrypt system" box is ticked by default. Untick it before you continue and the install is unencrypted — no passphrase at boot, no recovery key. You can always re-encrypt later by reinstalling (see below).
+
+## Recovering an encrypted machine
+
+If the system won't boot and you need to get at your files, boot the ShedOS live USB and unlock the disk by hand:
+
+```bash
+# Replace /dev/nvme0n1p2 with your root partition (lsblk shows the layout).
+cryptsetup open /dev/nvme0n1p2 root      # enter the passphrase or recovery key
+mount -o subvol=@ /dev/mapper/root /mnt
+```
+
+With the disk unlocked and mounted, the usual recovery paths work as normal — the guided recovery tools, snapshot rollback, and the ESP repair runbook all operate on the unlocked root.
+
+## Encrypting an existing install
+
+Encryption happens at install time, so an existing unencrypted ShedOS box is never converted by an update — it keeps working exactly as it is. To encrypt one, back up your data and reinstall (new installs are encrypted by default), then restore. In-place encryption of a running system is planned for a later release.
