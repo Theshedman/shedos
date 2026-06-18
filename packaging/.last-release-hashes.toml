@@ -3,7 +3,7 @@
 # Compared against current hashes on every run to decide what to bump.
 
 cage = "32975462ee10a85b0aa974d9dd3e22179a87c73c65f3bc95cd64856f72020daa"
-calamares = "479bc008942b0827551ab9050dd006b2c3ac34c3c7c4f2bf59bd3c4a554383fd"
+calamares = "12d1b67bc2a573cec6b2cc47e250a8cb16abbd06daf2c6a58b943961394263b2"
 shedos-branding = "3d6d5d8a9dbb5229aaabe8b04ca8b74ce180029341ce5f7ed4819b3d6518c785"
 shedos-greeter = "0de0321cacffce056f0c39d8296bdeed346bde32a8dd79c4663ce7f245fa8703"
 shedos-hyprland = "84dbae6be0eb5a8863589523928f3225de496d4bf0ad7577295f6c2fd9088c3c"
