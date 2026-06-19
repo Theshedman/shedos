@@ -401,6 +401,23 @@ iso: prepare
 	@echo -e "$(GREEN)Build complete!$(NC)"
 	@ls -lh $(OUTPUT_DIR)/*.iso 2>/dev/null || echo -e "$(RED)No ISO found$(NC)"
 
+# One-command local ISO build. Runs the same sequence CI does before
+# mkarchiso (.github/workflows/build-iso.yml) so `make iso` never runs against
+# a stale or empty archiso/shedos-repo: build the AUR deps, build the ShedOS
+# native packages (each repo-add's into shedos-repo), then the ISO. The bare
+# `make iso` deliberately stays a leaf that only assembles + mkarchiso, since
+# CI invokes it after running those steps itself.
+#
+# Channel is always 'test' on a local build (CI bakes 'stable' only on a
+# stable tag). If you changed shedos-meta's dependency closure, run
+# `sudo make regen` first and commit the diff — CI re-resolves the closure on
+# every build; locally it's a deliberate, reviewable step.
+iso-local: check-root
+	@$(MAKE) download-packages
+	@$(MAKE) shedos-packages
+	@$(MAKE) iso
+	@echo -e "$(GREEN)Local ISO built. Boot it with: make test$(NC)"
+
 clean: check-root
 	@echo -e "$(YELLOW)Cleaning build artifacts...$(NC)"
 	@rm -rf $(BUILD_DIR) $(WORK_DIR)
