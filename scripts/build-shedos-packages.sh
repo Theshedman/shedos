@@ -69,12 +69,13 @@ if [[ ${#PKG_DIRS[@]} -eq 0 ]]; then
     exit 1
 fi
 
-# Build under /tmp so the unprivileged `builduser` can actually cd into the
-# build tree even when the invoking user's $HOME is 0700. makepkg refuses to
-# run as root, and granting builduser traversal rights on the real user's
-# home would be invasive. Copying the package dir (PKGBUILD + tree/) into a
-# world-readable scratch area is the standard workaround.
-BUILD_ROOT="/tmp/shedos-pkgbuild"
+# Build under a world-traversable scratch area so the unprivileged `builduser`
+# can cd into the tree even when the invoking user's $HOME is 0700 (makepkg
+# refuses to run as root, and granting builduser rights on the real home would
+# be invasive). /var/tmp, not /tmp: the Rust packages compile with LTO and
+# debuginfo=2, which overflows a RAM-backed /tmp. /var/tmp is disk-backed and,
+# like /tmp, 1777 so builduser can reach it. Override with SHEDOS_PKGBUILD_DIR.
+BUILD_ROOT="${SHEDOS_PKGBUILD_DIR:-/var/tmp/shedos-pkgbuild}"
 PACMAN_CONF_BACKUP="/tmp/shedos-pacman.conf.bak"
 PACMAN_CONF_MARKER="# >>> shedos-build-local-repo (temporary) >>>"
 

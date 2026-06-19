@@ -404,7 +404,7 @@ iso: prepare
 clean: check-root
 	@echo -e "$(YELLOW)Cleaning build artifacts...$(NC)"
 	@rm -rf $(BUILD_DIR) $(WORK_DIR)
-	@rm -rf /tmp/shedos-aur-build
+	@rm -rf /var/tmp/shedos-aur-build /tmp/shedos-aur-build /var/tmp/shedos-pkgbuild /tmp/shedos-pkgbuild
 	@echo -e "$(GREEN)Clean complete (packages preserved)$(NC)"
 
 clean-all: check-root
