@@ -28,7 +28,13 @@ window#waybar>box {
     padding: 0 5px;
 }
 
-#workspaces button {
+/* Per-number custom workspace buttons (see config.jsonc — the built-in
+ * hyprland/workspaces click is broken under Hyprland 0.55's Lua config). */
+#custom-workspace-1,
+#custom-workspace-2,
+#custom-workspace-3,
+#custom-workspace-4,
+#custom-workspace-5 {
     color: @text;
     padding: 0 8px;
     margin: 3px 2px;
@@ -37,19 +43,30 @@ window#waybar>box {
     transition: all 0.2s ease;
 }
 
-#workspaces button:hover {
+#custom-workspace-1:hover,
+#custom-workspace-2:hover,
+#custom-workspace-3:hover,
+#custom-workspace-4:hover,
+#custom-workspace-5:hover {
     background: @surface1;
     color: @mauve;
 }
 
-#workspaces button.active {
+#custom-workspace-1.active,
+#custom-workspace-2.active,
+#custom-workspace-3.active,
+#custom-workspace-4.active,
+#custom-workspace-5.active {
     background: @mauve;
     color: @base;
 }
 
-#workspaces button.urgent {
-    background: @red;
-    color: @base;
+#custom-workspace-1.empty,
+#custom-workspace-2.empty,
+#custom-workspace-3.empty,
+#custom-workspace-4.empty,
+#custom-workspace-5.empty {
+    opacity: 0.45;
 }
 
 #window {

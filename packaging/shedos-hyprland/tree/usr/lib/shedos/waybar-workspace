@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Emit a waybar custom-module JSON line for Hyprland workspace $1's state
+# (active / occupied / empty), then watch Hyprland's event socket and re-emit
+# on every change so the bar tracks switches instantly.
+#
+# Why this exists: Hyprland 0.55's Lua config evaluates external dispatches as
+# Lua, so waybar's built-in workspace click (raw `dispatch workspace N`) is a
+# Lua syntax error and never switches. These buttons dispatch the hl.dsp.focus
+# Lua form on-click (see config.jsonc); this script supplies their live state.
+set -u
+
+ws=$1
+
+emit() {
+    local active occupied class
+    active=$(hyprctl activeworkspace -j 2>/dev/null | jq -r '.id // -1')
+    occupied=$(hyprctl workspaces -j 2>/dev/null \
+        | jq -r --argjson w "$ws" 'map(select(.id == $w))[0].windows // 0')
+    if [ "$active" = "$ws" ]; then
+        class=active
+    elif [[ "${occupied:-0}" =~ ^[1-9] ]]; then
+        class=occupied
+    else
+        class=empty
+    fi
+    printf '{"text":"%s","class":"%s","tooltip":"Workspace %s"}\n' "$ws" "$class" "$ws"
+}
+
+emit
+
+sock="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/hypr/${HYPRLAND_INSTANCE_SIGNATURE:-}/.socket2.sock"
+# Exit (waybar's restart-interval re-runs us) if the event socket isn't up yet
+# — covers the login race before Hyprland exports its instance signature.
+[ -S "$sock" ] || exit 0
+
+# socat streams one `EVENT>>data` line per event; refresh on any that can move
+# a workspace's active or occupied state.
+socat -u "UNIX-CONNECT:$sock" - 2>/dev/null | while IFS= read -r line; do
+    case "$line" in
+        workspace* | focusedmon* | createworkspace* | destroyworkspace* \
+            | moveworkspace* | openwindow* | closewindow* | movewindow*)
+            emit
+            ;;
+    esac
+done

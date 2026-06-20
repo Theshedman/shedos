@@ -65,6 +65,8 @@ depends=(
     'wl-clipboard'        # wl-paste watchers feeding cliphist
     'pamixer'             # volume keys via /usr/lib/shedos/osd
     'brightnessctl'       # brightness keys via /usr/lib/shedos/osd + hypridle kbd backlight
+    'jq'                  # waybar-workspace parses hyprctl -j
+    'socat'               # waybar-workspace watches the Hyprland event socket
     'playerctl'           # media keys
     'libnotify'           # notify-send in the osd + screenshot helpers
     'xdg-user-dirs'       # resolves the Pictures dir for screenshot saves
@@ -158,6 +160,9 @@ package() {
     # the module on a session where the locale is missing.
     install -Dm755 tree/usr/lib/shedos/waybar-launch.sh \
         "$pkgdir/usr/lib/shedos/waybar-launch.sh"
+    # Per-number workspace button state/click backend (Hyprland Lua dispatch).
+    install -Dm755 tree/usr/lib/shedos/waybar-workspace \
+        "$pkgdir/usr/lib/shedos/waybar-workspace"
     install -Dm644 tree/usr/lib/systemd/user/waybar.service.d/shedos-locale.conf \
         "$pkgdir/usr/lib/systemd/user/waybar.service.d/shedos-locale.conf"
 

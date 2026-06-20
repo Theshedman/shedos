@@ -6,7 +6,7 @@
     "height": 26,
     "modules-left": [
         "custom/shedos-logo",
-        "hyprland/workspaces"
+        "group/workspaces"
     ],
     "custom/shedos-logo": {
         "format": "    ",
@@ -29,30 +29,56 @@
         "battery",
         "custom/power"
     ],
-    "hyprland/workspaces": {
-        "on-click": "activate",
-        "format": "{icon}",
-        "format-icons": {
-            "default": "",
-            "1": "1",
-            "2": "2",
-            "3": "3",
-            "4": "4",
-            "5": "5",
-            "6": "6",
-            "7": "7",
-            "8": "8",
-            "9": "9",
-            "10": "0",
-            "active": "󱓻"
-        },
-        "persistent-workspaces": {
-            "1": [],
-            "2": [],
-            "3": [],
-            "4": [],
-            "5": []
-        }
+    // Custom per-number workspace buttons. hyprland/workspaces' built-in
+    // click sends the raw `dispatch workspace N`, which Hyprland 0.55's Lua
+    // config rejects as a syntax error; these dispatch the hl.dsp.focus Lua
+    // form instead. The group reuses the #workspaces id so the existing
+    // container styling applies; /usr/lib/shedos/waybar-workspace supplies
+    // the live active/occupied state per button.
+    "group/workspaces": {
+        "orientation": "horizontal",
+        "modules": [
+            "custom/workspace-1",
+            "custom/workspace-2",
+            "custom/workspace-3",
+            "custom/workspace-4",
+            "custom/workspace-5"
+        ]
+    },
+    "custom/workspace-1": {
+        "exec": "/usr/lib/shedos/waybar-workspace 1",
+        "return-type": "json",
+        "restart-interval": 3,
+        "format": "{}",
+        "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = 1 })'"
+    },
+    "custom/workspace-2": {
+        "exec": "/usr/lib/shedos/waybar-workspace 2",
+        "return-type": "json",
+        "restart-interval": 3,
+        "format": "{}",
+        "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = 2 })'"
+    },
+    "custom/workspace-3": {
+        "exec": "/usr/lib/shedos/waybar-workspace 3",
+        "return-type": "json",
+        "restart-interval": 3,
+        "format": "{}",
+        "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = 3 })'"
+    },
+    "custom/workspace-4": {
+        "exec": "/usr/lib/shedos/waybar-workspace 4",
+        "return-type": "json",
+        "restart-interval": 3,
+        "format": "{}",
+        "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = 4 })'"
+    },
+    "custom/workspace-5": {
+        "exec": "/usr/lib/shedos/waybar-workspace 5",
+        "return-type": "json",
+        "restart-interval": 3,
+        "format": "{}",
+        "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = 5 })'"
     },
     "cpu": {
         "interval": 5,
