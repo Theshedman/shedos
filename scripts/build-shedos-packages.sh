@@ -149,6 +149,13 @@ EOF
     useradd -m -G wheel builduser 2>/dev/null || true
     echo "builduser ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/builduser-shedos
     chmod 440 /etc/sudoers.d/builduser-shedos
+    # shedos-screensaver/greeter/power are Rust; the fresh build user has no
+    # default toolchain, so cargo errors "no default is configured" the moment
+    # one of them actually rebuilds (it stays hidden while they cache-hit).
+    # The version pin was dropped on purpose, so build against current stable.
+    if command -v rustup &> /dev/null; then
+        sudo -u builduser rustup default stable 2>/dev/null || true
+    fi
 fi
 
 rm -rf "$BUILD_ROOT"
