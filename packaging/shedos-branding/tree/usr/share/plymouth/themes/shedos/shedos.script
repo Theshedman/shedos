@@ -34,15 +34,39 @@ for (i = 0; i < 8; i++) {
     # Base white dots (always visible or fading in opposite phase)
     spinner.white_dots[i].sprite = Sprite(dot_white_image);
     spinner.white_dots[i].sprite.SetOpacity(0);
-    
+
     # Blue overlay dots (animated)
     spinner.dots[i].sprite = Sprite(dot_blue_image);
     spinner.dots[i].sprite.SetOpacity(0);
 }
 
+# Hide the spinner while the LUKS field is waiting for input; it should only
+# turn once the passphrase is accepted and the disk is actually unlocking.
+password_active = 0;
+# Track whether the user typed in the current attempt. systemd-cryptsetup sends
+# Plymouth no message on a wrong password — it just re-asks with an empty field
+# — so an empty prompt that FOLLOWS a typed attempt is the only "incorrect"
+# signal. A first or untyped prompt (and the redraws Plymouth issues at startup)
+# show nothing.
+password_typed = 0;
+
 fun refresh_callback() {
+    if (password_active) {
+        for (i = 0; i < 8; i++) {
+            spinner.dots[i].sprite.SetOpacity(0);
+            spinner.white_dots[i].sprite.SetOpacity(0);
+        }
+        if (Plymouth.GetCapslockState()) {
+            caps_sprite.SetOpacity(1);
+        } else {
+            caps_sprite.SetOpacity(0);
+        }
+        return;
+    }
+
+    caps_sprite.SetOpacity(0);
     spinner.angle += 0.06;
-    
+
     for (i = 0; i < 8; i++) {
         angle = spinner.angle + (i * 3.14159 * 2 / 8);
         
@@ -101,19 +125,49 @@ for (i = 0; i < MAX_BULLETS; i++) {
     bullets[i].sprite.SetOpacity(0);
 }
 
-# Message display
+# Shared message sprite, warm-red under the box (Z above everything). The
+# wrong-password error is driven by the password_typed gate in
+# display_password_callback (the crypttab boot path sends no Plymouth message);
+# message_callback below stays registered only to cover any future
+# display-message path.
 message_sprite = Sprite();
+message_sprite.SetPosition(0, 0, 100);
+message_sprite.SetOpacity(0);
+
+# Caps Lock indicator, amber, above the label — toggled live in
+# refresh_callback off Plymouth.GetCapslockState() so a forgotten Caps Lock
+# can't silently wreck a case-sensitive passphrase or recovery key.
+caps_sprite = Sprite();
+caps_image = Image.Text("⇪  Caps Lock is on", 1.0, 0.8, 0.3, 1);
+caps_sprite.SetImage(caps_image);
+caps_sprite.SetPosition(screen_width / 2 - caps_image.GetWidth() / 2, entry.y - 62, 100);
+caps_sprite.SetOpacity(0);
 
 fun message_callback(text) {
-    my_image = Image.Text(text, 0.8, 0.8, 0.85, 1);
+    if (text == "") {
+        message_sprite.SetOpacity(0);
+        return;
+    }
+    my_image = Image.Text(text, 0.95, 0.45, 0.45, 1);
     message_sprite.SetImage(my_image);
     message_sprite.SetX(screen_width / 2 - my_image.GetWidth() / 2);
-    message_sprite.SetY(screen_height - 60);
+    message_sprite.SetY(entry.y + entry.image.GetHeight() + 16);
+    message_sprite.SetOpacity(1);
+}
+
+fun hide_message_callback(text) {
+    message_sprite.SetOpacity(0);
 }
 
 Plymouth.SetMessageFunction(message_callback);
+Plymouth.SetHideMessageFunction(hide_message_callback);
 
 fun display_normal_callback() {
+    global.password_active = 0;
+    # Clear the error in the spinner/normal phase so it can't linger past a
+    # correct unlock. A wrong password re-asks immediately after and the
+    # password_typed gate re-shows it, so this never swallows a real error.
+    message_sprite.SetOpacity(0);
     entry.sprite.SetOpacity(0);
     label.sprite.SetOpacity(0);
     for (i = 0; i < MAX_BULLETS; i++) {
@@ -122,9 +176,29 @@ fun display_normal_callback() {
 }
 
 fun display_password_callback(prompt, num_bullets) {
+    global.password_active = 1;
+
     # Show the entry box
     entry.sprite.SetOpacity(1);
-    
+
+    # Show the wrong-password error only on an empty prompt that FOLLOWS a typed
+    # attempt (a rejected password). Typing clears it; a first prompt and the
+    # repeated empty redraws Plymouth issues at startup never show it — so it
+    # never appears by default and never lingers past a correct unlock.
+    if (num_bullets > 0) {
+        global.password_typed = 1;
+        message_sprite.SetOpacity(0);
+    } else if (password_typed) {
+        global.password_typed = 0;
+        err_image = Image.Text("Incorrect password, try again", 0.95, 0.45, 0.45, 1);
+        message_sprite.SetImage(err_image);
+        message_sprite.SetX(screen_width / 2 - err_image.GetWidth() / 2);
+        message_sprite.SetY(entry.y + entry.image.GetHeight() + 16);
+        message_sprite.SetOpacity(1);
+    } else {
+        message_sprite.SetOpacity(0);
+    }
+
     # Show label - always show helpful LUKS message
     label_text = "Enter LUKS password to unlock disk";
     label_image = Image.Text(label_text, 0.9, 0.9, 0.95, 1);
@@ -132,17 +206,33 @@ fun display_password_callback(prompt, num_bullets) {
     label.sprite.SetX(screen_width / 2 - label_image.GetWidth() / 2);
     label.sprite.SetY(entry.y - 30);
     label.sprite.SetOpacity(1);
-    
-    # Render password bullets using the white bullet image
+
+    # Bullets sit one layer above the box (entry is Z=50) and start from the
+    # box's inner-left, clamped to what fits — a long passphrase no longer
+    # spills past the edge or hides behind the box looking dark.
     bullet_spacing = 18;
-    total_width = num_bullets * bullet_spacing;
-    start_x = screen_width / 2 - total_width / 2;
+    box_pad = 14;
+    inner_left = entry.x + box_pad;
+    inner_width = entry.image.GetWidth() - box_pad * 2;
+    max_visible = Math.Int(inner_width / bullet_spacing);
     bullet_y = entry.y + entry.image.GetHeight() / 2 - bullet_image.GetHeight() / 2;
-    
+
+    # Once the field fills, slide a window of the most recent dots leftward so
+    # continued typing (e.g. a 25-char recovery key) visibly registers instead
+    # of sitting full and static. Below max_visible this is plain left-align.
+    overflow = num_bullets - max_visible;
+    if (overflow < 0) overflow = 0;
+    scroll_chars = Math.Int(overflow / 2);
+    frac = (overflow - scroll_chars * 2) / 2;   # 0 or 0.5: a half-cell nudge per char
+
+    visible = num_bullets;
+    if (visible > max_visible) visible = max_visible;
+
     for (i = 0; i < MAX_BULLETS; i++) {
-        if (i < num_bullets) {
-            bullets[i].sprite.SetX(start_x + i * bullet_spacing);
-            bullets[i].sprite.SetY(bullet_y);
+        char_index = scroll_chars + i;
+        if (i < visible && char_index < num_bullets) {
+            x = inner_left + (i - frac) * bullet_spacing;
+            bullets[i].sprite.SetPosition(x, bullet_y, 51);
             bullets[i].sprite.SetOpacity(1);
         } else {
             bullets[i].sprite.SetOpacity(0);
@@ -158,6 +248,7 @@ fun quit_callback() {
     entry.sprite.SetOpacity(0);
     label.sprite.SetOpacity(0);
     message_sprite.SetOpacity(0);
+    caps_sprite.SetOpacity(0);
     for (i = 0; i < 8; i++) {
         spinner.dots[i].sprite.SetOpacity(0);
         spinner.white_dots[i].sprite.SetOpacity(0);
