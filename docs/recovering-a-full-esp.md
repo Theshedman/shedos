@@ -13,8 +13,9 @@ Booting an older entry (the shedos-kernel, or a fallback) may still work.
 
 ## Why it happens
 
-Limine reads only FAT, so the kernels and their initramfs images live on
-the EFI System Partition — a small FAT volume — not on the btrfs `/boot`.
+Limine reads only FAT, so each kernel's signed boot image — a UKI bundling
+the kernel, initramfs, and cmdline in one file — lives on the EFI System
+Partition, a small FAT volume, not on the btrfs `/boot`.
 On installs from before the firmware-slim fix, the initramfs carried
 ~145 MiB of GPU firmware, and during the shedos-kernel → linux-zen
 migration both kernels' images had to fit at once. On a 512 MiB ESP they
@@ -50,9 +51,9 @@ If it boots nothing, recover from the live USB:
    pacman -Syu
    ```
 
-4. Run the recovery helper. It clears the ESP, rebuilds the initramfs,
-   re-syncs, and verifies every ESP image against `/boot` before it
-   reports success:
+4. Run the recovery helper. It prunes UKIs for retired kernels, rebuilds
+   and re-signs every live kernel's signed boot image (UKI), and verifies
+   each one before it reports success:
 
    ```
    /usr/lib/shedos/recover-esp.sh
