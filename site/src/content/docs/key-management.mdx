@@ -1,0 +1,75 @@
+---
+title: Managing your keys
+description: Change the disk passphrase, rotate the recovery key, add a second passphrase or a hardware key, and remove a keyslot — without ever locking yourself out.
+order: 40
+section: Security
+---
+
+import Callout from "~/components/Callout.astro";
+
+<h1 style="margin-top:.7rem;">Managing your keys</h1>
+
+Your encrypted disk can be opened more than one way: the passphrase you set at install, the printed recovery key, and — if you add them — a TPM2 or a hardware security key. `shedman key` manages all of them. Every change applies to the whole disk at once: the encrypted root and encrypted swap together.
+
+See what you have:
+
+```bash
+shedman key --status
+```
+
+It lists each keyslot and what it is — passphrase, recovery, an added passphrase, TPM2, or FIDO2.
+
+## Changing the passphrase
+
+```bash
+sudo shedman key change-passphrase
+```
+
+It asks for your current passphrase, then the new one twice. [Passwordless unlock](/docs/tpm-unlock) keeps working afterwards — there is nothing to re-enroll.
+
+## Rotating the recovery key
+
+The recovery key is the printed fallback from [install](/docs/encryption). If the paper is lost, or you just want a fresh one:
+
+```bash
+sudo shedman key rotate-recovery
+```
+
+A new key is shown once. Write it down before you confirm — ShedOS keeps it nowhere, and there is no command to reprint it.
+
+<Callout variant="note" label="The old key works until the new one is proven">
+Rotation adds the new key and checks that it opens the disk **before** it removes the old one. If anything goes wrong partway, your old recovery key still works. The disk is never reachable only by a key you have not written down yet.
+</Callout>
+
+## Adding another way in
+
+Add a second passphrase — handy for a shared machine, or a backup you keep elsewhere:
+
+```bash
+sudo shedman key add-key
+```
+
+Or enroll a **FIDO2 security key** — a YubiKey or similar — that opens the disk with a touch at boot:
+
+```bash
+sudo shedman key add-key --fido2
+```
+
+Plug the key in, run the command, and touch it when it blinks. From then on the boot prompt takes a touch of the key instead of a typed passphrase. Your passphrase and recovery key stay enrolled.
+
+## Removing a keyslot
+
+```bash
+sudo shedman key remove-key <slot>
+```
+
+Use the slot number from `shedman key --status`. This is how you drop an old passphrase, a recovery key you have rotated past, or a hardware key you no longer carry.
+
+<Callout variant="note" label="It will not let you lock yourself out">
+`remove-key` refuses to remove your last keyslot, and refuses your last passphrase or recovery key if only a TPM2 or hardware key would be left — those can fail on a firmware update or a lost key, and you would have no way in. A TPM2 slot is dropped with [`shedman tpm2 remove`](/docs/tpm-unlock).
+</Callout>
+
+## See also
+
+- [Disk encryption](/docs/encryption) — how the disk is encrypted and the recovery key is set at install
+- [Passwordless unlock](/docs/tpm-unlock) — bind the disk to this machine's TPM2
