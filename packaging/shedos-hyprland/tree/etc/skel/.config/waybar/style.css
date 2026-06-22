@@ -238,6 +238,15 @@ window#waybar>box {
     animation: blink 0.5s linear infinite alternate;
 }
 
+/* bootsec = Secure Boot is set up but currently off, or a UKI no longer
+ * verifies: a security regression rather than a boot-availability failure, so a
+ * solid mauve block — distinct from the amber/red tiers, no blink. */
+#custom-doctor.bootsec {
+    background: @mauve;
+    color: @base;
+    font-weight: bold;
+}
+
 #battery {
     color: @teal;
 }
