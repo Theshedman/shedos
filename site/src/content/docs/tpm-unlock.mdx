@@ -1,0 +1,52 @@
+---
+title: Passwordless unlock
+description: Bind the encrypted disk to this machine's TPM2 so it unlocks without a passphrase on a trusted boot — and the tradeoff that comes with it.
+order: 30
+section: Security
+---
+
+import Callout from "~/components/Callout.astro";
+
+<h1 style="margin-top:.7rem;">Passwordless unlock</h1>
+
+By default an encrypted ShedOS box asks for its passphrase at every boot. Once you trust the machine, you can bind the disk to its **TPM2** — the small security chip on the motherboard — so it unlocks on its own when the machine boots its own kernel, with nothing to type.
+
+This is opt-in and set up after install, on a box that already has [disk encryption](/docs/encryption) and [Secure Boot](/docs/secure-boot).
+
+## Enabling it
+
+The TPM hands over the key only against a verified measurement of the boot chain, so Secure Boot has to be on first. With that done:
+
+```bash
+sudo shedman tpm2 enroll
+```
+
+That adds a TPM keyslot to the encrypted disk, and to encrypted swap if you have it. Reboot and the disk unlocks on its own.
+
+<Callout variant="note" label="You can't get locked out">
+Your passphrase and recovery key are never removed — TPM unlock is an extra keyslot, not a replacement. If the box ever boots a kernel this machine's key never signed — rescue media, another OS, a tampered boot chain — the TPM declines and you type the passphrase, exactly as before. Routine firmware and signed kernel updates keep unlocking, because the slot is bound to your signing key, not to a frozen snapshot of one boot.
+</Callout>
+
+## The tradeoff
+
+Passwordless unlock trades some security for convenience, and it's worth knowing which.
+
+Because the key is released only when this machine boots its own signed kernel, it protects your data **at rest** — a disk pulled from the machine, or the machine lost powered-off, stays encrypted and unreadable. What it does not protect is a machine that is already running, or an attacker with physical access who can roll the system back to an older signed kernel and let the TPM unlock it for them.
+
+If that is in your threat model, add a PIN:
+
+```bash
+sudo shedman tpm2 enroll --with-pin
+```
+
+Now unlock needs the measured boot state **and** a short PIN at boot — shorter than the full passphrase, but enough to close the rollback gap. It is the same choice BitLocker offers between its TPM-only default and TPM-plus-PIN.
+
+## Managing it
+
+```bash
+shedman tpm2 --status         # is TPM unlock enrolled, and on which disks
+sudo shedman tpm2 re-enroll   # rotate the slot after a key or boot-chain change
+sudo shedman tpm2 remove      # drop it; back to the passphrase at every boot
+```
+
+Removing the TPM slot leaves the passphrase and recovery key untouched — you simply go back to typing the passphrase at boot.

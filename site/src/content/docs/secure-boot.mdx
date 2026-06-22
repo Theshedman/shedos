@@ -1,0 +1,57 @@
+---
+title: Secure Boot
+description: How ShedOS signs its boot images with a key of your own, how to turn Secure Boot on, and how to recover.
+order: 20
+section: Security
+---
+
+import Callout from "~/components/Callout.astro";
+
+<h1 style="margin-top:.7rem;">Secure Boot</h1>
+
+Secure Boot lets the firmware refuse to start any boot image this machine hasn't signed. ShedOS does it with a key of your own — minted on the box and kept on its disk. It is **opt-in**: a fresh install boots fine without it, and you turn it on when you want it.
+
+## How it works
+
+ShedOS boots through Limine, which hands off to a Unified Kernel Image — the kernel, its initramfs, and the command line bundled into one signed file. When you enroll, ShedOS mints this machine's own Secure Boot key, signs every boot image with it, and only then arms the firmware. From that point the firmware checks each image against your key and refuses anything that doesn't match.
+
+The key never leaves the machine, and your box signs its own boot images instead of relying on a vendor to vouch for them.
+
+## Turning it on
+
+Secure Boot can only be enrolled while the firmware is in **Setup Mode** — the state where its factory keys have been cleared. Open your firmware setup, clear or delete the Secure Boot keys (the wording varies by vendor), save, and boot back into ShedOS. Then:
+
+```bash
+sudo shedman secureboot enroll
+```
+
+This signs the whole boot chain, verifies every image, and arms the firmware as its **last** step. If anything fails before that, Secure Boot stays off and the machine still boots — enrollment never leaves you with firmware that rejects its own kernel.
+
+By default the firmware also keeps trusting the Microsoft certificate, so the signed firmware on some discrete GPUs and network cards still loads. Add `--shedos-only` to trust your key alone — though some of that hardware may then fail to start.
+
+<Callout variant="note" label="Why Setup Mode">
+Requiring Setup Mode is deliberate. The machine runs its unsigned images perfectly until you opt in, so there is no way to half-enroll and strand yourself.
+</Callout>
+
+## Checking and re-signing
+
+```bash
+shedman secureboot status     # Secure Boot state, your keys, image signatures
+shedman secureboot verify     # check every signed image; non-zero if anything is wrong
+```
+
+Both are read-only. After a key change, re-sign the images with `sudo shedman secureboot sign`, or rebuild and re-sign a missing one with `sudo shedman secureboot repair`.
+
+## Turning it off
+
+```bash
+sudo shedman secureboot disable
+```
+
+This clears the machine's keys and returns the firmware to Setup Mode, so it stops enforcing Secure Boot. The images you already signed still boot — nothing breaks, the firmware just stops checking.
+
+## Booting rescue media
+
+Once Secure Boot is on, the firmware rejects anything unsigned — including a stock ShedOS install USB or another distro's live media. To boot one, turn Secure Boot off in your firmware setup (or run `sudo shedman secureboot disable` from a working system first), do what you need, then re-enroll. The signed recovery entry in the boot menu keeps working under Secure Boot; it unlocks an encrypted disk with the passphrase, not the TPM.
+
+Secure Boot is also what makes [passwordless unlock](/docs/tpm-unlock) possible — the TPM releases the disk key only against a boot chain it can verify.

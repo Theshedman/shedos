@@ -42,6 +42,25 @@ import CardGrid from "~/components/CardGrid.astro";
         </a>
       </CardGrid>
 
+      <h2 style="font-family:var(--font-mono);font-size:.72rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:2.5rem 0 1.2rem;">Security</h2>
+      <CardGrid cols={3}>
+        <a href="/docs/encryption" class="card linkcard">
+          <h3>Disk encryption</h3>
+          <p>Encrypted by default — your two keys, unlocking at boot, and recovery.</p>
+          <span class="card-link">Read →</span>
+        </a>
+        <a href="/docs/secure-boot" class="card linkcard">
+          <h3>Secure Boot</h3>
+          <p>Sign the boot chain with a key of your own and turn Secure Boot on.</p>
+          <span class="card-link">Read →</span>
+        </a>
+        <a href="/docs/tpm-unlock" class="card linkcard">
+          <h3>Passwordless unlock</h3>
+          <p>Bind the disk to the TPM2 so it unlocks without a passphrase — and the tradeoff.</p>
+          <span class="card-link">Read →</span>
+        </a>
+      </CardGrid>
+
       <h2 style="font-family:var(--font-mono);font-size:.72rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:2.5rem 0 1.2rem;">Reference</h2>
       <CardGrid cols={3}>
         <a href="/docs/keybindings" class="card linkcard">

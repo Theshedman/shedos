@@ -1,8 +1,8 @@
 ---
 title: Disk encryption
 description: New ShedOS installs are encrypted by default. How your keys work, how to recover, and how to opt out.
-order: 25
-section: Guide
+order: 10
+section: Security
 ---
 
 <h1 style="margin-top:.7rem;">Disk encryption</h1>
@@ -23,6 +23,8 @@ Write the recovery key down and keep it somewhere safe and separate from the mac
 ## Unlocking at boot
 
 Every boot stops at a prompt before the system starts. Type your passphrase (or the recovery key) and it continues to the login screen as normal. Hibernation works too: the resume image is written to encrypted swap and unlocked the same way.
+
+If typing the passphrase every boot gets old, you can bind the disk to this machine's TPM2 so a trusted boot unlocks on its own — see [Passwordless unlock](/docs/tpm-unlock).
 
 ## Turning encryption off
 
