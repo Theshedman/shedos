@@ -1,0 +1,15 @@
+{
+    // Repo pyright config. Scoped to the installer — the only typed Python
+    // project here; the ad-hoc scripts elsewhere have no project setup and
+    // would only add noise. extraPaths puts installer/ on the path so
+    // `shedos_installer` and `tests` resolve (the suite runs with installer/ on
+    // PYTHONPATH); stubPath finds the libcalamares host-module stub.
+    "include": ["installer"],
+    "extraPaths": ["installer"],
+    "stubPath": "installer/typings",
+    "pythonVersion": "3.11",
+    // libcalamares is injected by the Calamares C++ host at runtime and has no
+    // Python source; the typings/ stub is its intended resolution, so pyright's
+    // "stub but no source" notice is expected here, not a real gap.
+    "reportMissingModuleSource": "none"
+}
