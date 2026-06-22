@@ -66,6 +66,24 @@ Once linux-zen boots cleanly you can retire the old kernel to free its
 space for good — `shedman` will do this on its own on the next boots, or
 remove `shedos-kernel` by hand.
 
+## Encrypted or Secure Boot boxes
+
+On an encrypted install, unlock the LUKS container before mounting in step 2,
+and mount the mapper rather than the bare partition:
+
+```
+cryptsetup open /dev/sdaN root
+mount -o subvol=@ /dev/mapper/root /mnt
+mount /dev/sda1 /mnt/boot/efi
+arch-chroot /mnt
+```
+
+`recover-esp.sh` re-signs every rebuilt UKI against this box's key, so the
+recovered images boot under Secure Boot unchanged. If the box still boots and
+only an image went missing or unsigned, you don't need the live USB at all:
+`sudo shedman secureboot repair` rebuilds and re-signs it in place, then
+verifies the chain. See `shedman-secureboot`(1).
+
 ## If recover-esp.sh still refuses
 
 It prints which image wouldn't fit. That only happens if the ESP is too

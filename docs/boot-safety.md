@@ -60,3 +60,34 @@ That recovers a broken update — but it cannot recover an fstab emergency,
 because every snapshot carries the same `/etc/fstab`. The bad mount line is
 in the snapshot too, so rolling back lands you in the same emergency. That is
 exactly the gap the guided screen and the doctor audit close.
+
+## Secure Boot and full-disk encryption
+
+Encryption and Secure Boot add their own ways to be stopped at boot. All of
+them are recoverable, and the defaults are chosen so you can't lock yourself
+out by accident.
+
+- **The encrypted disk asks for a passphrase.** A fresh encrypted install
+  prompts for it every boot. If you forget it, the recovery key shown at
+  install time unlocks the disk — keep it somewhere off the machine.
+- **Passwordless unlock falls back, it never locks out.** After
+  `sudo shedman tpm2 enroll` the disk opens with nothing typed on a trusted
+  boot. If the boot chain changes — a firmware update, a kernel the TPM hasn't
+  measured — the TPM declines and you type the passphrase instead. The
+  passphrase and recovery key are never removed. The passwordless-versus-PIN
+  tradeoff is in `shedman-tpm2`(1).
+- **Secure Boot rejects unsigned media.** Once you run
+  `sudo shedman secureboot enroll`, firmware refuses to boot anything this box
+  hasn't signed, including a stock install USB. To boot rescue media, turn
+  Secure Boot off in firmware setup (or run `shedman secureboot disable`),
+  recover, then re-enroll. The signed recovery entry in the boot menu still
+  works under Secure Boot, but it unlocks the disk with the passphrase, not
+  the TPM.
+- **enroll only runs in Setup Mode.** `secureboot enroll` refuses unless you
+  have first cleared the platform keys in firmware setup. That is deliberate:
+  a box boots its unsigned images fine until you opt in, so enrollment can
+  never silently strand you. See `shedman-secureboot`(1).
+
+The recovery paths above are unaffected by Secure Boot: the snapshot
+auto-rollback boots a signed snapshot, and the guided emergency screen runs
+from the signed initramfs, so both still work with Secure Boot on.
