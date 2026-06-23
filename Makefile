@@ -29,7 +29,7 @@ YELLOW := \033[0;33m
 RED := \033[0;31m
 NC := \033[0m
 
-.PHONY: all iso clean clean-all test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages regen bump bump-today bump-check release release-rc release-stable _cut push test-review-configs test-sync-configs test-check-health test-tui-logs test-tui-history test-apply test-apply-checkpoint test-doctor test-shedman test-status test-completions test-migrate test-man test-screenrecord test-kernel test-uki test-tpm2 test-secureboot test-key test-installer test-config test-rollback test-update test-install test-screensaver test-screensaver-rust lint-rust
+.PHONY: all iso clean clean-all test help check-deps check-root prepare build-aur download-packages generate-packages shedos-packages regen bump bump-today bump-check release release-rc release-stable _cut push test-review-configs test-sync-configs test-check-health test-tui-logs test-tui-history test-apply test-apply-checkpoint test-doctor test-shedman test-status test-completions test-migrate test-man test-screenrecord test-kernel test-uki test-tpm2 test-secureboot test-key test-encrypt test-installer test-config test-rollback test-update test-install test-screensaver test-screensaver-rust lint-rust
 
 all: iso
 
@@ -73,6 +73,7 @@ help:
 	@echo "  test-tpm2          Run shedman tpm2 verb tests"
 	@echo "  test-secureboot    Run shedman secureboot verb tests"
 	@echo "  test-key           Run shedman key verb tests"
+	@echo "  test-encrypt       Run shedman encrypt preflight tests"
 	@echo "  test-installer     Run installer pytest suite (Calamares modules + core)"
 	@echo "  test-config        Run shedman config umbrella tests"
 	@echo "  test-rollback      Run shedman rollback smoke tests"
@@ -580,6 +581,10 @@ test-secureboot:
 test-key:
 	@echo -e "$(GREEN)Running shedman key verb tests...$(NC)"
 	@bash $(TEST_DIR)/key/run.sh
+
+test-encrypt:
+	@echo -e "$(GREEN)Running shedman encrypt tests...$(NC)"
+	@bash $(TEST_DIR)/encrypt/run.sh
 
 test-installer:
 	@echo -e "$(GREEN)Running installer pytest suite...$(NC)"
