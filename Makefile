@@ -585,6 +585,7 @@ test-key:
 test-encrypt:
 	@echo -e "$(GREEN)Running shedman encrypt tests...$(NC)"
 	@bash $(TEST_DIR)/encrypt/run.sh
+	@bash $(TEST_DIR)/encrypt/loop-e2e.sh
 
 test-installer:
 	@echo -e "$(GREEN)Running installer pytest suite...$(NC)"
