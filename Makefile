@@ -589,6 +589,7 @@ test-encrypt:
 	@bash $(TEST_DIR)/encrypt/enroll.sh
 	@bash $(TEST_DIR)/encrypt/reconfigure.sh
 	@bash $(TEST_DIR)/encrypt/loop-e2e.sh
+	@bash $(TEST_DIR)/encrypt/swap-loop-e2e.sh
 
 test-installer:
 	@echo -e "$(GREEN)Running installer pytest suite...$(NC)"
