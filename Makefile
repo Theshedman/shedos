@@ -585,6 +585,7 @@ test-key:
 test-encrypt:
 	@echo -e "$(GREEN)Running shedman encrypt tests...$(NC)"
 	@bash $(TEST_DIR)/encrypt/run.sh
+	@bash $(TEST_DIR)/encrypt/arm.sh
 	@bash $(TEST_DIR)/encrypt/enroll.sh
 	@bash $(TEST_DIR)/encrypt/reconfigure.sh
 	@bash $(TEST_DIR)/encrypt/loop-e2e.sh
