@@ -216,6 +216,8 @@ push:
 		echo -e "$(GREEN)→ Already up to date with origin/main; nothing to push.$(NC)"; \
 		exit 0; \
 	fi
+	@echo -e "$(GREEN)→ Guarding against CI-managed release bumps...$(NC)"
+	@bash scripts/check-release-bump.sh origin/main..HEAD
 	@count=$$(git rev-list --count origin/main..HEAD); \
 	echo -e "$(GREEN)→ Pushing $$count commit(s) to origin/main...$(NC)"
 	@git push origin main
