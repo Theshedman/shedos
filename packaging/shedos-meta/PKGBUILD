@@ -12,7 +12,7 @@
 
 pkgname=shedos-meta
 pkgver=2026.06.19
-pkgrel=5
+pkgrel=6
 pkgdesc='ShedOS meta-package — installs the full default ShedOS environment'
 arch=('any')
 url='https://github.com/Theshedman/shedos'
@@ -483,6 +483,7 @@ depends=(
     'libcanberra'
     'libcap'
     'libcap-ng'
+    'libcbor'
     'libcdio'
     'libcdio-paranoia'
     'libcloudproviders'
@@ -514,6 +515,7 @@ depends=(
     'libfakekey'
     'libfdk-aac'
     'libffi'
+    'libfido2'
     'libfontenc'
     'libfprint'
     'libfreeaptx'
