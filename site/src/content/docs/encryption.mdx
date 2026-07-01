@@ -28,7 +28,7 @@ If typing the passphrase every boot gets old, you can bind the disk to this mach
 
 ## Turning encryption off
 
-At the **partitioning** step of the installer, the "Encrypt system" box is ticked by default. Untick it before you continue and the install is unencrypted — no passphrase at boot, no recovery key. You can always re-encrypt later by reinstalling (see below).
+At the **partitioning** step of the installer, the "Encrypt system" box is ticked by default. Untick it before you continue and the install is unencrypted — no passphrase at boot, no recovery key. You can always encrypt it in place later (see below).
 
 ## Recovering an encrypted machine
 
@@ -44,4 +44,16 @@ With the disk unlocked and mounted, the usual recovery paths work as normal — 
 
 ## Encrypting an existing install
 
-Encryption happens at install time, so an existing unencrypted ShedOS box is never converted by an update — it keeps working exactly as it is. To encrypt one, back up your data and reinstall (new installs are encrypted by default), then restore. In-place encryption of a running system is planned for a later release.
+An unencrypted ShedOS box keeps working exactly as it is — an update never converts it. When you want to encrypt it, you don't have to reinstall. `shedman encrypt` converts the running system in place, with no external drive and no copying your data off and back.
+
+```bash
+sudo shedman encrypt
+```
+
+It can't rewrite the disk while the system is running on it, so nothing is encrypted on the spot. It runs a preflight, takes a passphrase, and arms the conversion. The next reboot does the real work — it rewrites the disk in a minimal environment while nothing is mounted, then boots back into your desktop encrypted. A full disk takes a while and the machine is unusable until it finishes, so start it when you can leave it alone and on AC power.
+
+Only a standard ShedOS layout converts: a btrfs root on the `@` subvolume. An already-encrypted or non-standard disk is turned away by the preflight before a byte is touched. A small encrypted swap is carved for hibernation too, unless you pass `--no-swap`.
+
+Afterwards you have the same two keys as a fresh install: the passphrase you just set, and a recovery key the first login shows once. Write it down and keep it safe, exactly as you would at install.
+
+A power cut mid-rewrite is the thing to avoid, which is why it wants AC power — but the rewrite is resumable, so if one happens the next boot picks up where it stopped and finishes. `sudo shedman encrypt --status` shows progress along the way, and `--disarm` cancels a conversion you armed but haven't rebooted into yet.
