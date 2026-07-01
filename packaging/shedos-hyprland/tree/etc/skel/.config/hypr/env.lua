@@ -22,11 +22,9 @@ hl.env("QT_AUTO_SCREEN_SCALE_FACTOR", "1")
 hl.env("GDK_BACKEND", "wayland,x11,*")
 hl.env("GTK_THEME", "catppuccin-mocha-blue-standard+default")
 
--- NVIDIA (uncomment if using NVIDIA)
--- hl.env("LIBVA_DRIVER_NAME", "nvidia")
--- hl.env("GBM_BACKEND", "nvidia-drm")
--- hl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
--- hl.env("NVD_BACKEND", "direct")
+-- GPU render env (AQ_DRM_DEVICES + nvidia vars) is written by the installer to
+-- /etc/uwsm/env from detected hardware; it must load before Hyprland, so it
+-- can't live in this config.
 
 hl.config({
     xwayland = { force_zero_scaling = true },
