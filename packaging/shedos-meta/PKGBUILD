@@ -11,8 +11,8 @@
 # as the source of truth for "what's on a fresh install".
 
 pkgname=shedos-meta
-pkgver=2026.06.19
-pkgrel=7
+pkgver=2026.07.01
+pkgrel=2
 pkgdesc='ShedOS meta-package — installs the full default ShedOS environment'
 arch=('any')
 url='https://github.com/Theshedman/shedos'
