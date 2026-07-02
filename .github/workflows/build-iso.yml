@@ -250,6 +250,37 @@ jobs:
           TMPDIR=/mnt SHEDOS_ISO="out/$ISO_NAME" SHEDOS_BASE_IMAGE_OUT=/mnt/base.qcow2 \
             scripts/build-base-image.sh
 
+      # TEMPORARY diagnostic: capture the freshly-built image's boot layout so we
+      # can see why the emergency drill can't find the UKI. Remove once fixed.
+      - name: Dump base-image boot layout
+        if: always()
+        continue-on-error: true
+        run: |
+          [ -f /mnt/base.qcow2 ] || { echo "no /mnt/base.qcow2 (base build failed)"; exit 0; }
+          out=out/base-boot-layout.txt
+          guestfish --ro -a /mnt/base.qcow2 -i <<'GF' > "$out" 2>&1 || true
+          echo "=== mountpoints ==="
+          mountpoints
+          echo "=== /boot (depth 2) ==="
+          find /boot -maxdepth 2
+          echo "=== /boot/efi ==="
+          find /boot/efi
+          echo "=== limine.conf variants ==="
+          sh "for f in /boot/limine.conf /boot/efi/EFI/limine/limine.conf /boot/efi/limine.conf /efi/EFI/limine/limine.conf /efi/limine.conf; do echo \"### $f ###\"; [ -f \"$f\" ] && cat \"$f\" || echo '(absent)'; echo; done"
+          echo "=== /etc/fstab ==="
+          cat /etc/fstab
+          GF
+          echo "===== base-boot-layout.txt ====="
+          cat "$out"
+
+      - name: Upload base-image boot layout
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: base-boot-layout
+          path: out/base-boot-layout.txt
+          if-no-files-found: warn
+
       - name: Emergency-recovery gate
         # non-blocking so a failure can't stop publishing
         continue-on-error: true
