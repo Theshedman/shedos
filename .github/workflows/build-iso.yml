@@ -241,26 +241,40 @@ jobs:
         run: |
           pacman -S --needed --noconfirm edk2-ovmf libguestfs squashfs-tools \
             socat libisoburn btrfs-progs dosfstools gptfdisk limine \
-            arch-install-scripts qemu-img
+            arch-install-scripts qemu-img binutils
           modprobe loop || true
-          SHEDOS_ISO="out/$ISO_NAME" SHEDOS_BASE_IMAGE_OUT=out/base.qcow2 \
+          # Build on /mnt (~74G), not out/ on /__w (~43G, already holding the ISO
+          # + caches), so the 16G scratch image and its qcow2 don't run out of
+          # space. The archiso work tree is spent once the ISO is in out/.
+          rm -rf /mnt/archiso-work
+          TMPDIR=/mnt SHEDOS_ISO="out/$ISO_NAME" SHEDOS_BASE_IMAGE_OUT=/mnt/base.qcow2 \
             scripts/build-base-image.sh
 
       - name: Emergency-recovery gate
         # non-blocking so a failure can't stop publishing
         continue-on-error: true
         run: |
-          SHEDOS_EMERGENCY_TEST_IMAGE=out/base.qcow2 scripts/emergency-boot-assert.sh
+          # A SKIP (exit 77) means a prerequisite is missing, not a failure —
+          # map it to success so it doesn't red-annotate this advisory gate.
+          SHEDOS_EMERGENCY_TEST_IMAGE=/mnt/base.qcow2 scripts/emergency-boot-assert.sh \
+            || { rc=$?; [ "$rc" -eq 77 ] && exit 0 || exit "$rc"; }
 
       - name: Live + installed lock gate
         # non-blocking so a failure can't stop publishing
         continue-on-error: true
         run: |
           # Arch splits qemu's display backends: -display egl-headless lives in
-          # qemu-ui-egl-headless, not qemu-base. virglrenderer/mesa back the GL.
-          pacman -S --needed --noconfirm qemu-ui-egl-headless virglrenderer mesa libglvnd
-          SHEDOS_LIVE_ISO="out/$ISO_NAME" SHEDOS_INSTALLED_IMAGE=out/base.qcow2 \
-            scripts/live-iso-lock-assert.sh
+          # qemu-ui-egl-headless, the virtio-gpu-gl-pci device in its own modules
+          # (the -pci-gl leaf needs the -pci base), and virglrenderer/mesa back
+          # the GL. GPU-less runners still SKIP at the render-node guard.
+          pacman -S --needed --noconfirm qemu-ui-egl-headless virglrenderer mesa \
+            libglvnd qemu-hw-display-virtio-gpu-pci-gl qemu-hw-display-virtio-gpu-pci
+          # A SKIP (exit 77) means a prerequisite is missing (a GPU-less runner
+          # can't bring up the desktop), not a failure — map it to success so it
+          # doesn't red-annotate this advisory gate.
+          SHEDOS_LIVE_ISO="out/$ISO_NAME" SHEDOS_INSTALLED_IMAGE=/mnt/base.qcow2 \
+            scripts/live-iso-lock-assert.sh \
+            || { rc=$?; [ "$rc" -eq 77 ] && exit 0 || exit "$rc"; }
 
       - name: Upload lock-harness artifacts
         if: always()
