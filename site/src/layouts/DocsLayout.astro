@@ -1,5 +1,5 @@
 ---
-import { getCollection } from "astro:content";
+import { orderedDocs } from "~/lib/docs";
 import BaseLayout from "./BaseLayout.astro";
 import DocsSidebar from "~/components/DocsSidebar.astro";
 import DocFoot from "~/components/DocFoot.astro";
@@ -23,10 +23,8 @@ const { title, description, section, prev: prevProp, next: nextProp } = Astro.pr
 const pathname = Astro.url.pathname.replace(/\/$/, "");
 const currentSlug = pathname.replace(/^\/docs\//, "");
 
-// Compute prev/next from sorted collection if not provided by caller
-const entries = (await getCollection("docs")).sort(
-    (a, b) => a.data.order - b.data.order,
-);
+// Compute prev/next from the shared section-ordered list (matches the sidebar)
+const entries = await orderedDocs();
 const idx = entries.findIndex((e) => e.id === currentSlug);
 const prev = prevProp ?? (idx > 0
     ? { href: `/docs/${entries[idx - 1].id}`, label: entries[idx - 1].data.title }

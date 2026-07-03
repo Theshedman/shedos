@@ -1,25 +1,15 @@
 ---
-import { getCollection } from "astro:content";
+import { docSections } from "~/lib/docs";
 
 interface Props {
     current?: string;
 }
 
 const { current } = Astro.props;
-
-const entries = (await getCollection("docs")).sort(
-    (a, b) => a.data.order - b.data.order,
-);
-
-const sections = new Map<string, typeof entries>();
-for (const e of entries) {
-    const key = e.data.section;
-    if (!sections.has(key)) sections.set(key, []);
-    sections.get(key)!.push(e);
-}
+const sections = await docSections();
 ---
 <aside class="docs-side">
-    {[...sections.entries()].map(([label, items]) => (
+    {sections.map(([label, items]) => (
         <>
             <div class="grp">{label}</div>
             {items.map((e) => (
