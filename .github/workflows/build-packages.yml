@@ -415,6 +415,12 @@ jobs:
           # /rc/<tag>; stable tag promotes the latest RC snapshot (not live
           # /test, which the soak's main-pushes overwrite) via copy so older
           # versions survive for downgrade.
+          # Packages land BEFORE the db in every channel: boxes that pull a
+          # db mid-publish must never see entries whose files aren't up yet.
+          # /test must also always stay >= /stable for every package — the
+          # canary repo is listed first in pacman.conf, and pacman prefers
+          # the first repo REGARDLESS of version, so a stable-only package
+          # would pin canary boxes to the older /test version.
           if [[ "$GITHUB_REF_TYPE" == "tag" ]] && [[ "$GITHUB_REF_NAME" != *-rc* ]]; then
               mapfile -t snaps < <(rclone lsf --dirs-only "r2:$R2_BUCKET/rc/" 2>/dev/null \
                   | grep -E "^${GITHUB_REF_NAME}-rc[0-9]+/$" | sort -V)
@@ -425,10 +431,20 @@ jobs:
               fi
               snap=${snaps[-1]%/}
               echo "Stable tag $GITHUB_REF_NAME: promoting /rc/$snap/x86_64/ → /stable/x86_64/"
-              rclone copy "r2:$R2_BUCKET/rc/$snap/x86_64/" "r2:$R2_BUCKET/stable/x86_64/" --progress
+              rclone copy "r2:$R2_BUCKET/rc/$snap/x86_64/" "r2:$R2_BUCKET/stable/x86_64/" \
+                  --exclude 'shedos.db*' --exclude 'shedos.files*' --progress
+              rclone copy "r2:$R2_BUCKET/rc/$snap/x86_64/" "r2:$R2_BUCKET/stable/x86_64/" \
+                  --include 'shedos.db*' --include 'shedos.files*' --progress
           else
               echo "Push or RC tag: publishing dist/x86_64/ → /test/x86_64/"
-              rclone sync dist/x86_64/ "r2:$R2_BUCKET/test/x86_64/" --progress
+              # The shedostest.* exclusion keeps sync's delete pass off the
+              # mirrored canary db, which would otherwise 404 for canary
+              # boxes between the sync and the re-mirror below.
+              rclone sync dist/x86_64/ "r2:$R2_BUCKET/test/x86_64/" \
+                  --exclude 'shedos.db*' --exclude 'shedos.files*' \
+                  --exclude 'shedostest.*' --progress
+              rclone copy dist/x86_64/ "r2:$R2_BUCKET/test/x86_64/" \
+                  --include 'shedos.db*' --include 'shedos.files*' --progress
               # Mirror the DB as [shedostest] on /test so a stable box can opt
               # into the canary. Out of dist/ to keep /rc and /stable clean.
               for ext in db db.sig files files.sig; do
