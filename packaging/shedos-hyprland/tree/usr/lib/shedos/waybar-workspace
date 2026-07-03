@@ -1,15 +1,21 @@
 #!/usr/bin/env bash
 # Emit a waybar custom-module JSON line for Hyprland workspace $1's state
-# (active / occupied / empty), then watch Hyprland's event socket and re-emit
-# on every change so the bar tracks switches instantly.
+# (active / urgent / occupied / empty), then watch Hyprland's event socket and
+# re-emit on every change so the bar tracks switches instantly.
 #
 # Why this exists: Hyprland 0.55's Lua config evaluates external dispatches as
 # Lua, so waybar's built-in workspace click (raw `dispatch workspace N`) is a
 # Lua syntax error and never switches. These buttons dispatch the hl.dsp.focus
 # Lua form on-click (see config.jsonc); this script supplies their live state.
+#
+# Urgency: Hyprland emits `urgent>>ADDR` when a window on an unfocused
+# workspace demands attention (a link opened from another workspace's
+# terminal, say). The flag sticks until this workspace is visited, matching
+# what hyprland/workspaces did before the switch.
 set -u
 
 ws=$1
+urgent=0
 
 emit() {
     local active occupied class
@@ -17,7 +23,10 @@ emit() {
     occupied=$(hyprctl workspaces -j 2>/dev/null \
         | jq -r --argjson w "$ws" 'map(select(.id == $w))[0].windows // 0')
     if [ "$active" = "$ws" ]; then
+        urgent=0
         class=active
+    elif [ "$urgent" = 1 ]; then
+        class=urgent
     elif [[ "${occupied:-0}" =~ ^[1-9] ]]; then
         class=occupied
     else
@@ -28,15 +37,33 @@ emit() {
 
 emit
 
-sock="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/hypr/${HYPRLAND_INSTANCE_SIGNATURE:-}/.socket2.sock"
-# Exit (waybar's restart-interval re-runs us) if the event socket isn't up yet
-# — covers the login race before Hyprland exports its instance signature.
-[ -S "$sock" ] || exit 0
+# The events file override is the test harness's seam; production streams the
+# Hyprland socket. Exit (waybar's restart-interval re-runs us) if the event
+# socket isn't up yet — covers the login race before Hyprland exports its
+# instance signature.
+if [ -n "${SHEDOS_WS_EVENTS_FILE:-}" ]; then
+    _events() { cat -- "$SHEDOS_WS_EVENTS_FILE"; }
+else
+    sock="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/hypr/${HYPRLAND_INSTANCE_SIGNATURE:-}/.socket2.sock"
+    [ -S "$sock" ] || exit 0
+    _events() { socat -u "UNIX-CONNECT:$sock" - 2>/dev/null; }
+fi
 
-# socat streams one `EVENT>>data` line per event; refresh on any that can move
-# a workspace's active or occupied state.
-socat -u "UNIX-CONNECT:$sock" - 2>/dev/null | while IFS= read -r line; do
+# One `EVENT>>data` line per event; refresh on any that can move a
+# workspace's active, urgent, or occupied state.
+_events | while IFS= read -r line; do
     case "$line" in
+        'urgent>>'*)
+            # Event addresses come bare; hyprctl clients prefixes 0x.
+            addr=${line#'urgent>>'}
+            target=$(hyprctl clients -j 2>/dev/null \
+                | jq -r --arg a "0x$addr" \
+                    'map(select(.address == $a))[0].workspace.id // -1')
+            if [ "$target" = "$ws" ]; then
+                urgent=1
+                emit
+            fi
+            ;;
         workspace* | focusedmon* | createworkspace* | destroyworkspace* \
             | moveworkspace* | openwindow* | closewindow* | movewindow*)
             emit

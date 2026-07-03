@@ -61,6 +61,18 @@ window#waybar>box {
     color: @base;
 }
 
+/* A window on this (unfocused) workspace wants attention — a link opened
+ * from another workspace's terminal, say. Cleared when the workspace is
+ * visited; see /usr/lib/shedos/waybar-workspace. */
+#custom-workspace-1.urgent,
+#custom-workspace-2.urgent,
+#custom-workspace-3.urgent,
+#custom-workspace-4.urgent,
+#custom-workspace-5.urgent {
+    background: alpha(@red, 0.85);
+    color: @base;
+}
+
 #custom-workspace-1.empty,
 #custom-workspace-2.empty,
 #custom-workspace-3.empty,
