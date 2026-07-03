@@ -17,6 +17,9 @@
 # (like the cryptsetup e2e), so it runs locally and in a root CI job.
 set -uo pipefail
 
+for t in pacman pacman-key repo-add gpg bsdtar; do
+    command -v "$t" >/dev/null 2>&1 || { echo "rotation-drill: SKIP (missing $t)"; exit 0; }
+done
 if [[ $(id -u) -ne 0 ]]; then
     echo "rotation-drill: SKIP (needs root: pacman-key --init and pacman -Sy)"
     exit 0

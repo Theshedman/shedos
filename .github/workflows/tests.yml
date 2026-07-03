@@ -45,5 +45,11 @@ jobs:
       - name: Run shell test suites
         run: sudo -u tester bash scripts/run-shell-tests.sh
 
+      # The rotation drill needs root (pacman-key/pacman -Sy) but no privileged
+      # container — it runs against a scratch file:// repo, not loop devices. It
+      # SKIPs as the tester above, so run it here as root for the real assertions.
+      - name: Run the rotation drill (real pacman signer swap, root)
+        run: bash test/rotation-drill/run.sh
+
       - name: Run the installer Python suite
         run: sudo -u tester bash -c 'PYTHONPATH=installer python -m pytest installer/tests -q'
