@@ -239,9 +239,13 @@ jobs:
         # non-blocking so a build failure can't stop publishing
         continue-on-error: true
         run: |
+          # linux: supermin builds guestfish's boot appliance from the
+          # container's kernel + modules, and the archlinux image ships
+          # neither — without it every guestfish call dies at appliance
+          # build and the recovery drill can only skip.
           pacman -S --needed --noconfirm edk2-ovmf libguestfs squashfs-tools \
             socat libisoburn btrfs-progs dosfstools gptfdisk limine \
-            arch-install-scripts qemu-img binutils
+            arch-install-scripts qemu-img binutils linux
           modprobe loop || true
           # Build on /mnt (~74G), not out/ on /__w (~43G, already holding the ISO
           # + caches), so the 16G scratch image and its qcow2 don't run out of
