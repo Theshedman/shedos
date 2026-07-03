@@ -11,6 +11,12 @@ import Callout from "~/components/Callout.astro";
 
 Secure Boot lets the firmware refuse to start any boot image this machine hasn't signed. ShedOS does it with a key of your own — minted on the box and kept on its disk. It is **opt-in**: a fresh install boots fine without it, and you turn it on when you want it.
 
+It is also the middle step of a three-part story. [Disk encryption](/docs/encryption) protects your data when the machine is off; Secure Boot proves the machine only ever starts *your* boot images; and once both hold, [passwordless unlock](/docs/tpm-unlock) lets the TPM type the passphrase for you on a boot it can verify. Each step is optional, each builds on the one before.
+
+<Callout variant="warn" label="Do not enable Secure Boot in the firmware first">
+Your firmware ships with factory keys from Microsoft and the vendor, and a fresh ShedOS install is **unsigned** — nothing on it matches those keys. If you flip Secure Boot on before enrolling, the firmware refuses every boot entry and shows something like *"Operating System Loader failed signature verification"*. Nothing is damaged; see [If you enabled it too early](#if-you-enabled-it-too-early) below. The right first move is the opposite one: **delete** the factory keys, then let `shedman secureboot enroll` arm the firmware for you.
+</Callout>
+
 ## How it works
 
 ShedOS boots through Limine, which hands off to a Unified Kernel Image — the kernel, its initramfs, and the command line bundled into one signed file. When you enroll, ShedOS mints this machine's own Secure Boot key, signs every boot image with it, and only then arms the firmware. From that point the firmware checks each image against your key and refuses anything that doesn't match.
@@ -19,19 +25,41 @@ The key never leaves the machine, and your box signs its own boot images instead
 
 ## Turning it on
 
-Secure Boot can only be enrolled while the firmware is in **Setup Mode** — the state where its factory keys have been cleared. Open your firmware setup, clear or delete the Secure Boot keys (the wording varies by vendor), save, and boot back into ShedOS. Then:
+**1. Put the firmware in Setup Mode.** Reboot into your firmware setup (usually F2, F10, Del, or Esc at the vendor logo) and find the Secure Boot section. You are looking for the option that clears or deletes the Secure Boot keys — vendors word it differently:
+
+- Dell: *Expert Key Management* → tick *Enable Custom Mode* → *Delete All Keys*
+- Lenovo: *Security* → *Secure Boot* → *Reset to Setup Mode*
+- ASUS/MSI and many others: *Key Management* → *Clear Secure Boot Keys* (or *Delete PK*)
+
+Deleting the Platform Key is what puts the firmware in Setup Mode. Leave the *Secure Boot Enable* toggle alone for now. Save and boot back into ShedOS — the machine boots normally, because a firmware with no keys enforces nothing.
+
+**2. Enroll.** From the desktop:
 
 ```bash
 sudo shedman secureboot enroll
 ```
 
-This signs the whole boot chain, verifies every image, and arms the firmware as its **last** step. If anything fails before that, Secure Boot stays off and the machine still boots — enrollment never leaves you with firmware that rejects its own kernel.
+This mints the machine's key, signs the whole boot chain, verifies every image, and arms the firmware as its **last** step. If anything fails before that, Secure Boot stays off and the machine still boots — enrollment never leaves you with firmware that rejects its own kernel.
+
+**3. Reboot and check.**
+
+```bash
+shedman secureboot status
+```
+
+It should report Secure Boot active and every image signed. If it says Secure Boot is still off, your firmware keeps a separate *Secure Boot Enable* toggle — reboot into the firmware and switch it on; your keys are already in place, so the machine keeps booting.
 
 By default the firmware also keeps trusting the Microsoft certificate, so the signed firmware on some discrete GPUs and network cards still loads. Add `--shedos-only` to trust your key alone — though some of that hardware may then fail to start.
 
 <Callout variant="note" label="Why Setup Mode">
 Requiring Setup Mode is deliberate. The machine runs its unsigned images perfectly until you opt in, so there is no way to half-enroll and strand yourself.
 </Callout>
+
+## If you enabled it too early
+
+You flipped Secure Boot on in the firmware before enrolling, and now the machine shows *"Operating System Loader failed signature verification"* (or *"All bootable devices failed Secure Boot verification"*) instead of booting. Your disk and data are untouched — the firmware is simply refusing to start unsigned images, which is its job.
+
+Reboot into the firmware setup and either switch *Secure Boot Enable* back off (the machine boots exactly as before), or better, delete the Secure Boot keys as described in step 1 above — that also puts you in Setup Mode, which is where enrollment starts anyway. Boot back into ShedOS and run `sudo shedman secureboot enroll` to do it in the right order.
 
 ## Checking and re-signing
 

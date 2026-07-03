@@ -11,17 +11,28 @@ import Callout from "~/components/Callout.astro";
 
 By default an encrypted ShedOS box asks for its passphrase at every boot. Once you trust the machine, you can bind the disk to its **TPM2** — the small security chip on the motherboard — so it unlocks on its own when the machine boots its own kernel, with nothing to type.
 
-This is opt-in and set up after install, on a box that already has [disk encryption](/docs/encryption) and [Secure Boot](/docs/secure-boot).
+This is the last step of the three-part story: [disk encryption](/docs/encryption) at install, then [Secure Boot](/docs/secure-boot), then this. The order matters — the TPM hands over the disk key only against a boot chain it can verify, and it's Secure Boot that makes the chain verifiable.
+
+## Before you start
+
+Two things must already be true, and both take one command to check:
+
+```bash
+shedman key --status          # the disk is encrypted (passphrase + recovery slots)
+shedman secureboot status     # Secure Boot is active and every image is signed
+```
+
+If Secure Boot isn't on yet, do [that page](/docs/secure-boot) first — `shedman tpm2 enroll` checks and will refuse rather than set up an unlock the TPM could never honor.
 
 ## Enabling it
-
-The TPM hands over the key only against a verified measurement of the boot chain, so Secure Boot has to be on first. With that done:
 
 ```bash
 sudo shedman tpm2 enroll
 ```
 
-That adds a TPM keyslot to the encrypted disk, and to encrypted swap if you have it. Reboot and the disk unlocks on its own.
+That adds a TPM keyslot to the encrypted disk, and to encrypted swap if you have it. Reboot and the disk unlocks on its own — the passphrase prompt simply doesn't appear.
+
+Kernel and firmware updates don't break it: the slot is bound to your Secure Boot signing key, not to a frozen snapshot of one particular boot, so any kernel this machine signs keeps unlocking.
 
 <Callout variant="note" label="You can't get locked out">
 Your passphrase and recovery key are never removed — TPM unlock is an extra keyslot, not a replacement. If the box ever boots a kernel this machine's key never signed — rescue media, another OS, a tampered boot chain — the TPM declines and you type the passphrase, exactly as before. Routine firmware and signed kernel updates keep unlocking, because the slot is bound to your signing key, not to a frozen snapshot of one boot.
@@ -50,3 +61,14 @@ sudo shedman tpm2 remove      # drop it; back to the passphrase at every boot
 ```
 
 Removing the TPM slot leaves the passphrase and recovery key untouched — you simply go back to typing the passphrase at boot.
+
+## The whole flow at a glance
+
+Starting from a fresh machine, the complete path to an encrypted disk that unlocks itself:
+
+1. **Install ShedOS with encryption on** (the default) — set a passphrase, write down the recovery key.
+2. **Firmware setup** — delete the Secure Boot keys to enter Setup Mode. Do **not** just switch Secure Boot on; an unenrolled machine is unsigned and the firmware would refuse to boot it.
+3. `sudo shedman secureboot enroll` — mints your key, signs the boot chain, arms the firmware.
+4. Reboot; `shedman secureboot status` should show Secure Boot active. If your firmware keeps a separate enable toggle, switch it on now.
+5. `sudo shedman tpm2 enroll` — bind the disk to the TPM (add `--with-pin` if rollback is in your threat model).
+6. Reboot. No prompt. Your passphrase and recovery key still work everywhere, forever.

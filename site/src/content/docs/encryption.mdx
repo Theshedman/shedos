@@ -57,3 +57,7 @@ Only a standard ShedOS layout converts: a btrfs root on the `@` subvolume. An al
 Afterwards you have the same two keys as a fresh install: the passphrase you just set, and a recovery key the first login shows once. Write it down and keep it safe, exactly as you would at install.
 
 A power cut mid-rewrite is the thing to avoid, which is why it wants AC power — but the rewrite is resumable, so if one happens the next boot picks up where it stopped and finishes. `sudo shedman encrypt --status` shows progress along the way, and `--disarm` cancels a conversion you armed but haven't rebooted into yet.
+
+## Going further
+
+Encryption is the first of three layers that build on each other. [Secure Boot](/docs/secure-boot) makes the firmware refuse any boot image this machine didn't sign — read that page before touching the firmware's Secure Boot switch, because the order matters. With both in place, [passwordless unlock](/docs/tpm-unlock) lets the TPM unlock the disk on a verified boot, so the passphrase prompt disappears entirely. And whenever you need to change a passphrase or rotate the recovery key, that's [key management](/docs/key-management).
