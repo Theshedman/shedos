@@ -102,6 +102,53 @@ During the RC soak, after installing in a VM, run
 installed system — it confirms the proprietary apps that ride
 install.sfs actually landed.
 
+## Soaking an RC: the go/no-go matrix
+
+The automated gates cover the mechanical checks — does the ISO boot, does
+recovery work, does the signer-swap drill hold. They do not cover the
+configuration matrix: firmware, encryption, boot layout, kernel, hardware.
+Work the cells below during the soak; promote to stable only when the ones you
+can run are green and the rest are a conscious accept, not an oversight.
+
+Every installed cell clears the same bar:
+
+- Reaches the desktop.
+- The disk unlocks with the passphrase and the recovery key, and the recovery
+  key is shown exactly once — never blank, never twice.
+- `shedman doctor` and `shedman health` are clean.
+- `systemctl --failed` is empty. This is the one that catches boot-time
+  regressions nothing else flags — the v2026.07.03 soak found the networkd and
+  locale failures only by reading it.
+- `[shedos]` points at the channel the ISO was cut for: `/test` for an RC,
+  `/stable` for a stable.
+
+Automated — confirm green, no action needed:
+
+| Check | Where |
+|---|---|
+| unit + contract suites, signer-swap drill | `tests.yml` |
+| ISO reaches multi-user | `build-iso.yml` boot-assert (blocking) |
+| guided emergency recovery, live + installed lock | `build-iso.yml` (advisory) |
+
+Manual — run per RC, on a VM or real hardware:
+
+| Config | How |
+|---|---|
+| UEFI · encrypted · single-boot · linux-zen (the default) | `make test`, or hardware |
+| UEFI · unencrypted · single-boot | `make test` |
+| BIOS · encrypted · single-boot | `make test-bios` |
+| the stock `linux` kernel — boot its Limine entry to the desktop | any install above |
+| UEFI · dual-boot alongside Windows — both boot, shared ESP intact | manual only — no coverage today |
+| Secure Boot enrolled + TPM2 passwordless, surviving a kernel update | real hardware (a live TPM) |
+| FIDO2 unlock with a hardware key | real hardware (a YubiKey) |
+| vendor sweep — Intel, AMD, NVIDIA (DKMS builds, box boots) | real hardware |
+| upgrade soak — install the RC, `shedman update` across a bump, still boots and unlocks | VM or hardware |
+| signer-swap drill, before any key rotation | `sudo bash test/rotation-drill/run.sh` |
+
+The dual-boot, real-hardware, and vendor rows need iron or setups CI does not
+have; a stable cut with them unchecked is a judgement call. Everything else runs
+on the dev box or a VM before every promotion.
+
 ---
 
 ## Why the maintainer signs locally
