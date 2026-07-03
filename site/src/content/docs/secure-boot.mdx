@@ -44,10 +44,18 @@ This mints the machine's key, signs the whole boot chain, verifies every image, 
 **3. Reboot and check.**
 
 ```bash
-shedman secureboot status
+sudo shedman secureboot status
 ```
 
-It should report Secure Boot active and every image signed. If it says Secure Boot is still off, your firmware keeps a separate *Secure Boot Enable* toggle — reboot into the firmware and switch it on; your keys are already in place, so the machine keeps booting.
+On a machine that enrolled cleanly it prints:
+
+```
+Secure Boot: on
+keys: set up for this machine
+boot images: 4 signed and valid
+```
+
+The Secure Boot state and your keys show without `sudo`; reading the signed images needs root, because they sit on the root-only boot partition. If it says Secure Boot is still off, your firmware keeps a separate *Secure Boot Enable* toggle — reboot into the firmware and switch it on; your keys are already in place, so the machine keeps booting.
 
 By default the firmware also keeps trusting the Microsoft certificate, so the signed firmware on some discrete GPUs and network cards still loads. Add `--shedos-only` to trust your key alone — though some of that hardware may then fail to start.
 
@@ -64,11 +72,11 @@ Reboot into the firmware setup and either switch *Secure Boot Enable* back off (
 ## Checking and re-signing
 
 ```bash
-shedman secureboot status     # Secure Boot state, your keys, image signatures
-shedman secureboot verify     # check every signed image; non-zero if anything is wrong
+sudo shedman secureboot status     # Secure Boot state, your keys, and image signatures
+sudo shedman secureboot verify     # re-check every signed image; non-zero if anything is wrong
 ```
 
-Both are read-only. After a key change, re-sign the images with `sudo shedman secureboot sign`, or rebuild and re-sign a missing one with `sudo shedman secureboot repair`.
+Both are read-only. Without `sudo` they still report the Secure Boot state, but reading the signed images on the boot partition needs root. After a key change, re-sign the images with `sudo shedman secureboot sign`, or rebuild and re-sign a missing one with `sudo shedman secureboot repair`.
 
 ## Turning it off
 

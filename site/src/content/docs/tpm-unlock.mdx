@@ -18,8 +18,8 @@ This is the last step of the three-part story: [disk encryption](/docs/encryptio
 Two things must already be true, and both take one command to check:
 
 ```bash
-shedman key --status          # the disk is encrypted (passphrase + recovery slots)
-shedman secureboot status     # Secure Boot is active and every image is signed
+sudo shedman key --status          # the disk is encrypted (passphrase + recovery slots)
+sudo shedman secureboot status     # Secure Boot is active and every image is signed
 ```
 
 If Secure Boot isn't on yet, do [that page](/docs/secure-boot) first — `shedman tpm2 enroll` checks and will refuse rather than set up an unlock the TPM could never honor.
@@ -30,7 +30,7 @@ If Secure Boot isn't on yet, do [that page](/docs/secure-boot) first — `shedma
 sudo shedman tpm2 enroll
 ```
 
-That adds a TPM keyslot to the encrypted disk, and to encrypted swap if you have it. Reboot and the disk unlocks on its own — the passphrase prompt simply doesn't appear.
+It adds a TPM keyslot to the encrypted disk, and to encrypted swap if you have it. Each volume has its own lock, so it asks for your current passphrase once per volume — on a standard install you type it twice, once for the root disk and once for swap. Reboot and the disk unlocks on its own; the passphrase prompt simply doesn't appear.
 
 Kernel and firmware updates don't break it: the slot is bound to your Secure Boot signing key, not to a frozen snapshot of one particular boot, so any kernel this machine signs keeps unlocking.
 
@@ -55,9 +55,16 @@ Now unlock needs the measured boot state **and** a short PIN at boot — shorter
 ## Managing it
 
 ```bash
-shedman tpm2 --status         # is TPM unlock enrolled, and on which disks
+sudo shedman tpm2 --status    # is TPM unlock enrolled, and on which disks
 sudo shedman tpm2 re-enroll   # rotate the slot after a key or boot-chain change
 sudo shedman tpm2 remove      # drop it; back to the passphrase at every boot
+```
+
+`--status` reports each encrypted volume, root and swap alike:
+
+```
+/dev/disk/by-uuid/4d033633-…: TPM2 unlock enrolled
+/dev/disk/by-uuid/1b480829-…: TPM2 unlock enrolled
 ```
 
 Removing the TPM slot leaves the passphrase and recovery key untouched — you simply go back to typing the passphrase at boot.

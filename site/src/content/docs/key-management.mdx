@@ -14,10 +14,25 @@ Your encrypted disk can be opened more than one way: the passphrase you set at i
 See what you have:
 
 ```bash
-shedman key --status
+sudo shedman key --status
 ```
 
-It lists each keyslot and what it is — passphrase, recovery, an added passphrase, TPM2, or FIDO2.
+On a standard encrypted install it prints something like:
+
+```
+/dev/disk/by-uuid/4d033633-…:
+  slot 0: passphrase
+  slot 1: recovery
+  slot 2: recovery
+  slot 3: recovery
+  slot 4: recovery
+  slot 5: tpm2
+/dev/disk/by-uuid/1b480829-…:
+  slot 0: passphrase
+  …
+```
+
+Each line is one keyslot: your passphrase, the recovery key, an added passphrase, TPM2, or FIDO2. The recovery key takes several slots because it opens the disk however you type it — with or without the dashes, in any case — so a small transcription slip still lets you in. The two devices are the encrypted root and encrypted swap; every `shedman key` change applies to both.
 
 ## Changing the passphrase
 
