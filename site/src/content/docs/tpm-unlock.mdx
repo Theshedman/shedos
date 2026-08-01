@@ -52,6 +52,8 @@ sudo shedman tpm2 enroll --with-pin
 
 Now unlock needs the measured boot state **and** a short PIN at boot — shorter than the full passphrase, but enough to close the rollback gap. It is the same choice BitLocker offers between its TPM-only default and TPM-plus-PIN.
 
+With a PIN enrolled, the boot prompt asks for the **PIN** first — and after five wrong entries it falls back to the ordinary passphrase prompt, so a forgotten PIN never locks you out of your own passphrase or recovery key. `sudo shedman tpm2 re-enroll` (without `--with-pin`) or `sudo shedman tpm2 remove` return the boot prompt to passphrase-only.
+
 ## Managing it
 
 ```bash
