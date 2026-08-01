@@ -66,7 +66,7 @@ Claude Code ships preinstalled — a terminal AI that reads your repo, writes co
 
 ## What's the security story?
 
-<Fragment set:html={String.raw`<p>Defaults you'd have to build yourself elsewhere: sudo requires your password (no silent wheel group), AppArmor is enforcing from the first boot, LUKS2 full-disk encryption is on by default, the lock screen fails closed (a crash locks, never unlocks), and a fingerprint enrolled once (<code>shedman fingerprint enroll</code>) works at the greeter, the lock screen, and sudo. You can also sign the boot chain with your own keys (<code>shedman secureboot enroll</code>) and bind the disk to the TPM2 for passwordless unlock (<code>shedman tpm2 enroll</code>). Every ShedOS package is GPG-signed and pacman verifies it.</p>`} />
+<Fragment set:html={String.raw`<p>Defaults you'd have to build yourself elsewhere: sudo requires your password (no silent wheel group), AppArmor is enforcing from the first boot, LUKS2 full-disk encryption is on by default, the lock screen fails closed (a crash locks, never unlocks), and a fingerprint enrolled once (<code>shedman fingerprint enroll</code>) unlocks the lock screen. You can also sign the boot chain with your own keys (<code>shedman secureboot enroll</code>) and bind the disk to the TPM2 for passwordless unlock (<code>shedman tpm2 enroll</code>). Every ShedOS package is GPG-signed and pacman verifies it.</p>`} />
 
 ## Is there telemetry?
 

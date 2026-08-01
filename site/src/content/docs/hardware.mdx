@@ -37,7 +37,7 @@ The installer refuses to start below the minimums rather than fail midway. Both 
 
 ## Laptops
 
-<Fragment set:html={String.raw`<p>TLP power management, brightness/media keys, and the 2/3/4-finger touchpad gestures work out of the box. Fingerprint readers supported by <code>fprintd</code> (most Goodix, Synaptics, Elan) enroll with <code>shedman fingerprint enroll</code> and unlock both the lock screen and the greeter.</p>`} />
+<Fragment set:html={String.raw`<p>TLP power management, brightness/media keys, and the 2/3/4-finger touchpad gestures work out of the box. Fingerprint readers supported by <code>fprintd</code> (most Goodix, Synaptics, Elan) enroll with <code>shedman fingerprint enroll</code> and unlock the lock screen; logging in at the greeter always takes the password.</p>`} />
 
 Hibernation works on machines with a disk swap partition: pick the RAM-sized swap option in the installer and the resume configuration is wired automatically; Hibernate then appears in the power menu. Systems installed without it gain the wiring on a later update if a disk swap partition exists.
 
