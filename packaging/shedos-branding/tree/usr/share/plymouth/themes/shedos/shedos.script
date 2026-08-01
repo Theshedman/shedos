@@ -199,8 +199,15 @@ fun display_password_callback(prompt, num_bullets) {
         message_sprite.SetOpacity(0);
     }
 
-    # Show label - always show helpful LUKS message
-    label_text = "Enter LUKS password to unlock disk";
+    # One label, always true, whatever is being asked for. Matching on
+    # systemd's prompt text to name the secret looks tempting and is a trap:
+    # the wording moves between systemd versions, is translated, and differs
+    # per token type, so any match here would quietly mislabel someone else's
+    # machine. Naming every accepted secret costs a few words and cannot go
+    # stale. The device name systemd passes stays off the screen — whoever is
+    # unlocking cannot act on it, and it only invites typing the wrong secret
+    # at the wrong block's prompt.
+    label_text = "Enter your PIN, passphrase, or recovery key";
     label_image = Image.Text(label_text, 0.9, 0.9, 0.95, 1);
     label.sprite.SetImage(label_image);
     label.sprite.SetX(screen_width / 2 - label_image.GetWidth() / 2);
