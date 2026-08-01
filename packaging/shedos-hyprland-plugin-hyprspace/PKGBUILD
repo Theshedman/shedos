@@ -5,9 +5,9 @@
 # window previews and drag-to-move-between-workspaces support.
 #
 # Source: Theshedman/Hyprspace — our fork of Petar546/Hyprspace, in turn
-# a fork of KZdkm/Hyprspace ported to Hyprland 0.55. Each ShedOS fix is
-# a separate commit on the fork; see `git log` on the fork for the full
-# story. Three fixes carried at time of writing:
+# a fork of KZdkm/Hyprspace. Each ShedOS fix is a separate commit on the
+# fork; see `git log` on the fork for the full story. Fixes carried at
+# time of writing:
 #   - wire reloadConfig() to the config.reloaded event so user-set
 #     plugin:overview:* keys actually apply
 #   - rewrite renderWindowStub to pin m_realPosition/m_realSize to the
@@ -27,12 +27,10 @@ url='https://github.com/Theshedman/Hyprspace'
 license=('BSD-3-Clause')
 
 depends=(
-    # Exact-version pin: a plugin compiled against one hyprland/aquamarine
-    # ABI dlopen-fails on the next (the May 2026 aquamarine .so.10→.so.11
-    # bump silently killed the overview on every install). The pin makes
-    # pacman refuse a hyprland upgrade unless a rebuilt plugin ships in
-    # the same transaction.
-    'hyprland=0.55.4'
+    # Never pin: an exact pin blocks the whole system update whenever
+    # the repos move hyprland first. Worst case now is the overview
+    # sitting out until the plugin is rebuilt.
+    'hyprland'
     'gcc-libs'
     'glibc'
     'pixman'
@@ -51,7 +49,7 @@ makedepends=(
     'git'
 )
 
-_commit='d8777776198017116ac446f160f87fb47b30a8e3'
+_commit='2728b7000bc6da2dbcb4e83d4708db3210d2ed4f'
 
 source=("git+https://github.com/Theshedman/Hyprspace.git#commit=$_commit")
 sha256sums=('SKIP')

@@ -31,7 +31,9 @@ hl.gesture({ fingers = 4, direction = "pinchin", action = function() hl.exec_cmd
 -- ---- Hyprspace plugin: workspace overview --------------------------
 -- Overview strip with live window thumbnails; autoDrag
 -- lets users drag windows between workspaces inside the overview.
-hl.plugin.load("/usr/lib/hyprland/Hyprspace.so")
+-- pcall: a plugin one hyprland version behind costs the overview,
+-- never the whole config.
+pcall(hl.plugin.load, "/usr/lib/hyprland/Hyprspace.so")
 
 hl.config({
     plugin = {
