@@ -115,49 +115,25 @@ fi
 # Modern CLI Replacements
 # ─────────────────────────────────────────────────────────────
 
-# eza (better ls)
+# The modern CLI tools (eza, bat, fd, dust, duf, procs, btm) are installed
+# under their own names — the core commands are never aliased over, so
+# scripts and muscle memory get exactly what they ask for.
+
+# eza extras (ls itself stays ls)
 if command -v eza &> /dev/null; then
-    alias ls="eza --icons --group-directories-first"
     alias ll="eza -la --icons --group-directories-first"
     alias lt="eza -T --icons --level=2"
     alias la="eza -a --icons --group-directories-first"
 fi
 
-# bat (better cat)
+# bat with paging, without touching cat
 if command -v bat &> /dev/null; then
-    alias cat="bat --style=plain"
     alias catp="bat"
 fi
 
-# zoxide (better cd)
+# zoxide: the z command, cd untouched
 if command -v zoxide &> /dev/null; then
     eval "$(zoxide init zsh)"
-    alias cd="z"
-fi
-
-# fd (better find)
-if command -v fd &> /dev/null; then
-    alias find="fd"
-fi
-
-# dust (better du)
-if command -v dust &> /dev/null; then
-    alias du="dust"
-fi
-
-# duf (better df)
-if command -v duf &> /dev/null; then
-    alias df="duf"
-fi
-
-# procs (better ps)
-if command -v procs &> /dev/null; then
-    alias ps="procs"
-fi
-
-# bottom (better top)
-if command -v btm &> /dev/null; then
-    alias top="btm"
 fi
 
 # ─────────────────────────────────────────────────────────────
@@ -221,10 +197,6 @@ alias c="clear"
 alias ..="cd .."
 alias ...="cd ../.."
 alias ....="cd ../../.."
-alias mkdir="mkdir -pv"
-alias cp="cp -iv"
-alias mv="mv -iv"
-alias rm="rm -iv"
 alias ports="ss -tulpn"
 
 # Package management goes through shedman (snapshots + review flow):
