@@ -296,6 +296,17 @@ for dir in "${PKG_DIRS[@]}"; do
         f="$REPO_DIR/${pkgname}-${pkgver}-${pkgrel}-${a}.pkg.tar.zst"
         [[ -f $f ]] && cached+=("$f")
     done
+    # The version key alone can't see working-tree edits (local builds
+    # never bump pkgrel), so a content-hash sidecar guards the cache.
+    tree_hash=$("$SCRIPT_DIR/compute-pkg-hash.sh" "$pkgname")
+    hash_file="$REPO_DIR/.hash-$pkgname"
+    if (( ${#cached[@]} > 0 )) && [[ $(cat "$hash_file" 2>/dev/null) != "$tree_hash" ]]; then
+        echo "✗ $pkgname: package tree changed since the cached build; rebuilding"
+        for c in "${cached[@]}"; do
+            rm -f "$c" "$c.sig"
+        done
+        cached=()
+    fi
     if (( ${#cached[@]} > 0 )); then
         echo "✓ $pkgname $pkgver-$pkgrel cached; skipping rebuild"
         printf '    %s\n' "${cached[@]##*/}"
@@ -356,9 +367,30 @@ for dir in "${PKG_DIRS[@]}"; do
     # shedos-hyprland → shedos-system; shedos-meta → everything else).
     find "$work" -maxdepth 1 -name "*.pkg.tar.zst" -exec cp -v {} "$REPO_DIR/" \;
     _refresh_repo_db
+    printf '%s\n' "$tree_hash" > "$hash_file"
 
     BUILT_PKGS+=("$pkgname")
 done
+
+# Prune superseded versions of locally-built packages. Dev repos keep
+# one file per historic pkgver, and the AUR-dep extraction in
+# download-packages.sh reads files rather than the db, so stale
+# versions leak retired dependencies back into the download set.
+for dir in "${PKG_DIRS[@]}"; do
+    pkgname=$(basename "$dir")
+    pkgver=$(awk -F= '/^pkgver=/ {print $2; exit}' "$dir/PKGBUILD")
+    pkgrel=$(awk -F= '/^pkgrel=/ {print $2; exit}' "$dir/PKGBUILD")
+    shopt -s nullglob
+    for f in "$REPO_DIR/$pkgname"-*.pkg.tar.zst; do
+        base=${f##*/}
+        inferred=${base%-*-*-*.pkg.tar.zst}
+        [[ $inferred == "$pkgname" ]] || continue
+        [[ $base == "$pkgname-$pkgver-$pkgrel-"*.pkg.tar.zst ]] && continue
+        rm -fv "$f" "$f.sig"
+    done
+    shopt -u nullglob
+done
+_refresh_repo_db
 
 # Strip -debug splits before mkarchiso (mirrors CI build-iso.yml).
 echo ""
