@@ -303,7 +303,6 @@ def _write_starship_toml(tmp, ctx):
         "dir_bg": ctx["primary_hex"],
         "git_fg": c.get("crust", "#11111b"),
         "git_clean_bg": c.get("green", "#a6e3a1"),
-        "git_dirty_bg": c.get("yellow", "#f9e2af"),
         "rail_fg": c.get("subtext0", "#a6adc8"),
         "rail_bg": c.get("surface0", "#313244"),
         "dur_fg": c.get("crust", "#11111b"),
@@ -341,7 +340,7 @@ add_newline = true
 palette = "shedos"
 
 format = \"\"\"
-$os[](fg:os_bg bg:dir_bg)$directory[](fg:dir_bg)$git_branch$git_status$fill$time$cmd_duration$jobs$direnv$rust$golang$python$nodejs$docker_context$kubernetes$terraform$aws$gcloud$username$hostname[─╮](fg:frame)
+$os[](fg:os_bg bg:dir_bg)$directory${{custom.dir_cap}}$git_branch$git_commit$git_status$fill$time$cmd_duration$jobs$direnv$rust$golang$python$nodejs$docker_context$kubernetes$terraform$aws$gcloud$username$hostname[─╮](fg:frame)
 $character\"\"\"
 
 [palettes.shedos]
@@ -368,12 +367,16 @@ truncation_symbol = "…/"
 
 [git_branch]
 style = "fg:git_fg bg:git_clean_bg"
-format = "[ $symbol$branch ]($style)[](fg:git_clean_bg)"
+format = "[](fg:dir_bg bg:git_clean_bg)[ $symbol$branch ]($style)"
 symbol = " "
 
+[git_commit]
+style = "fg:git_fg bg:git_clean_bg"
+format = "[](fg:dir_bg bg:git_clean_bg)[ @$hash ]($style)"
+
 [git_status]
-style = "fg:git_fg bg:git_dirty_bg"
-format = "([ $all_status$ahead_behind]($style)[](fg:git_dirty_bg))"
+style = "fg:git_fg bg:git_clean_bg"
+format = "[$all_status$ahead_behind]($style)[](fg:git_clean_bg)"
 conflicted = "~$count "
 ahead = "⇡$count "
 behind = "⇣$count "
@@ -421,6 +424,11 @@ format = "[](fg:rail_bg bg:time_bg)[@$hostname ]($style)"
 [character]
 success_symbol = "[❯](fg:ok)"
 error_symbol = "[❯](fg:error)"
+
+[custom.dir_cap]
+when = "! git rev-parse --git-dir 2>/dev/null"
+command = "true"
+format = "[](fg:dir_bg)"
 
 [status]
 disabled = true
