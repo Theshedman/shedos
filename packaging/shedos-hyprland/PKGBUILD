@@ -41,8 +41,8 @@ depends=(
     'fastfetch'
     'mise-bin'
     'zsh'
-    'oh-my-zsh-git'
-    'zsh-theme-powerlevel10k-git'
+    'blesh-git'           # bash autosuggestions + highlighting; .bashrc attaches it
+    'starship'            # the prompt on both shells
     'zsh-autosuggestions'
     'zsh-syntax-highlighting'
     'hyprsunset'
@@ -105,8 +105,13 @@ package() {
             "$pkgdir/usr/share/man/man1/$(basename "$_page")"
     done
 
-    # /etc/skel/; seed for new users via useradd -m.
+    # /etc/skel/; seed for new users via useradd -m. The bash pair stays
+    # out of the payload — the bash package owns those two skel paths, so
+    # the install scriptlet seeds them from the defaults mirror instead
+    # (same pattern as greetd.pam; they are bash backup files, so a bash
+    # upgrade pacnews rather than reverts them).
     cp -a tree/etc "$pkgdir/"
+    rm "$pkgdir/etc/skel/.bashrc" "$pkgdir/etc/skel/.bash_profile"
 
     # /usr/share/shedos/hyprland/defaults/; pristine mirror for sync tool.
     # Identical to what we put in /etc/skel/, rooted at the same layout the

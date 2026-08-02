@@ -1,22 +1,36 @@
 # shellcheck shell=bash
 # shedos-hyprland install scriptlet
 
+
+_seed_bash_skel() {
+    # /etc/skel/.bashrc and .bash_profile are owned by the bash package,
+    # so they cannot ride this package's payload. Seed ours over the
+    # stock pair from the defaults mirror; bash lists them as backup
+    # files, so bash upgrades leave these in place.
+    local d=/usr/share/shedos/hyprland/defaults f
+    for f in .bashrc .bash_profile; do
+        [[ -f $d/$f ]] && install -m644 "$d/$f" "/etc/skel/$f"
+    done
+}
+
 _strip_live_artifacts() {
     # Skip in the live ISO build chroot and on the running live ISO —
     # /etc/calamares ships only on the live ISO and is excluded from the
     # installed system via unpackfs-exclude.conf. Without this guard, the
-    # hook strips /home/shedos/.zprofile from the airootfs during pacstrap.
+    # hook strips /home/shedos/.bash_profile from the airootfs during pacstrap.
     [[ -d /etc/calamares ]] && return 0
 
-    # 1. Per-user .zprofile: revert from the live-ISO auto-installer
-    #    variant back to the skeleton baseline.
-    local marker='ShedOS Live Environment - Auto-start graphical installer on tty1'
-    local home zp
+    # 1. Per-user .bash_profile: revert from the live-ISO auto-installer
+    #    variant back to the skeleton baseline. Older installs carried the
+    #    same launcher in .zprofile; revert that spelling too.
+    local marker='Auto-start graphical installer on tty1'
+    local home f
     while IFS=: read -r _ _ _ _ _ home _; do
-        zp="$home/.zprofile"
-        [[ -f "$zp" ]] || continue
-        grep -qF "$marker" "$zp" 2>/dev/null || continue
-        install -Dm644 /etc/skel/.zprofile "$zp" 2>/dev/null || true
+        for f in "$home/.bash_profile" "$home/.zprofile"; do
+            [[ -f "$f" ]] || continue
+            grep -qF "$marker" "$f" 2>/dev/null || continue
+            install -Dm644 "/etc/skel/${f##*/}" "$f" 2>/dev/null || true
+        done
     done < <(getent passwd | awk -F: '$3 >= 1000 && $3 < 65000 && $6 ~ /^\/home\//')
 
     # 2. /etc/profile.d/shedos-live.sh: the live-ISO welcome banner.
@@ -69,6 +83,7 @@ _migrate_surface_enablement() {
 }
 
 post_install() {
+    _seed_bash_skel
     _strip_live_artifacts
     _migrate_surface_enablement
     /usr/lib/shedos/sync-lockdead 2>/dev/null || true
@@ -85,6 +100,7 @@ EOF
 }
 
 post_upgrade() {
+    _seed_bash_skel
     _strip_live_artifacts
     _migrate_surface_enablement
     /usr/lib/shedos/sync-lockdead 2>/dev/null || true

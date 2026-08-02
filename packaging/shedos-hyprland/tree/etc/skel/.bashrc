@@ -1,6 +1,13 @@
-# ShedOS Zsh Configuration
+# ShedOS Bash Configuration
+# shellcheck shell=bash
 
-autoload -Uz compinit && compinit
+# Interactive shells only.
+[[ $- != *i* ]] && return
+
+# ble.sh drives autosuggestions and syntax highlighting. Sourced first
+# with --noattach and attached on the last line — the order ble.sh and
+# starship both document.
+[[ -f /usr/share/blesh/ble.sh ]] && source /usr/share/blesh/ble.sh --noattach
 
 # ─────────────────────────────────────────────────────────────
 # Environment Variables
@@ -22,21 +29,31 @@ export XDG_CACHE_HOME="$HOME/.cache"
 
 # Locale comes from /etc/locale.conf; not forced here.
 
-# Path additions (typeset -U keeps PATH deduplicated when .zshrc is re-sourced)
-typeset -U path PATH
-path=("$HOME/.local/bin" "$HOME/.cargo/bin" "$HOME/go/bin" $path)
-
+# Path additions (guarded so a re-sourced rc doesn't stack duplicates)
+case ":$PATH:" in
+    *":$HOME/.local/bin:"*) ;;
+    *) PATH="$HOME/.local/bin:$HOME/.cargo/bin:$HOME/go/bin:$PATH" ;;
+esac
 
 # Man pages
 export MANPAGER="nvim +Man!"
 export MANWIDTH=999
 
 # ─────────────────────────────────────────────────────────────
+# History + shell options
+# ─────────────────────────────────────────────────────────────
+
+HISTSIZE=50000
+HISTFILESIZE=50000
+HISTCONTROL=ignoreboth
+shopt -s histappend checkwinsize globstar cdspell autocd
+
+# ─────────────────────────────────────────────────────────────
 # mise (runtime version manager)
 # ─────────────────────────────────────────────────────────────
 
 if command -v mise &> /dev/null; then
-    eval "$(mise activate zsh)"
+    eval "$(mise activate bash)"
 fi
 
 # ─────────────────────────────────────────────────────────────
@@ -61,7 +78,7 @@ fi
 
 # zoxide: the z command, cd untouched
 if command -v zoxide &> /dev/null; then
-    eval "$(zoxide init zsh)"
+    eval "$(zoxide init bash)"
 fi
 
 # ─────────────────────────────────────────────────────────────
@@ -136,8 +153,8 @@ alias ports="ss -tulpn"
 
 # Colors come from the active ShedOS theme; the Mocha block below is
 # the fallback when the render is missing.
-if [[ -f /etc/shedos/themes/current/fzf.zsh ]]; then
-    source /etc/shedos/themes/current/fzf.zsh
+if [[ -f /etc/shedos/themes/current/fzf.bash ]]; then
+    source /etc/shedos/themes/current/fzf.bash
 else
     export FZF_DEFAULT_OPTS=" \
 --color=bg+:#313244,bg:#1e1e2e,spinner:#f5e0dc,hl:#f38ba8 \
@@ -153,60 +170,16 @@ export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 export FZF_ALT_C_COMMAND="fd --type d --hidden --follow --exclude .git"
 
 # Enable fzf
-[ -f /usr/share/fzf/key-bindings.zsh ] && source /usr/share/fzf/key-bindings.zsh
-[ -f /usr/share/fzf/completion.zsh ] && source /usr/share/fzf/completion.zsh
+[ -f /usr/share/fzf/key-bindings.bash ] && source /usr/share/fzf/key-bindings.bash
+[ -f /usr/share/fzf/completion.bash ] && source /usr/share/fzf/completion.bash
 
 # ─────────────────────────────────────────────────────────────
 # Direnv
 # ─────────────────────────────────────────────────────────────
 
 if command -v direnv &> /dev/null; then
-    eval "$(direnv hook zsh)"
+    eval "$(direnv hook bash)"
 fi
-
-# ─────────────────────────────────────────────────────────────
-# Prompt
-# ─────────────────────────────────────────────────────────────
-
-# Rendered per-theme by shedman theme apply. The :- default keeps any
-# value a user set before this line; point it at a copy to customize.
-export STARSHIP_CONFIG="${STARSHIP_CONFIG:-/etc/shedos/themes/current/starship.toml}"
-eval "$(starship init zsh)"
-
-# ─────────────────────────────────────────────────────────────
-# History Configuration
-# ─────────────────────────────────────────────────────────────
-
-HISTSIZE=50000
-SAVEHIST=50000
-HISTFILE=~/.zsh_history
-setopt EXTENDED_HISTORY
-setopt HIST_EXPIRE_DUPS_FIRST
-setopt HIST_IGNORE_DUPS
-setopt HIST_IGNORE_SPACE
-setopt HIST_VERIFY
-setopt SHARE_HISTORY
-
-# ─────────────────────────────────────────────────────────────
-# Zsh Options
-# ─────────────────────────────────────────────────────────────
-
-setopt AUTO_CD
-setopt AUTO_PUSHD
-setopt PUSHD_IGNORE_DUPS
-setopt PUSHD_SILENT
-setopt CORRECT
-setopt CORRECT_ALL
-setopt NO_BEEP
-setopt INTERACTIVE_COMMENTS
-
-# zsh-autosuggestions and zsh-syntax-highlighting are installed as system
-# packages (not OMZ custom plugins) so we source them directly from their
-# Arch-standard locations.
-[ -f /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ] && \
-    source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
-[ -f /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ] && \
-    source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
 # ─────────────────────────────────────────────────────────────
 # Custom Functions
@@ -214,7 +187,7 @@ setopt INTERACTIVE_COMMENTS
 
 # Create directory and cd into it
 mkcd() {
-    mkdir -p "$1" && cd "$1"
+    mkdir -p "$1" && cd "$1" || return
 }
 
 # Extract any archive
@@ -249,18 +222,26 @@ fif() {
 }
 
 # ─────────────────────────────────────────────────────────────
+# Prompt
+# ─────────────────────────────────────────────────────────────
+
+# Rendered per-theme by shedman theme apply. The :- default keeps any
+# value a user set before this line; point it at a copy to customize.
+export STARSHIP_CONFIG="${STARSHIP_CONFIG:-/etc/shedos/themes/current/starship.toml}"
+eval "$(starship init bash)"
+
+# ─────────────────────────────────────────────────────────────
 # ShedOS Welcome; fastfetch on first interactive shell per session.
 # Marker lives in XDG_RUNTIME_DIR (tmpfs, cleared on reboot / final logout),
 # so the banner shows once per boot and stays quiet for subsequent terminals.
 # ─────────────────────────────────────────────────────────────
 
-if [[ -o interactive ]]; then
-    _shedos_runtime="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
-    _shedos_marker="$_shedos_runtime/shedos-welcome-shown"
-    if [[ -d "$_shedos_runtime" && ! -e "$_shedos_marker" ]]; then
-        fastfetch 2>/dev/null || neofetch 2>/dev/null || true
-        : > "$_shedos_marker" 2>/dev/null
-    fi
-    unset _shedos_runtime _shedos_marker
+_shedos_runtime="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+_shedos_marker="$_shedos_runtime/shedos-welcome-shown"
+if [[ -d "$_shedos_runtime" && ! -e "$_shedos_marker" ]]; then
+    fastfetch 2>/dev/null || true
+    : > "$_shedos_marker" 2>/dev/null
 fi
+unset _shedos_runtime _shedos_marker
 
+[[ ${BLE_VERSION-} ]] && ble-attach

@@ -1294,6 +1294,7 @@ depends=(
     'zsh-syntax-highlighting'
     'zstd'
     'ananicy-cpp-git'
+    'blesh-git'
     'bluetui'
     'catppuccin-gtk-theme-mocha'
     'elephant'
@@ -1317,7 +1318,6 @@ depends=(
     'lazydocker'
     'mise-bin'
     'nautilus-open-any-terminal'
-    'oh-my-zsh-git'
     'openssl-1.1'
     'overskride'
     'slack-desktop'
@@ -1325,7 +1325,6 @@ depends=(
     'visual-studio-code-bin'
     'walker'
     'yay'
-    'zsh-theme-powerlevel10k-git'
 )
 optdepends=(
     'google-chrome: proprietary AUR package; reinstall via shedman install'
