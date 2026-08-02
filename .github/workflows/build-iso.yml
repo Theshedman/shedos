@@ -235,6 +235,9 @@ jobs:
           pacman -S --needed --noconfirm qemu-base libarchive util-linux
           scripts/boot-assert.sh "out/$ISO_NAME"
 
+      - name: Boot-assert the ISO on BIOS firmware
+        run: scripts/bios-boot-assert.sh "out/$ISO_NAME"
+
       - name: Build the base install image
         # non-blocking so a build failure can't stop publishing
         continue-on-error: true
