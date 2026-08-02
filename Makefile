@@ -420,8 +420,8 @@ iso: prepare
 # `sudo make regen` first and commit the diff — CI re-resolves the closure on
 # every build; locally it's a deliberate, reviewable step.
 iso-local: check-root
-	@$(MAKE) download-packages
 	@$(MAKE) shedos-packages
+	@$(MAKE) download-packages
 	@$(MAKE) iso
 	@echo -e "$(GREEN)Local ISO built. Boot it with: make test$(NC)"
 
