@@ -192,36 +192,6 @@ _pacman_install_meta() {
     log "installed shedos-meta"
 }
 
-_install_aur_pkgs() {
-    local dry=$1
-    local dir="$ROOT/usr/share/shedos/aur-pkgs"
-    if [[ ! -d $dir ]]; then
-        warn "$dir not found; skipping bundled AUR package install"
-        return 0
-    fi
-    shopt -s nullglob
-    local pkgs=("$dir"/*.pkg.tar.zst)
-    shopt -u nullglob
-    if (( ${#pkgs[@]} == 0 )); then
-        log "$dir is empty; nothing to install"
-        return 0
-    fi
-
-    if (( dry )); then
-        log "(dry-run) pacman -U --noconfirm --needed --ask=4 $dir/*.pkg.tar.zst"
-        return 0
-    fi
-    log "installing bundled AUR packages (fingerprint TOD stack)"
-    for p in "${pkgs[@]}"; do
-        log "  → ${p##*/}"
-    done
-    if ! pacman -U --noconfirm --needed --ask=4 "${pkgs[@]}" 2>&1 \
-            | sed 's/^/shedman migrate: /'; then
-        warn "pacman -U exited non-zero; some bundled AUR packages may not have installed"
-        warn "  rerun later with: sudo pacman -U $dir/*.pkg.tar.zst"
-    fi
-}
-
 _seed_sync_state() {
     local dry=$1
     if (( dry )); then
@@ -398,7 +368,6 @@ if (( from_arch )); then
     _fence_pacman_conf "$dry"
     _refresh_mirrorlist "$dry"
     _pacman_install_meta "$dry"
-    _install_aur_pkgs "$dry"
     _handle_display_manager "$dry"
     _seed_sync_state "$dry"
     _verify_with_doctor "$dry"
@@ -426,7 +395,6 @@ _fence_pacman_conf "$dry"
 _refresh_mirrorlist "$dry"
 _remove_legacy_hyprlock "$dry"
 _pacman_install_meta "$dry"
-_install_aur_pkgs "$dry"
 _seed_sync_state "$dry"
 _verify_with_doctor "$dry"
 

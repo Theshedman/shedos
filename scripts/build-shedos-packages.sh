@@ -263,58 +263,6 @@ for dir in "${PKG_DIRS[@]}"; do
     cp -a "$dir" "$work"
 done
 
-# Bundle AUR builds into shedos-system so user systems can pacman -U
-# them at migrate/update time without an internet-fetching yay round-
-# trip. The bundled set is listed in packages/aur-bundled.txt
-# (currently the fingerprint TOD stack — vendor-licensed AUR packages
-# that ship on the ISO but cannot be republished as signed entries in
-# shedos-repo.db, so pacman -Syu shedos-meta can't pull them).
-#
-# build-aur-packages.sh has already populated $REPO_DIR/*.pkg.tar.zst
-# by the time this runs (CI ordering: download-packages → shedos-packages;
-# local ordering: `make build-aur` before `make shedos-packages`). For
-# each name in aur-bundled.txt we glob the matching file by parsing the
-# `<pkg>-<ver>-<rel>-<arch>.pkg.tar.zst` filename back to its pkgname
-# (the same disambiguation build-aur-packages.sh uses at line 174), and
-# copy it into the package tree. Build aborts if any entry resolves to
-# zero or more than one file, so a stale-version cache or a silently-
-# failed AUR build can't ship the wrong binary.
-system_pkg="$BUILD_ROOT/shedos-system"
-bundled_list="$PROJECT_ROOT/packages/aur-bundled.txt"
-if [[ -d $system_pkg && -f $bundled_list ]]; then
-    aur_pkgs_dir="$system_pkg/tree/usr/share/shedos/aur-pkgs"
-    rm -rf "$aur_pkgs_dir"
-    mkdir -p "$aur_pkgs_dir"
-    bundle_errors=()
-    while IFS= read -r line; do
-        pkg=${line%%#*}
-        pkg=${pkg//[[:space:]]/}
-        [[ -z $pkg ]] && continue
-        shopt -s nullglob
-        candidates=("$REPO_DIR/$pkg"-*.pkg.tar.zst)
-        shopt -u nullglob
-        matches=()
-        for f in "${candidates[@]}"; do
-            base=${f##*/}
-            inferred=${base%-*-*-*.pkg.tar.zst}
-            [[ $inferred == "$pkg" ]] && matches+=("$f")
-        done
-        if (( ${#matches[@]} == 0 )); then
-            bundle_errors+=("$pkg: no matching .pkg.tar.zst in $REPO_DIR")
-        elif (( ${#matches[@]} > 1 )); then
-            bundle_errors+=("$pkg: multiple matches (${matches[*]##*/})")
-        else
-            cp "${matches[0]}" "$aur_pkgs_dir/"
-        fi
-    done < "$bundled_list"
-    if (( ${#bundle_errors[@]} > 0 )); then
-        echo "ERROR: aur-bundled staging failed:" >&2
-        printf '  %s\n' "${bundle_errors[@]}" >&2
-        echo "Run 'make build-aur' (or 'make download-packages' in CI) before 'make shedos-packages' to refresh $REPO_DIR." >&2
-        exit 1
-    fi
-fi
-
 # Pre-stage workspace library crates that ship as Cargo `path = "../<name>"`
 # deps but have no PKGBUILD of their own (e.g. shedos-prompt-ui; the
 # shared lock-surface renderer used by shedos-greeter and, soon,
@@ -348,26 +296,6 @@ for dir in "${PKG_DIRS[@]}"; do
         f="$REPO_DIR/${pkgname}-${pkgver}-${pkgrel}-${a}.pkg.tar.zst"
         [[ -f $f ]] && cached+=("$f")
     done
-    if (( ${#cached[@]} > 0 )) && [[ $pkgname == shedos-system ]]; then
-        staged_bundle="$work/tree/usr/share/shedos/aur-pkgs"
-        if [[ -d $staged_bundle ]]; then
-            staged_list=$(cd "$staged_bundle" && ls *.pkg.tar.zst 2>/dev/null | LC_ALL=C sort)
-            cached_list=$(bsdtar -tf "${cached[0]}" 2>/dev/null \
-                | sed -n 's|^usr/share/shedos/aur-pkgs/\(.\+\.pkg\.tar\.zst\)$|\1|p' \
-                | LC_ALL=C sort)
-            if [[ $staged_list != "$cached_list" ]]; then
-                echo "✗ $pkgname: bundled AUR set drifted; busting cache"
-                # diff exits 1 on differences, which is the whole point here;
-                # don't let pipefail turn the report into a fatal.
-                diff <(echo "$cached_list") <(echo "$staged_list") | sed 's/^/    /' || true
-                for c in "${cached[@]}"; do
-                    rm -f "$c" "$c.sig"
-                done
-                cached=()
-            fi
-        fi
-    fi
-
     if (( ${#cached[@]} > 0 )); then
         echo "✓ $pkgname $pkgver-$pkgrel cached; skipping rebuild"
         printf '    %s\n' "${cached[@]##*/}"

@@ -43,10 +43,6 @@ if compgen -G "$dir/Cargo.toml" >/dev/null; then
     )
 fi
 
-if [[ $pkg == shedos-system && -f $root/packages/aur-bundled.txt ]]; then
-    sibling_paths+=("packages/aur-bundled.txt")
-fi
-
 # Emit a PKGBUILD for hashing with its top-of-file metadata comments and
 # blank lines normalized away, so editing a doc comment no longer bumps
 # pkgrel and rebuilds the package. Everything from the first build function
