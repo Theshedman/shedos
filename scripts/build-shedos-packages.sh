@@ -146,7 +146,12 @@ EOF
         rm -rf "$BUILD_ROOT"
     }
     trap _cleanup EXIT
-    useradd -m -G wheel builduser 2>/dev/null || true
+    # An interrupted run can leave the group behind after userdel; useradd
+    # then refuses the name, so clear it and let a real failure surface.
+    if ! getent passwd builduser >/dev/null; then
+        groupdel builduser 2>/dev/null || true
+        useradd -m -G wheel builduser
+    fi
     echo "builduser ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/builduser-shedos
     chmod 440 /etc/sudoers.d/builduser-shedos
     # shedos-screensaver/greeter/power are Rust; the fresh build user has no
