@@ -27,7 +27,7 @@ The installer refuses to start below the minimums rather than fail midway. Both 
 
 <Fragment set:html={String.raw`<ul>
   <li><strong>AMD / Intel</strong> — first-class. Mesa drivers ship; Hyprland runs out of the box.</li>
-  <li><strong>NVIDIA, Turing and newer</strong> (GTX 16xx / RTX 20xx+) — the open kernel modules install automatically and <code>nvidia_drm.modeset=1</code> is set. Wayland + NVIDIA has sharper edges than AMD/Intel, but current-generation cards on the open modules work well.</li>
+  <li><strong>NVIDIA, Turing and newer</strong> (GTX 16xx / RTX 20xx+) — the open kernel modules install automatically and <code>nvidia_drm.modeset=1</code> is set. Wayland + NVIDIA has sharper edges than AMD/Intel, but current-generation cards on the open modules work well. Machines without an NVIDIA card don't carry the driver stack at all; if your only NVIDIA GPU is a detachable eGPU, boot with the enclosure attached, or bring the stack back with <code>shedman install nvidia-open-dkms</code>.</li>
   <li><strong>NVIDIA, pre-Turing</strong> (GTX 10xx and older) — NVIDIA dropped these from the current driver, so the installer deliberately skips it: the desktop runs on the built-in nouveau/modesetting stack and a note in <code>/etc/shedos/nvidia-legacy-gpu</code> explains the AUR legacy branch (<code>nvidia-580xx-dkms</code>) if you want the proprietary driver.</li>
 </ul>`} />
 
