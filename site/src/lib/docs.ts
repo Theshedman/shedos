@@ -2,12 +2,11 @@ import { getCollection, type CollectionEntry } from "astro:content";
 
 export type DocEntry = CollectionEntry<"docs">;
 
-// Docs grouped into sections, in the order the sidebar lists them: a section
-// appears when its first page does (pages sorted by `order`), and pages within
-// a section follow `order`. This is the single source of truth for both the
-// sidebar and the prev/next footer, so the two can't drift. `order` is only
-// unique *within* a section, so a plain global sort interleaves sections —
-// which is exactly what broke the footer's prev/next links.
+// Docs grouped into sections in SECTION_ORDER, pages within a section by
+// `order`. This is the single source of truth for both the sidebar and the
+// prev/next footer, so the two can't drift.
+const SECTION_ORDER = ["Guide", "Security", "Reference"];
+
 export async function docSections(): Promise<[string, DocEntry[]][]> {
     const entries = (await getCollection("docs")).sort(
         (a, b) => a.data.order - b.data.order,
@@ -18,7 +17,13 @@ export async function docSections(): Promise<[string, DocEntry[]][]> {
         if (!sections.has(key)) sections.set(key, []);
         sections.get(key)!.push(e);
     }
-    return [...sections.entries()];
+    // `order` collides across sections (each starts at 10), so first-page
+    // position can't decide section order; list it explicitly instead.
+    const rank = (s: string) => {
+        const i = SECTION_ORDER.indexOf(s);
+        return i === -1 ? SECTION_ORDER.length : i;
+    };
+    return [...sections.entries()].sort((a, b) => rank(a[0]) - rank(b[0]));
 }
 
 // The docs flattened in sidebar order, so prev/next walks pages the way they
