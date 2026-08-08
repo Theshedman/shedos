@@ -19,8 +19,8 @@
 #     so the hyprland.lua binds and gestures call these instead
 
 pkgname=shedos-hyprland-plugin-hyprspace
-pkgver=2026.05.17
-pkgrel=2
+pkgver=2026.07.03
+pkgrel=1
 pkgdesc='Workspace-overview plugin for Hyprland (Hyprspace), forked for ShedOS'
 arch=('x86_64')
 url='https://github.com/Theshedman/Hyprspace'
