@@ -392,6 +392,17 @@ for dir in "${PKG_DIRS[@]}"; do
 done
 _refresh_repo_db
 
+# Evict same-named files from the host pacman cache; a rebuilt package
+# keeps its version, so a stale cache copy would fail pacstrap's
+# checksum check against the refreshed repo db.
+if [[ $EUID -eq 0 && -d /var/cache/pacman/pkg ]]; then
+    shopt -s nullglob
+    for f in "$REPO_DIR"/*.pkg.tar.zst; do
+        rm -f "/var/cache/pacman/pkg/${f##*/}"
+    done
+    shopt -u nullglob
+fi
+
 # Strip -debug splits before mkarchiso (mirrors CI build-iso.yml).
 echo ""
 echo "Stripping -debug packages from $REPO_DIR/ ..."
