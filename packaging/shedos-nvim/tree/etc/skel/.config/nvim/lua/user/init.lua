@@ -1,0 +1,2 @@
+-- Yours. Options, keymaps, anything — loaded after the ShedOS runtime.
+-- Extra plugins go in lua/user/plugins/*.lua as normal lazy.nvim specs.
