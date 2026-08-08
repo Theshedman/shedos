@@ -10,6 +10,7 @@ import Card from "~/components/Card.astro";
 import Showcase from "~/components/Showcase.astro";
 import TechGrid from "~/components/TechGrid.astro";
 import CtaBand from "~/components/CtaBand.astro";
+import { STABLE_VERSION } from "~/generated/version";
 import Terminal from "~/components/Terminal.astro";
 ---
 <BaseLayout title="ShedOS — the operating system for software developers">
@@ -145,7 +146,7 @@ import Terminal from "~/components/Terminal.astro";
   <Section>
     <CtaBand grid>
       <span slot="eyebrow" class="eyebrow no-rule" style="justify-content:center;">Try ShedOS</span>
-      <h2 style="margin-top:.7rem;">Download v2026.05.17, write it to a USB, boot.</h2>
+      <h2 style="margin-top:.7rem;">Download v{STABLE_VERSION}, write it to a USB, boot.</h2>
       <p>A full live desktop runs from the stick — the real Hyprland setup and toolchain. The installer is one click whenever you're convinced.</p>
       <Btn slot="cta" href="/download">Download</Btn>
       <Btn slot="cta" href="https://github.com/Theshedman/shedos" variant="ghost">Source on GitHub</Btn>
