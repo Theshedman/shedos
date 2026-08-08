@@ -40,4 +40,9 @@ return {
       },
     },
   },
+
+  -- The language servers ship as system packages; Mason would duplicate
+  -- them per user and hit the network on first open.
+  { "mason-org/mason.nvim", enabled = false },
+  { "mason-org/mason-lspconfig.nvim", enabled = false },
 }
