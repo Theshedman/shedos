@@ -1,0 +1,79 @@
+#!/bin/bash
+# Move this user onto the preprovisioned Neovim: the architecture and the
+# plugins are OS-owned now, so the per-user clones and the Mason cache are
+# dead weight, and any ShedOS-shipped config generation is replaced by the
+# thin shim (backed up first). A config we didn't ship is never touched.
+set -uo pipefail
+
+cfg="${XDG_CONFIG_HOME:-$HOME/.config}/nvim"
+data="${XDG_DATA_HOME:-$HOME/.local/share}/nvim"
+marker="${XDG_STATE_HOME:-$HOME/.local/state}/shedos/.nvim-preprovisioned"
+shipped="${SHEDOS_NVIM_SHIPPED_ROOT:-/usr/share/shedos/nvim}"
+defaults="${SHEDOS_NVIM_DEFAULTS:-/usr/share/shedos/nvim/defaults/.config/nvim}"
+
+[[ -f $marker ]] && exit 0
+# Package mid-install; retry next login.
+[[ -d $shipped/plugins && -d $defaults ]] || exit 0
+
+_disarm() { mkdir -p "$(dirname "$marker")"; : > "$marker"; }
+
+# Which config is in the home? Fingerprints, not byte-equality, so version
+# skew still counts as ours.
+_generation() {
+    [[ -d $cfg ]] || { echo none; return; }
+    if [[ -f $cfg/init.lua ]] && grep -q 'shedos/nvim/runtime' "$cfg/init.lua" 2>/dev/null; then
+        echo shim; return
+    fi
+    if [[ -f $cfg/lua/config/lazy.lua && -f $cfg/lua/plugins/lsp-system.lua ]] \
+       && grep -q 'lazy.nvim' "$cfg/lua/config/lazy.lua" 2>/dev/null; then
+        echo shipped; return
+    fi
+    if [[ -e $cfg/lua/config/features ]] \
+       || { [[ -f $cfg/lazyvim.json ]] && grep -qE 'lang\.(java|typescript)' "$cfg/lazyvim.json" 2>/dev/null; }; then
+        echo shipped; return
+    fi
+    echo custom
+}
+
+case $(_generation) in
+    custom)
+        # Not ours to rewrite; their config manages its own plugins, so the
+        # data dir stays theirs too.
+        echo "nvim-preprovision: keeping your own config and plugins"
+        _disarm; exit 0 ;;
+    shipped)
+        ts=$(date +%Y%m%d-%H%M%S)
+        mv "$cfg" "$cfg.shedos-bak-$ts"
+        cp -a "$defaults" "$cfg"
+        echo "nvim-preprovision: config replaced; previous copy at $cfg.shedos-bak-$ts" ;;
+    none)
+        cp -a "$defaults" "$cfg"
+        echo "nvim-preprovision: default config deployed" ;;
+    shim) ;;
+esac
+
+# Reclaim what the OS now provides; anything else in lazy/ is the user's.
+if [[ -d $data/lazy ]]; then
+    for dir in "$data"/lazy/*/; do
+        [[ -d $dir ]] || continue
+        name=$(basename "$dir")
+        if [[ -d $shipped/plugins/$name ]]; then
+            rm -rf "$dir"
+            echo "nvim-preprovision: reclaimed $name (now provided by the system)"
+        fi
+    done
+fi
+# Plugins ShedOS used to ship and has since retired; the runtime disables
+# them, so a leftover clone can never load again.
+for name in mason.nvim mason-lspconfig.nvim mason-nvim-dap.nvim; do
+    if [[ -d $data/lazy/$name ]]; then
+        rm -rf "${data:?}/lazy/$name"
+        echo "nvim-preprovision: removed retired $name"
+    fi
+done
+if [[ -d $data/mason ]]; then
+    rm -rf "$data/mason"
+    echo "nvim-preprovision: removed the mason cache; servers come from system packages"
+fi
+
+_disarm

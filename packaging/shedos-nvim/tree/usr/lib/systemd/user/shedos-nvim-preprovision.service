@@ -1,0 +1,11 @@
+[Unit]
+Description=Move this user onto the preprovisioned Neovim
+ConditionPathExists=!%h/.local/state/shedos/.nvim-preprovisioned
+ConditionPathExists=/usr/share/shedos/nvim/plugins
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/shedos/nvim-preprovision
+
+[Install]
+WantedBy=default.target

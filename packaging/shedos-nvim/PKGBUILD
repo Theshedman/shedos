@@ -78,13 +78,13 @@ package() {
     install -Dm644 tree/usr/share/shedos/nvim/sync-policy \
         "$pkgdir/usr/share/shedos/nvim/sync-policy"
 
-    # Per-user migration one-shot: cleanly swap an old ShedOS nvim config
-    # for the rebuilt LazyVim one (the 3-way sync can't handle the 79->12
-    # file restructure). Enabled --global by shedos-nvim.install.
-    install -Dm755 tree/usr/lib/shedos/migrate-nvim-config \
-        "$pkgdir/usr/lib/shedos/migrate-nvim-config"
-    install -Dm644 tree/usr/lib/systemd/user/shedos-nvim-migrate.service \
-        "$pkgdir/usr/lib/systemd/user/shedos-nvim-migrate.service"
+    # Per-user migration one-shot: move every home onto the preprovisioned
+    # editor (shim config + reclaimed plugin clones). Enabled --global by
+    # shedos-nvim.install.
+    install -Dm755 tree/usr/lib/shedos/nvim-preprovision \
+        "$pkgdir/usr/lib/shedos/nvim-preprovision"
+    install -Dm644 tree/usr/lib/systemd/user/shedos-nvim-preprovision.service \
+        "$pkgdir/usr/lib/systemd/user/shedos-nvim-preprovision.service"
 
     # Preserve XDG_CONFIG_HOME across sudo so `sudo nvim` reads the
     # invoking user's ~/.config/nvim/. Mode 0440 is what sudo demands.
