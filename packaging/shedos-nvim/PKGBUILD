@@ -27,6 +27,12 @@ depends=(
     'neovim'
     'git'
 )
+makedepends=(
+    'rust'
+    'tree-sitter-cli'
+    'python'
+    'gcc'
+)
 optdepends=(
     'clang: C/C++ language server (clangd), used from the system'
     'rust: rust-analyzer language server, used from the system'
@@ -35,6 +41,14 @@ optdepends=(
     'fd: telescope file finder'
     'lazygit: default LazyVim git TUI'
 )
+
+build() {
+    cd "$startdir"
+    ../../scripts/materialize-nvim-plugins.sh \
+        tree/usr/share/shedos/nvim/runtime \
+        tree/etc/skel/.config/nvim \
+        "$srcdir/nvim-shipped"
+}
 
 package() {
     cd "$startdir"
@@ -48,6 +62,17 @@ package() {
     install -d "$pkgdir/usr/share/shedos/nvim/defaults/.config"
     cp -a tree/etc/skel/.config/nvim \
         "$pkgdir/usr/share/shedos/nvim/defaults/.config/nvim"
+
+    # System-owned editor architecture; the skel shim loads this and it
+    # updates with the package on every machine.
+    cp -a tree/usr/share/shedos/nvim/runtime \
+        "$pkgdir/usr/share/shedos/nvim/runtime"
+
+    # The pinned plugin set, .git-stripped, plus the generated overlay
+    # that binds each spec to its shipped directory.
+    cp -a "$srcdir/nvim-shipped/plugins" "$pkgdir/usr/share/shedos/nvim/plugins"
+    install -Dm644 "$srcdir/nvim-shipped/shipped.lua" \
+        "$pkgdir/usr/share/shedos/nvim/shipped.lua"
 
     # Per-package sync policy.
     install -Dm644 tree/usr/share/shedos/nvim/sync-policy \
