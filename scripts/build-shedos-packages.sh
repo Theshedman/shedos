@@ -343,6 +343,11 @@ for dir in "${PKG_DIRS[@]}"; do
         shedos-screensaver|calamares|shedos-hyprland-plugin-hyprspace|cage)
             mk_flags=(--syncdeps --noconfirm --force --cleanbuild)
             ;;
+        shedos-nvim)
+            # build() runs nvim headless to stage the plugin set, so the
+            # makedepends must actually install.
+            mk_flags=(--syncdeps --noconfirm --force)
+            ;;
         *)
             if [[ -f $dir/Cargo.toml ]]; then
                 mk_flags=(--syncdeps --noconfirm --force)

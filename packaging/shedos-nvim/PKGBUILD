@@ -44,7 +44,7 @@ optdepends=(
 
 build() {
     cd "$startdir"
-    ../../scripts/materialize-nvim-plugins.sh \
+    "$startdir/materialize-plugins.sh" \
         tree/usr/share/shedos/nvim/runtime \
         tree/etc/skel/.config/nvim \
         "$srcdir/nvim-shipped"

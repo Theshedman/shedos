@@ -44,7 +44,7 @@ fi
 # N3: the materializer stages every locked plugin with a dir override and
 # leaves no .git behind. Needs network; opt in explicitly.
 if [[ -n ${SHEDOS_NVIM_MATERIALIZE_TEST:-} ]]; then
-    if bash "$repo_root/scripts/materialize-nvim-plugins.sh" \
+    if bash "$repo_root/packaging/shedos-nvim/materialize-plugins.sh" \
             "$runtime" "$shim" "$work/out" >"$work/mat.log" 2>&1; then
         missing=$(python3 - "$runtime/lazy-lock.json" "$work/out" <<'PY'
 import json, sys, pathlib
