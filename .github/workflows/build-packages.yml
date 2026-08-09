@@ -184,8 +184,12 @@ jobs:
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: archiso/shedos-repo
-          key: aur-${{ runner.os }}-${{ hashFiles('packages/aur.txt') }}
+          # Unique save key per run (immutable caches can't be overwritten,
+          # and a failed run's partial save would freeze the content key
+          # forever); restore prefers the newest save for the same inputs.
+          key: aur-${{ runner.os }}-${{ hashFiles('packages/aur.txt', 'packages/aur-pkgbuild-hashes.txt') }}-${{ github.run_id }}
           restore-keys: |
+            aur-${{ runner.os }}-${{ hashFiles('packages/aur.txt', 'packages/aur-pkgbuild-hashes.txt') }}-
             aur-${{ runner.os }}-
 
       - name: Pre-build AUR packages
@@ -196,11 +200,11 @@ jobs:
 
       - name: Save AUR package cache
         # Save regardless of downstream failures so the AUR prebuild survives.
-        if: always() && steps.aur-cache.outputs.cache-hit != 'true'
+        if: always()
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: archiso/shedos-repo
-          key: aur-${{ runner.os }}-${{ hashFiles('packages/aur.txt') }}
+          key: aur-${{ runner.os }}-${{ hashFiles('packages/aur.txt', 'packages/aur-pkgbuild-hashes.txt') }}-${{ github.run_id }}
 
       - name: Restore shedos-pkgs cache
         # github.sha key always-misses; restore-keys falls back to the latest.
