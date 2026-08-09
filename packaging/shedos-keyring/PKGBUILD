@@ -21,6 +21,8 @@ package() {
         "$pkgdir/usr/share/pacman/keyrings/shedos.gpg"
     install -Dm644 "$startdir/tree/shedos-trusted" \
         "$pkgdir/usr/share/pacman/keyrings/shedos-trusted"
+    install -Dm644 "$startdir/tree/shedos-retired" \
+        "$pkgdir/usr/share/pacman/keyrings/shedos-retired"
     install -Dm755 "$startdir/tree/usr/lib/shedos-keyring/trust-keys.sh" \
         "$pkgdir/usr/lib/shedos-keyring/trust-keys.sh"
     install -Dm644 "$startdir/tree/usr/lib/systemd/system/shedos-keyring-trust.service" \

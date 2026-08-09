@@ -45,6 +45,21 @@ while IFS= read -r fp; do
     }
 done < "$TRUSTED"
 
+# Retired keys stop verifying once deleted from pacman's keyring; a key
+# that was never imported (fresh installs) is simply skipped.
+RETIRED=/usr/share/pacman/keyrings/shedos-retired
+if [[ -f $RETIRED ]]; then
+    while IFS= read -r fp; do
+        [[ -z $fp || $fp == \#* ]] && continue
+        if pacman-key --list-keys "$fp" >/dev/null 2>&1; then
+            pacman-key --delete "$fp" >/dev/null || {
+                echo "shedos-keyring: --delete $fp failed" >&2
+                exit 1
+            }
+        fi
+    done < "$RETIRED"
+fi
+
 install -d -m 755 "$SENTINEL_DIR"
 # Record the fingerprint(s) we signed so a future key rotation can detect
 # the sentinel is stale and re-trust without manual intervention.

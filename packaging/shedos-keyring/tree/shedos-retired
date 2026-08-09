@@ -1,0 +1,3 @@
+# Keys ShedOS no longer signs with. trust-keys.sh deletes these from
+# pacman's keyring so their signatures stop verifying.
+2095CF9F5C6DDED8ACF8583D99B38D3CAE22D820

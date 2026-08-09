@@ -44,7 +44,9 @@ Rotation is a staged, dual-key operation — the full runbook lives at
    still listed, so the publish gate passes.
 4. Only after the fleet has absorbed that: swap the GitHub signing
    secret. CI signs with the new key, which machines already trust.
-5. A release later, remove the old key from both files.
+5. A release later, remove the old key from both files and list its
+   fingerprint in `tree/shedos-retired` — trust-keys.sh deletes retired
+   keys from every machine's pacman keyring on the next upgrade.
 
 Never overwrite `shedos.gpg` with a single new key in one step: the
 repo database is re-signed immediately, and any machine that hasn't

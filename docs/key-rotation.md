@@ -71,10 +71,13 @@ After every supported machine has had a realistic chance to upgrade
 
 1. Remove the old fingerprint from `shedos-trusted` and the old key
    from `shedos.gpg` (re-export without it, same scratch-GNUPGHOME
-   technique as the rotation script).
+   technique as the rotation script), and add the fingerprint to
+   `shedos-retired`.
 2. Remove it from `SHEDOS_KEY_FPRS` in migrate.
-3. Commit, push, release. The sentinel mismatch re-runs trust-keys
-   everywhere; the old key stops being honored as machines upgrade.
+3. Commit, push, release. trust-keys re-runs everywhere and deletes
+   every `shedos-retired` fingerprint from pacman's keyring, so the
+   old key stops verifying as machines upgrade. Re-trusting alone
+   never removes a key; the retired list is what closes the window.
 
 ## Drill
 
