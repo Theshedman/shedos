@@ -5,7 +5,7 @@
 # delete or downgrade without understanding the consequences (pacman will
 # start refusing ShedOS updates).
 #
-# Key rotation procedure: packaging/shedos-keyring/README.md
+# Key rotation procedure: the README beside this file
 
 pkgname=shedos-keyring
 pkgver=2026.08.09

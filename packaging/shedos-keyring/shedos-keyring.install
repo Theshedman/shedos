@@ -4,7 +4,7 @@
 # Runs as root in the target install root. For a normal `pacman -S` this is
 # the live system; during pacstrap it's the install target.
 #
-# Key-trust strategy (see packaging/shedos-keyring/README.md):
+# Key-trust strategy (see the README beside this file):
 # The actual trust work; `pacman-key --init`, `--populate archlinux`, `--add`
 # and `--lsign-key`; lives in /usr/lib/shedos-keyring/trust-keys.sh, run by
 # shedos-keyring-trust.service (oneshot, sentinel-gated, WantedBy=multi-user).

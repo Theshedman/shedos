@@ -11,13 +11,13 @@ locally sign). `trust-keys.sh` lsigns every listed fingerprint on
 upgrade and at boot, and the sentinel comparison in
 `shedos-keyring.install` re-fires it whenever the list changes. CI
 refuses to publish unless its signing key's fingerprint appears in
-the committed `shedos-trusted`, and refuses again unless the
-`shedos.gpg` it is about to publish holds that same key — so the
-published keyring can never lag the trusted list. Both gates run
-before anything is signed, and they run on every publish in the org:
-a `shedos-trusted` that gains a fingerprint while `shedos.gpg` does
-not stops every package repository from publishing, not just this
-one.
+the `shedos-trusted` the channel's own keyring package carries, and
+refuses again unless the `shedos.gpg` in that same package holds
+that key — the two lists it gates on are the pair the fleet
+installs, so they cannot drift apart. Both gates run before anything
+is signed, and they run on every publish in the org: a keyring whose
+`shedos-trusted` gains a fingerprint its `shedos.gpg` does not carry
+stops every package repository from publishing, not just this one.
 
 ## Phase 0 — generate (offline)
 
@@ -60,15 +60,27 @@ exists to prevent.
 
 ## Phase 2 — swap the signer
 
+Before touching the secret, check that the keyring package the
+channel serves already carries the new fingerprint — the gate reads
+that package, not the commit. Phase 1's push publishes it, so this
+is a confirmation rather than a step, but it is the one to make.
+
 Replace the `SHEDOS_REPO_SIGNING_KEY` GitHub secret with the new
 secret key. The next CI run signs everything with the new key; the
-fingerprint gate passes because phase 1 committed it. The repo
-database and all new packages now carry new-key signatures, which
-the fleet already trusts.
+fingerprint gate passes because the published keyring already lists
+it. The repo database and all new packages now carry new-key
+signatures, which the fleet already trusts.
+
+Swapping the secret before the new keyring reaches the channel takes
+every package repository in the org down: each publish is refused at
+the fingerprint gate, and publishing a fixed keyring is itself a
+publish, so there is no way forward through it. Put the old secret
+back, let phase 1 finish, and swap again.
 
 The R2 bucket also serves `shedos.gpg` at the root (the migrate
-bootstrap fetches it); CI publishes the committed keyring on every
-push, so phase 1 already refreshed it.
+bootstrap fetches it). Every publish rewrites it from the keyring
+package the channel already holds, so it refreshes when a new
+keyring is published, not when one is committed.
 
 ## Phase 3 — retire the old key (window closes)
 
@@ -107,6 +119,11 @@ holding any key its `SHEDOS_KEY_FPRS` does not list, and every
 publish refreshes the `shedos.gpg` the channel serves. That list has
 to stay a superset of the published keyring, which means the migrate
 change leads an addition and trails a retirement.
+
+Both of the publisher's own trust inputs come out of that published
+package, so the keyring repository's push is what moves them. A
+fingerprint that is committed there but not yet published gates
+nothing.
 
 1. Phase 1: push migrate's new fingerprint, then the keyring
    repository with `shedos.gpg` and `shedos-trusted` together. The
