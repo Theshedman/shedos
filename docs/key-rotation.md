@@ -11,7 +11,13 @@ locally sign). `trust-keys.sh` lsigns every listed fingerprint on
 upgrade and at boot, and the sentinel comparison in
 `shedos-keyring.install` re-fires it whenever the list changes. CI
 refuses to publish unless its signing key's fingerprint appears in
-the committed `shedos-trusted`.
+the committed `shedos-trusted`, and refuses again unless the
+`shedos.gpg` it is about to publish holds that same key — so the
+published keyring can never lag the trusted list. Both gates run
+before anything is signed, and they run on every publish in the org:
+a `shedos-trusted` that gains a fingerprint while `shedos.gpg` does
+not stops every package repository from publishing, not just this
+one.
 
 ## Phase 0 — generate (offline)
 
@@ -78,6 +84,42 @@ After every supported machine has had a realistic chance to upgrade
    every `shedos-retired` fingerprint from pacman's keyring, so the
    old key stops verifying as machines upgrade. Re-trusting alone
    never removes a key; the retired list is what closes the window.
+
+CI's drift check compares the two anchor lists to each other —
+`shedos-trusted` against migrate's `SHEDOS_KEY_FPRS` — and never to
+the key that is signing the channel right now. It goes green on two
+lists that agree on a key nothing signs with, which is exactly the
+state a retirement can leave behind. Only the publish gates compare
+an anchor to the live signer, and they do it when the next publish
+runs, so read the signing secret's fingerprint and check it against
+both files by hand before pushing this step.
+
+## Once the keyring has its own repository
+
+The phases above name paths in this repository, which is where the
+keyring and the migrate verb both still ship from. After the
+multi-repo cutover they sit in `shed-os/shedos-keyring` and
+`shed-os/shedos-migrate`, so the two anchors can no longer move in
+one commit.
+
+The order is decided by migrate: it refuses a downloaded keyring
+holding any key its `SHEDOS_KEY_FPRS` does not list, and every
+publish refreshes the `shedos.gpg` the channel serves. That list has
+to stay a superset of the published keyring, which means the migrate
+change leads an addition and trails a retirement.
+
+1. Phase 1: push migrate's new fingerprint, then the keyring
+   repository with `shedos.gpg` and `shedos-trusted` together. The
+   stable release and the wait are unchanged, and phase 2 still
+   swaps the signer only once the fleet has absorbed it.
+2. Phase 3: push the keyring's removal first and migrate's last, so
+   the list never drops a key the channel is still serving.
+
+Between the two pushes the anchors really do disagree, and the drift
+check in `shed-os/shedos-release` says so. That red is expected and
+the second push clears it. It is an alarm rather than a gate — the
+publisher runs off a repository dispatch, not off that repo's CI —
+and reverting the first push to quiet it puts the refusal back.
 
 ## Drill
 
