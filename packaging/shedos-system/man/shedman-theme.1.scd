@@ -35,4 +35,4 @@ running surfaces reload live via the post-apply hooks.
 
 # SEE ALSO
 
-*shedman-apply*(1)
+*shedman*(1), *shedman-apply*(1)
