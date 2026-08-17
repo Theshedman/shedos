@@ -359,8 +359,6 @@ prepare: check-root check-deps generate-packages
 	@sed -i 's|^XferCommand.*|XferCommand = $(abspath $(BUILD_DIR))/scripts/pacman-offline-download.sh %o %u|' $(BUILD_DIR)/pacman.conf
 	@mkdir -p $(BUILD_DIR)/airootfs/opt/shedos-installer
 	@cp -r installer/shedos_installer $(BUILD_DIR)/airootfs/opt/shedos-installer/
-	@cp -r packages $(BUILD_DIR)/airootfs/opt/shedos-installer/
-	@# Ensure npm-cache is copied inside packages (it should be automatic if inside packages/, but explicit check helps)
 	@mkdir -p $(BUILD_DIR)/airootfs/opt/shedos-installer/branding
 	@cp -r branding/wallpapers $(BUILD_DIR)/airootfs/opt/shedos-installer/branding/
 	@# Copy ShedOS branding files. Note: /etc/os-release and /etc/shedos-ascii.txt
