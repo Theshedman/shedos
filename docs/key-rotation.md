@@ -38,7 +38,7 @@ fingerprint to `shedos-trusted`. Then:
 
 1. Add the new fingerprint to `SHEDOS_KEY_FPRS` in
    `packaging/shedos-migrate-to-packaged/tree/usr/libexec/shedman/migrate`,
-   and to `KEY_FPRS` in `shed-os/shedos-ci`'s
+   and to `KEY_FPRS` in `shedos-org/shedos-ci`'s
    `scripts/enable-shedos-channels.sh` together with the copy its
    `test/pipeline/run.sh` pins. Every package repository's build and
    test containers verify the channel through that list, so a rotation
@@ -117,8 +117,8 @@ both files by hand before pushing this step.
 
 The phases above name paths in this repository, which is where the
 keyring and the migrate verb both still ship from. After the
-multi-repo cutover they sit in `shed-os/shedos-keyring` and
-`shed-os/shedos-migrate`, so the anchors can no longer move in
+multi-repo cutover they sit in `shedos-org/shedos-keyring` and
+`shedos-org/shedos-migrate`, so the anchors can no longer move in
 one commit. shedos-ci's list is already in that position.
 
 The order is decided by migrate: it refuses a downloaded keyring
@@ -141,7 +141,7 @@ nothing.
    serving.
 
 Between the two pushes the anchors really do disagree, and the drift
-check in `shed-os/shedos-release` says so. That red is expected and
+check in `shedos-org/shedos-release` says so. That red is expected and
 the second push clears it. It is an alarm rather than a gate — the
 publisher runs off a repository dispatch, not off that repo's CI —
 and reverting the first push to quiet it puts the refusal back.
